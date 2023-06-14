@@ -31,16 +31,35 @@ bool WebServ::runListeners(void)
 
     // TODO boucler pour chaque host:port
 
-    // Création du socket
+    // Create an AF_INET6 stream socket to receive incoming connections on
     int                 serverSocket;
-    struct sockaddr_in  serverAddress;
     serverSocket = socket(AF_INET, SOCK_STREAM, 0);
     if (serverSocket == -1) {
         std::cerr << "Error : server socket creation failed" << std::endl;
         return(false);
     }
 
+    // Allow socket descriptor to be reuseable 
+    int on = 1;
+    int rc = setsockopt(serverSocket, SOL_SOCKET,  SO_REUSEADDR, (char *)&on, sizeof(on));
+    if (rc < 0)
+    {
+        std::cerr << "Error : setting server socket options failed" << std::endl;
+        close(serverSocket);
+        return(false);
+    }
+
+    // Set socket to be nonblocking.  
+    rc = fcntl(serverSocket, F_SETFL, O_NONBLOCK);
+    if (rc < 0)
+    {
+        std::cerr << "Error : setting nonblocking option failed" << std::endl;
+        close(serverSocket);
+        return(false);
+    }    
+
     // Configuration de l'adresse du serveur
+    struct sockaddr_in  serverAddress;
     serverAddress.sin_family = AF_INET;
     serverAddress.sin_addr.s_addr = INADDR_ANY;
     serverAddress.sin_port = htons(_virtualServers.at(0)->getPort()); // htons : converts bytes from host byte order to network byte order
