@@ -17,6 +17,7 @@
 # include <arpa/inet.h>
 # include <unistd.h>
 # include <fcntl.h>
+# include <sys/time.h>
 
 # include <iostream>
 # include <cstdlib>
@@ -24,6 +25,8 @@
 # include <string>
 # include <vector>
 # include <queue>
+# include <ctime>
+# include <cstring>
 
 # include "VirtualServer.hpp"
 
@@ -49,6 +52,7 @@ class WebServ
         static bool                             checkConfFile(const std::string& filename);
         static void                             addVarConf(std::string& line);
         static void                             addSrvConf(std::string& line);
+        static bool                             initFdSet(void);
 };
 
 #endif

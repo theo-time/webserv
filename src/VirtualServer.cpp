@@ -42,7 +42,18 @@ unsigned int VirtualServer::getPort(void)
     return(_port);
 }
 
-void VirtualServer::setName(unsigned int name)
+void VirtualServer::setFd(int fd)
+{
+    // TODO check valid fd number
+    _fd = fd;
+}
+
+int VirtualServer::getFd(void)
+{
+    return(_fd);
+}
+
+void VirtualServer::setName(std::string name)
 {
     // TODO check valid name
     _name = name;
@@ -53,7 +64,7 @@ std::string VirtualServer::getName(void)
     return(_name);
 }
 
-void VirtualServer::setIndex(unsigned int index)
+void VirtualServer::setIndex(std::string index)
 {
     // TODO check valid index
     _index = index;
@@ -64,7 +75,7 @@ std::string VirtualServer::getIndex(void)
     return(_index);
 }
 
-void VirtualServer::setRoot(unsigned int root)
+void VirtualServer::setRoot(std::string root)
 {
     // TODO check valid root
     _root = root;

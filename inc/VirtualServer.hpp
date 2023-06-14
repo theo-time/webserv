@@ -27,11 +27,13 @@ class VirtualServer
 
         void                setPort(unsigned int port);
         unsigned int        getPort(void);
-        void                setName(unsigned int name);
+        void                setFd(int fd);
+        int                 getFd(void);
+        void                setName(std::string name);
         std::string         getName(void);
-        void                setIndex(unsigned int index);
+        void                setIndex(std::string index);
         std::string         getIndex(void);
-        void                setRoot(unsigned int root);
+        void                setRoot(std::string root);
         std::string         getRoot(void);
 
     private:
@@ -41,6 +43,7 @@ class VirtualServer
         std::string         _name;
         std::string         _index;
         std::string         _root;
+        int                 _fd;
 };
 
 #endif
