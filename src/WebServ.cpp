@@ -119,7 +119,7 @@ bool WebServ::initFdSet(void)
     int                     max_sd, new_sd;
     fd_set                  master_set, working_set; 
     struct timeval          timeout;
-    char                    buffer[80];
+    char                    buffer[1024];
     
     /*************************************************************/
     /* Initialize the master fd_set                              */
@@ -132,14 +132,14 @@ bool WebServ::initFdSet(void)
     /* Initialize the timeval struct to 3 minutes.  If no        */
     /* activity after 3 minutes this program will end.           */
     /*************************************************************/
-    timeout.tv_sec  = 3 * 60;
+    timeout.tv_sec  = 3 * 60; // TODO ajuster timer
     timeout.tv_usec = 0;
 
     /*************************************************************/
     /* Loop waiting for incoming connects or for incoming data   */
     /* on any of the connected sockets.                          */
     /*************************************************************/
-    do
+    while (end_server == 0)
     {
         /**********************************************************/
         /* Copy the master fd_set over to the working fd_set.     */
@@ -250,7 +250,7 @@ bool WebServ::initFdSet(void)
                 /* Receive all incoming data on this socket      */
                 /* before we loop back and call select again.    */
                 /*************************************************/
-                do
+                while (1)
                 {
                     /**********************************************/
                     /* Receive data on this connection until the  */
@@ -284,12 +284,12 @@ bool WebServ::initFdSet(void)
                     /* Data was received                          */
                     /**********************************************/
                     len = rc;
-                    printf("  %d bytes received\n", len);
+                    printf("  %d bytes received\n***************\n%s", len, buffer);
 
                     /**********************************************/
                     /* Echo the data back to the client           */
                     /**********************************************/
-                    rc = send(i, buffer, len, 0);
+                    rc = send(i, buffer, len, 0); // TODO push la requete dans une queue?
                     if (rc < 0)
                     {
                         perror("  send() failed");
@@ -297,7 +297,7 @@ bool WebServ::initFdSet(void)
                         break;
                     }
 
-                } while (1);
+                }
 
                 /*************************************************/
                 /* If the close_conn flag was turned on, we need */
@@ -322,7 +322,7 @@ bool WebServ::initFdSet(void)
             } /* End of if (FD_ISSET(i, &working_set)) */
         } /* End of loop through selectable descriptors */
 
-    } while (end_server == 0);
+    } 
 
     /*************************************************************/
     /* Clean up all of the sockets that are open                 */
