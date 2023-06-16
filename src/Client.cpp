@@ -36,12 +36,12 @@ Client& Client::operator=(const Client& rhs)
 
 std::string Client::getResponse(void) const
 {
-    return(_response);
+    return("HTTP/1.1 200 OK\r\nContent-Length: 13\r\nConnection: close\r\n\r\nHello, world!");
 }
 
 void Client::newRequest(std::string req)
 {
-    (void)req;
+    std::cout << req << std::endl;
 }
 
 void Client::setFd(int fd)

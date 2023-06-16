@@ -20,7 +20,7 @@
 # include "VirtualServer.hpp"
 
 /* 
-Contains client socket info 
+Contains client socket info, request and response
 */
 class Client
 {
@@ -30,9 +30,12 @@ class Client
         ~Client(void);
         
         Client& operator=(const Client& rhs);
-
-        std::string         getResponse(void) const;
+        
+        // TODO créer un objet HttpRequest ou un appel CGI selon parsing
         void                newRequest(std::string req);
+        
+        // TODO renvoyer le contenu de l'objet HttpResponse
+        std::string         getResponse(void) const;
 
     private:
 

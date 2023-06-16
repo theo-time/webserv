@@ -234,8 +234,8 @@ bool WebServ::readRequest(const int &fd, Client &c)
         request.append(buffer);
     }
 
-    std::cout << "  " << request.size() << " bytes received\n***************\n" << request << std::endl;
-    c.newRequest(buffer);
+    std::cout << "  " << request.size() << " bytes received\n***************\n" << std::endl;
+    c.newRequest(request);
     memset(buffer, 0, sizeof(buffer)); // TODO ft_memset
     del(fd, _master_set_recv);
     add(fd, _master_set_write);
@@ -246,9 +246,9 @@ bool WebServ::readRequest(const int &fd, Client &c)
 bool WebServ::sendResponse(const int &fd, Client &c)
 {
     std::cout << "  Sending response - fd " << fd << std::endl;
-    (void)c; 
     char response[]  = "HTTP/1.1 200 OK\r\nContent-Length: 13\r\nConnection: close\r\n\r\nHello, world!";
 
+    (void)c; 
     int rc  = send(fd, response, sizeof(response), 0);
     if (rc < 0)
     {
