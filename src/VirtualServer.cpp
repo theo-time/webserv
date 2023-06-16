@@ -37,7 +37,7 @@ void VirtualServer::setPort(unsigned int port)
     _port = port;
 }
 
-unsigned int VirtualServer::getPort(void)
+unsigned int VirtualServer::getPort(void) const
 {
     return(_port);
 }
@@ -48,9 +48,20 @@ void VirtualServer::setFd(int fd)
     _fd = fd;
 }
 
-int VirtualServer::getFd(void)
+int VirtualServer::getFd(void) const
 {
     return(_fd);
+}
+
+void VirtualServer::setHost(std::string host)
+{
+    // TODO check valid host
+    _host = host;
+}
+
+std::string VirtualServer::getHost(void) const
+{
+    return(_host);
 }
 
 void VirtualServer::setName(std::string name)
@@ -59,7 +70,7 @@ void VirtualServer::setName(std::string name)
     _name = name;
 }
 
-std::string VirtualServer::getName(void)
+std::string VirtualServer::getName(void) const
 {
     return(_name);
 }
@@ -70,7 +81,7 @@ void VirtualServer::setIndex(std::string index)
     _index = index;
 }
 
-std::string VirtualServer::getIndex(void)
+std::string VirtualServer::getIndex(void) const
 {
     return(_index);
 }
@@ -81,7 +92,7 @@ void VirtualServer::setRoot(std::string root)
     _root = root;
 }
 
-std::string VirtualServer::getRoot(void)
+std::string VirtualServer::getRoot(void) const
 {
     return(_root);
 }

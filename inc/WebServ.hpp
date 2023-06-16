@@ -20,39 +20,42 @@
 # include <sys/time.h>
 
 # include <iostream>
-# include <cstdlib>
-# include <fstream>
+# include <cstring>
 # include <string>
 # include <vector>
-# include <queue>
 # include <ctime>
-# include <cstring>
+# include <map>
 
-# include "VirtualServer.hpp"
+# include "Config.hpp"
+# include "Client.hpp"
 
+/* 
+Static class representing the engine 
+*/
 class WebServ
 {
     public:
 
-        typedef std::queue<std::string>         queue;
         typedef std::vector<VirtualServer*>     srvVect;
+        typedef std::map<int, Client*>          cliMap;
 
-        static bool                             init(const std::string& filename);
         static bool                             runListeners(void);
         static void                             stop(void);
 
     private:    
+        static fd_set                           _master_set_recv;
+        static fd_set                           _master_set_write;
+        static int                              _max_fd;
+        static cliMap                           _clients;
 
-        static unsigned int                     _clientMaxBodySize;
-        static srvVect                          _virtualServers;
-
-        static queue                            _tmpVarConf;
-        static queue                            _tmpSrvConf;
-
-        static bool                             checkConfFile(const std::string& filename);
-        static void                             addVarConf(std::string& line);
-        static void                             addSrvConf(std::string& line);
-        static bool                             initFdSet(void);
+        static bool                             process(void);
+        static void                             init(void);
+        static bool                             acceptNewCnx(VirtualServer& server);
+        static bool                             readRequest(const int& fd, Client& c);
+        static bool                             sendResponse(const int& fd, Client& c);
+        static void                             add(const int& fd, fd_set& set);
+        static void                             del(const int& fd, fd_set& set);
+        static void                             closeCnx(const int& fd);
 };
 
 #endif

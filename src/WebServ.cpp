@@ -12,55 +12,25 @@
 
 #include "WebServ.hpp"
 
-unsigned int                                WebServ::_clientMaxBodySize = 1024 * 1024;
-
-typedef std::queue<std::string>             queue;
 typedef std::vector<VirtualServer*>         srvVect;
-
-srvVect                                     WebServ::_virtualServers;
-queue                                       WebServ::_tmpVarConf;
-queue                                       WebServ::_tmpSrvConf;
-
-bool WebServ::init(const std::string& filename)
-{
-    if (!checkConfFile(filename))
-        return(false);
-        
-    if (_tmpSrvConf.empty())
-    {
-        std::cout << "Error: missing virtual server configuration" << std::endl;
-        return(false);
-    }
-
-    while (!_tmpVarConf.empty())
-    {
-        addVarConf(_tmpVarConf.front());
-        _tmpVarConf.pop();
-    }
-
-    std::cout << "Found " << _tmpSrvConf.size() << " virtual server configuration(s)" << std::endl;
-    while (!_tmpSrvConf.empty())
-    {
-        addSrvConf(_tmpSrvConf.front());
-        _tmpSrvConf.pop();
-    }
-
-    return(true);
-}
+typedef std::map<int, Client*>              cliMap;
+fd_set                                      WebServ::_master_set_recv;
+fd_set                                      WebServ::_master_set_write;
+int                                         WebServ::_max_fd;
+cliMap                                      WebServ::_clients;
 
 bool WebServ::runListeners(void)
 {
-    if (_virtualServers.empty())
+    if (Config::getVirtualServers().empty())
     {
         std::cout << "Error: no configured virtual server" << std::endl;
         return(false);
     }
 
-    // TODO boucler pour chaque host:port
+    // TODO boucler pour chaque VirtualServer, créer un seul socket par host:port
 
     // Create an AF_INET6 stream socket to receive incoming connections on
-    int serverSocket;
-    serverSocket = socket(AF_INET, SOCK_STREAM, 0);
+    int serverSocket = socket(AF_INET, SOCK_STREAM, 0);
     if (serverSocket == -1) {
         std::cerr << "Error : socket creation failed" << std::endl;
         return(false);
@@ -89,7 +59,7 @@ bool WebServ::runListeners(void)
     struct sockaddr_in  serverAddress;
     serverAddress.sin_family = AF_INET;
     serverAddress.sin_addr.s_addr = INADDR_ANY;
-    serverAddress.sin_port = htons(_virtualServers.at(0)->getPort()); 
+    serverAddress.sin_port = htons(Config::getVirtualServers().at(0)->getPort()); 
     rc = bind(serverSocket, (struct sockaddr*)&serverAddress, sizeof(serverAddress));
     if (rc < 0)
     {
@@ -99,429 +69,250 @@ bool WebServ::runListeners(void)
     }
 
     // Set the listen back log
-    rc = listen(serverSocket, 10);
+    rc = listen(serverSocket, 32);
     if (rc < 0)
     {
         std::cerr << "Error : socket listen failed" << std::endl;
         close(serverSocket);
         return(false);
     }
-    _virtualServers.at(0)->setFd(serverSocket);
-    std::cout << "Waiting for connexion: port " << _virtualServers.at(0)->getPort() <<"..." << std::endl;
+    Config::getVirtualServers().at(0)->setFd(serverSocket);
+    std::cout << "Waiting for connexion: port " << Config::getVirtualServers().at(0)->getPort() <<"..." << std::endl;
 
-    return(initFdSet());
+    return(process());
 }
 
-bool WebServ::initFdSet(void)
+bool WebServ::process(void)
 {
-    int                     i, rc, len = 1;
-    int                     desc_ready, close_conn, end_server = 0;
-    int                     max_sd, new_sd;
-    fd_set                  master_set, working_set; 
-    struct timeval          timeout;
-    char                    buffer[1024];
-    
-    /*************************************************************/
-    /* Initialize the master fd_set                              */
-    /*************************************************************/
-    FD_ZERO(&master_set);
-    max_sd = _virtualServers.at(0)->getFd(); // TODO boucler sur _virtualServers
-    FD_SET(_virtualServers.at(0)->getFd(), &master_set);
+    struct timeval  timeout;    
+    int             ret;
+    fd_set          working_set_recv;
+    fd_set          working_set_write;
 
-    /*************************************************************/
-    /* Initialize the timeval struct to 3 minutes.  If no        */
-    /* activity after 3 minutes this program will end.           */
-    /*************************************************************/
-    timeout.tv_sec  = 3 * 60; // TODO ajuster timer
+    init();
+    timeout.tv_sec = 10;
     timeout.tv_usec = 0;
-
-    /*************************************************************/
-    /* Loop waiting for incoming connects or for incoming data   */
-    /* on any of the connected sockets.                          */
-    /*************************************************************/
-    while (end_server == 0)
+    while (true)
     {
-        /**********************************************************/
-        /* Copy the master fd_set over to the working fd_set.     */
-        /**********************************************************/
-        memcpy(&working_set, &master_set, sizeof(master_set));
-
-        /**********************************************************/
-        /* Call select() and wait 3 minutes for it to complete.   */
-        /**********************************************************/
-        printf("Waiting on select()...\n");
-        rc = select(max_sd + 1, &working_set, NULL, NULL, &timeout);
-
-        /**********************************************************/
-        /* Check to see if the select call failed.                */
-        /**********************************************************/
-        if (rc < 0)
+        working_set_recv = _master_set_recv;
+        working_set_write = _master_set_write;
+        std::cout << "  Preparing select() " << std::endl;
+        for (int i = 0; i <= _max_fd; ++i)
         {
-            perror("  select() failed");
-            break;
-        }
-
-        /**********************************************************/
-        /* Check to see if the 3 minute time out expired.         */
-        /**********************************************************/
-        if (rc == 0)
-        {
-            printf("  select() timed out.  End program.\n");
-            break;
-        }
-
-        /**********************************************************/
-        /* One or more descriptors are readable.  Need to         */
-        /* determine which ones they are.                         */
-        /**********************************************************/
-        desc_ready = rc;
-        for (i=0; i <= max_sd  &&  desc_ready > 0; ++i)
-        {
-            /*******************************************************/
-            /* Check to see if this descriptor is ready            */
-            /*******************************************************/
-            if (FD_ISSET(i, &working_set))
-            {
-            /****************************************************/
-            /* A descriptor was found that was readable - one   */
-            /* less has to be looked for.  This is being done   */
-            /* so that we can stop looking at the working set   */
-            /* once we have found all of the descriptors that   */
-            /* were ready.                                      */
-            /****************************************************/
-            desc_ready -= 1;
-
-            /****************************************************/
-            /* Check to see if this is the listening socket     */
-            /****************************************************/
-            if (i == _virtualServers.at(0)->getFd())
-            {
-                printf("  Listening socket is readable\n");
-                /*************************************************/
-                /* Accept all incoming connections that are      */
-                /* queued up on the listening socket before we   */
-                /* loop back and call select again.              */
-                /*************************************************/
-                do
-                {
-                    /**********************************************/
-                    /* Accept each incoming connection.  If       */
-                    /* accept fails with EWOULDBLOCK, then we     */
-                    /* have accepted all of them.  Any other      */
-                    /* failure on accept will cause us to end the */
-                    /* server.                                    */
-                    /**********************************************/
-                    new_sd = accept(_virtualServers.at(0)->getFd(), NULL, NULL);
-                    if (new_sd < 0)
-                    {
-                        if (errno != EWOULDBLOCK)
-                        {
-                        perror("  accept() failed");
-                        end_server = 1;
-                        }
-                        break;
-                    }
-
-                    /**********************************************/
-                    /* Add the new incoming connection to the     */
-                    /* master read set                            */
-                    /**********************************************/
-                    printf("  New incoming connection - %d\n", new_sd);
-                    FD_SET(new_sd, &master_set);
-                    if (new_sd > max_sd)
-                        max_sd = new_sd;
-
-                    /**********************************************/
-                    /* Loop back up and accept another incoming   */
-                    /* connection                                 */
-                    /**********************************************/
-                } while (new_sd != -1);
-            }
-
-            /****************************************************/
-            /* This is not the listening socket, therefore an   */
-            /* existing connection must be readable             */
-            /****************************************************/
+            if (FD_ISSET(i, &working_set_recv))
+                std::cout << "  fd - " << i << " : working_set_recv" << std::endl;
+            else if (FD_ISSET(i, &working_set_write))
+                std::cout << "  fd - " << i << " : working_set_write" << std::endl;
             else
-            {
-                printf("  Descriptor %d is readable\n", i);
-                close_conn = 0;
-                /*************************************************/
-                /* Receive all incoming data on this socket      */
-                /* before we loop back and call select again.    */
-                /*************************************************/
-                while (1)
-                {
-                    /**********************************************/
-                    /* Receive data on this connection until the  */
-                    /* recv fails with EWOULDBLOCK.  If any other */
-                    /* failure occurs, we will close the          */
-                    /* connection.                                */
-                    /**********************************************/
-                    rc = recv(i, buffer, sizeof(buffer), 0);
-                    if (rc < 0)
-                    {
-                        if (errno != EWOULDBLOCK)
-                        {
-                        perror("  recv() failed");
-                        close_conn = 1;
-                        }
-                        break;
-                    }
+                std::cout << "  fd - " << i << " : not working set" << std::endl;
+        }
 
-                    /**********************************************/
-                    /* Check to see if the connection has been    */
-                    /* closed by the client                       */
-                    /**********************************************/
-                    if (rc == 0)
-                    {
-                        printf("  Connection closed\n");
-                        close_conn = 1;
-                        break;
-                    }
-
-                    /**********************************************/
-                    /* Data was received                          */
-                    /**********************************************/
-                    len = rc;
-                    printf("  %d bytes received\n***************\n%s", len, buffer);
-
-                    /**********************************************/
-                    /* Echo the data back to the client           */
-                    /**********************************************/
-                    rc = send(i, buffer, len, 0); // TODO push la requete dans une queue?
-                    if (rc < 0)
-                    {
-                        perror("  send() failed");
-                        close_conn = 1;
-                        break;
-                    }
-
-                }
-
-                /*************************************************/
-                /* If the close_conn flag was turned on, we need */
-                /* to clean up this active connection.  This     */
-                /* clean up process includes removing the        */
-                /* descriptor from the master set and            */
-                /* determining the new maximum descriptor value  */
-                /* based on the bits that are still turned on in */
-                /* the master set.                               */
-                /*************************************************/
-                if (close_conn)
-                {
-                    close(i);
-                    FD_CLR(i, &master_set);
-                    if (i == max_sd)
-                    {
-                        while (FD_ISSET(max_sd, &master_set) == 0)
-                        max_sd -= 1;
-                    }
-                }
-            } /* End of existing connection is readable */
-            } /* End of if (FD_ISSET(i, &working_set)) */
-        } /* End of loop through selectable descriptors */
-
-    } 
-
-    /*************************************************************/
-    /* Clean up all of the sockets that are open                 */
-    /*************************************************************/
-    for (i=0; i <= max_sd; ++i)
-    {
-        if (FD_ISSET(i, &master_set))
-            close(i);
+        ret = select(_max_fd + 1, &working_set_recv, &working_set_write, NULL, &timeout);
+        if (ret < 0)
+        {
+            std::cerr << "  select() failed" << std::endl;
+            stop();
+            return(false);
+        }
+        if (ret == 0)
+        {
+            std::cerr << "  select() timed out.  End program.\n" << std::endl;
+            stop();
+            return(false);
+        }
+        for (int i = 0; i <= _max_fd; ++i)
+        {
+            if (FD_ISSET(i, &working_set_recv) && i == Config::getVirtualServers().at(0)->getFd() ) // TODO map servers puis count(i) 
+                acceptNewCnx(*Config::getVirtualServers().at(0));
+            /* {
+                if (!acceptNewCnx(*Config::getVirtualServers().at(0)))
+                    return(false);
+            } */
+            else if (FD_ISSET(i, &working_set_recv) && _clients.count(i))
+                readRequest(i, *_clients[i]);
+            /* {
+                if (!readRequest(i, *_clients[i]))
+                    return(false);
+            }      */       
+            else if (FD_ISSET(i, &working_set_write) && _clients.count(i))
+                sendResponse(i, *_clients[i]);
+            /* {
+                if (!sendResponse(i, *_clients[i]))
+                    return(false);
+            } */
+        }
     }
     return(true);
 }
 
-bool WebServ::checkConfFile(const std::string& filename)
+void WebServ::init(void)
 {
-    if (filename.size() < 6  || filename.find(".") == std::string::npos || filename.find(".conf") != filename.size() - 5)
+    FD_ZERO(&_master_set_recv);
+    FD_ZERO(&_master_set_write);
+    
+    _max_fd = 0;
+
+    // add server sockets to _master_set_recv
+    int fd = Config::getVirtualServers().at(0)->getFd(); // TODO boucler sur Config::getVirtualServers()
+    add(fd, _master_set_recv);
+}
+
+bool WebServ::acceptNewCnx(VirtualServer &server)
+{
+    int                 clientSocket;
+    struct sockaddr_in  clientAddress;
+    long                clientAddressSize = sizeof(clientAddress);
+
+    do
     {
-        std::cout << "Error: invalid filename: " << filename << std::endl;
-        return(false);
+        clientSocket = accept(server.getFd(), (struct sockaddr *)&clientAddress, (socklen_t*)&clientAddressSize);
+        if (clientSocket < 0)
+        {
+            if (errno != EWOULDBLOCK) // TODO ne pas utiliser errno
+            {
+                std::cerr << "  accept() failed" << std::endl;
+                stop();
+                return(false);
+            }
+            break;
+        }
+
+        // Set socket to be reusable and nonblocking
+        int on = 1;
+        int rc = setsockopt(clientSocket, SOL_SOCKET,  SO_REUSEADDR, (char *)&on, sizeof(on));
+        if (rc < 0)
+        {
+            std::cerr << "Error : setting reusable option failed" << std::endl;
+            close(clientSocket);
+            break;
+        }  
+        rc = fcntl(clientSocket, F_SETFL, O_NONBLOCK);
+        if (rc < 0)
+        {
+            std::cerr << "Error : setting nonblocking option failed" << std::endl;
+            close(clientSocket);
+            break;
+        }
+        
+        add(clientSocket, _master_set_recv);
+        _clients[clientSocket] = new Client(clientSocket, clientAddress, server);
+        std::cout << "  New incoming connection - fd " << clientSocket << std::endl;
+    } while (clientSocket != -1);
+
+    return(true);
+}
+
+bool WebServ::readRequest(const int &fd, Client &c)
+{
+    std::cout << "  Reading request - fd " << fd << std::endl;
+    char        buffer[1024];
+    int         rc = 0;
+    
+    buffer[0] = 0;
+
+    std::string request("");
+    while (true)
+    {
+        rc = recv(fd, buffer, sizeof(buffer), 0);
+        if (rc < 0)
+        {
+            if (errno != EWOULDBLOCK) // TODO ne pas utilier errno
+            {
+                std::cerr << "  recv() failed" << std::endl;
+                closeCnx(fd);
+                // return(false) ???
+            }
+            break;
+        }
+        if (rc == 0)
+        {
+            std::cerr << "  Connection closed\n" << std::endl;
+            closeCnx(fd);
+            return(true);
+        }
+        buffer[rc] = 0;
+        request.append(buffer);
     }
 
-    std::ifstream                           ifs(filename.c_str());
-    if (ifs)
+    std::cout << "  " << request.size() << " bytes received\n***************\n" << request << std::endl;
+    c.newRequest(buffer);
+    memset(buffer, 0, sizeof(buffer)); // TODO ft_memset
+    del(fd, _master_set_recv);
+    add(fd, _master_set_write);
+
+    return(true);
+}
+
+bool WebServ::sendResponse(const int &fd, Client &c)
+{
+    std::cout << "  Sending response - fd " << fd << std::endl;
+    (void)c; 
+    char response[]  = "HTTP/1.1 200 OK\r\nContent-Length: 13\r\nConnection: close\r\n\r\nHello, world!";
+
+    int rc  = send(fd, response, sizeof(response), 0);
+    if (rc < 0)
     {
-        std::string                         line;
-        std::string                         srvConf;
-        bool                                srv = false; 
-
-        std::cout << "Parsing config file: " << filename << std::endl;
-        while(std::getline(ifs, line))
-        {
-            if (!line.empty())
-            {
-                // clear comments
-                std::size_t found = line.find('#');
-                if (found != std::string::npos)
-                    line.erase(line.begin() + found, line.end());
-
-                // trim spaces
-                while (isspace(line[0]))
-                    line.erase(0, 1);
-                if (line.empty())
-                    continue;
-                while (isspace(line[line.length() - 1]))
-                    line.erase(line.length() - 1, 1);
-                if (line.empty())
-                    continue;
-
-                if (srv)
-                {
-                    found = line.find('}');
-                    if (found != std::string::npos)
-                    {
-                        line.erase(line.begin() + found, line.end());
-                        srv = false;
-                    }
-                    srvConf = srvConf + line;
-                    if (!srv)
-                    {
-                        _tmpSrvConf.push(srvConf);
-                        srvConf.clear();
-                    }
-                }
-                else
-                {
-                    found = line.find("server{");
-                    if (found == 0)
-                        srv = true;
-                    else
-                        _tmpVarConf.push(line);
-                }
-            }
-        }
-        if (!srv)
-            return(true);
-        else
-        {
-            std::cout << "Error: missing closing brace for virtual server configuration: " << srvConf << std::endl;
-            return(false);
-        }
+        std::cerr << "  send() failed" << std::endl;
+        closeCnx(fd);
     }
     else
     {
-        std::cout << "Error: could not open file: " << filename << std::endl;
-        return(false);
+        del(fd, _master_set_write);
+        add(fd, _master_set_recv);
     }
-}
-
-void WebServ::addVarConf(std::string& line)
-{
-    std::size_t sep = line.find('=');
-    std::size_t end = line.find(';');
-    if (sep == std::string::npos || end == std::string::npos || sep == 0 || sep + 1 == end)
-    {
-        std::cout << "Error: invalid input: " << line << std::endl;
-        return;
-    }
-    std::string key = line.substr(0, sep);
-    std::string valueStr = line.substr(sep + 1, line.length() - sep - 2);
-
-    if(key == "client_max_body_size")
-    {
-        char*               endPtr      = NULL;
-        unsigned long       tmpValue = strtoul(valueStr.c_str(), &endPtr, 0);
-        if  (endPtr == valueStr || endPtr != &(valueStr[valueStr.size()]) 
-        || tmpValue > 5 * 1024 * 1024 || tmpValue < 1024 * 1024)
-        {
-            std::cout << "Error: invalid input: " << line << std::endl;
-            return;
-        }
-        _clientMaxBodySize = static_cast<unsigned int>(tmpValue);
-        std::cout << "  adding key = " << key;
-        std::cout << ", value = " << _clientMaxBodySize << std::endl;
-        return;
-    }
-
-    std::cout << "  Warning: unknown key: " << line << std::endl;
-}
-
-void WebServ::addSrvConf(std::string& line)
-{
-    std::cout << "  parsing Server..." << std::endl;
     
-    queue           tmpVars;
-    std::string     tmpLine = line;
-    std::size_t     sep = tmpLine.find(';');
-    while (sep != std::string::npos)
+    return(true);
+}
+
+void WebServ::add(const int& fd, fd_set& set)
+{
+    FD_SET(fd, &set);
+
+    if (fd > _max_fd)
+        _max_fd = fd;
+}
+
+void WebServ::del(const int& fd, fd_set& set)
+{
+    FD_CLR(fd, &set);
+
+    if (fd == _max_fd)
     {
-        tmpVars.push(tmpLine.substr(0, sep));
-        tmpLine.erase(0, sep + 1);
-        sep = tmpLine.find(';');
+        while (FD_ISSET(_max_fd, &set) == 0)
+        _max_fd--;
+    }
+}
+
+void WebServ::closeCnx(const int& fd)
+{
+    std::cout << "  Closing cnx - fd " << fd << std::endl;
+    if (FD_ISSET(fd, &_master_set_recv))
+    {        
+        del(fd, _master_set_recv);
     }
 
-    std::string     portStr;
-    unsigned int    port;
-    std::string     index, root;
-    while (!tmpVars.empty())
-    {
-        sep = tmpVars.front().find('=');
-        std::string key = tmpVars.front().substr(0, sep);
-        std::string valueStr = tmpVars.front().substr(sep + 1, tmpVars.front().length() - sep - 1);
-
-        if(key == "listen")
-        {
-            char*               endPtr      = NULL;
-            unsigned long       tmpValue = strtoul(valueStr.c_str(), &endPtr, 0);
-            if  (endPtr == valueStr || endPtr != &(valueStr[valueStr.size()]))
-            {
-                std::cout << "Error: invalid input: " << tmpVars.front() << std::endl;
-                return;
-            }
-            portStr = valueStr;
-            port = static_cast<unsigned int>(tmpValue);
-            std::cout << "      key = " << key;
-            std::cout << ", value = " << port << std::endl;
-            tmpVars.pop();
-            continue;
-        }
-
-        if(key == "index")
-        {
-            index = valueStr;
-            std::cout << "      key = " << key;
-            std::cout << ", value = " << index << std::endl;
-            tmpVars.pop();
-            continue;
-        }
-
-        if(key == "root")
-        {
-            root = valueStr;
-            std::cout << "      key = " << key;
-            std::cout << ", value = " << root << std::endl;
-            tmpVars.pop();
-            continue;
-        }
-
-        std::cout << "      Warning: unknown key: " << tmpVars.front() << std::endl;
-        tmpVars.pop();
+    if (FD_ISSET(fd, &_master_set_write))
+    {        
+        del(fd, _master_set_write);
     }
 
-    if (portStr.empty())
-    {
-        std::cout << "      Error: missing port number" << std::endl;
-        return;
-    }
-
-    VirtualServer* tmp = new VirtualServer(port);
-    _virtualServers.push_back(tmp);
+    close(fd);
+    delete _clients.at(fd);
+    _clients.erase(fd);
 }
 
 void WebServ::stop(void)
 {
-    srvVect::iterator      it  = _virtualServers.begin();
-    while(it != _virtualServers.end())
+    delete Config::getVirtualServers().at(0); // TODO boucler sur le vector
+    Config::getVirtualServers().clear();
+
+    cliMap::iterator      cliIt  = _clients.begin();
+    cliMap::iterator      cliEnd  = _clients.end();
+    while(cliIt != cliEnd)
     {
-        VirtualServer* tmp = *it;
-        std::cout << "Deleting virtual server " << tmp->getPort() << std::endl;
+        Client* tmp = cliIt->second;
         delete tmp;
-        it++;
+        cliIt++;
     }
-    _virtualServers.clear();
+    _clients.clear();
 }

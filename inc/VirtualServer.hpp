@@ -16,30 +16,41 @@
 # include <iostream>
 # include <string>
 
+/*
+Represents 1 server config (One instance per server block in conf file)
+_fd contains server socket
+*/
 class VirtualServer
 {
     public:
+
         VirtualServer(const unsigned int& port);
         VirtualServer(const VirtualServer& src);
         ~VirtualServer(void);
         
         VirtualServer& operator=(const VirtualServer& rhs);
 
-        void                setPort(unsigned int port);
-        unsigned int        getPort(void);
+        unsigned int        getPort(void) const;
+        int                 getFd(void) const;
+        std::string         getHost(void) const;
+        std::string         getName(void) const;
+        std::string         getIndex(void) const;
+        std::string         getRoot(void) const;
+        
         void                setFd(int fd);
-        int                 getFd(void);
-        void                setName(std::string name);
-        std::string         getName(void);
-        void                setIndex(std::string index);
-        std::string         getIndex(void);
-        void                setRoot(std::string root);
-        std::string         getRoot(void);
 
     private:
+
         VirtualServer(void);
 
+        void                setPort(unsigned int port);
+        void                setHost(std::string host);
+        void                setName(std::string name);
+        void                setIndex(std::string index);
+        void                setRoot(std::string root);
+
         unsigned int        _port;
+        std::string         _host;
         std::string         _name;
         std::string         _index;
         std::string         _root;

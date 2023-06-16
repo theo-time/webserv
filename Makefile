@@ -13,7 +13,8 @@
 NAME		=	webserv
 CC			=	c++
 FLAGS		=	-Wall -Wextra -Werror -std=c++98 -g3
-SRC			=	./src/main.cpp ./src/WebServ.cpp ./src/VirtualServer.cpp
+SRC			=	./src/main.cpp ./src/Config.cpp ./src/WebServ.cpp \
+				./src/VirtualServer.cpp ./src/Client.cpp
 OBJ			=	$(SRC:.cpp=.o)
 INC			=	./inc/*.hpp
 INC_PATH	=	./inc/
