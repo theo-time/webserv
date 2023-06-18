@@ -18,8 +18,8 @@ _fd(src.getFd()), _clientAddress(src.getClientAddress()), _server(src.getServer(
     *this = src;
 }
 
-Client::Client(const int& fd, struct sockaddr_in& clientAddress, VirtualServer& server) :
-_fd(fd), _clientAddress(clientAddress), _server(server) {}
+Client::Client(const int& fd, struct sockaddr_in& clientAddress) :
+_fd(fd), _clientAddress(clientAddress) {}
 
 Client::~Client(void){}
 

@@ -38,6 +38,7 @@ class WebServ
 
         typedef std::vector<VirtualServer*>     srvVect;
         typedef std::map<int, Client*>          cliMap;
+        typedef std::map<int, int>              listenMap;
 
         static bool                             runListeners(void);
         static void                             stop(void);
@@ -47,15 +48,17 @@ class WebServ
         static fd_set                           _master_set_write;
         static int                              _max_fd;
         static cliMap                           _clients;
+        static listenMap                        _listeners;
 
         static bool                             process(void);
-        static void                             init(void);
-        static bool                             acceptNewCnx(VirtualServer& server);
+        static bool                             init(void);
+        static bool                             acceptNewCnx(const int& fd);
         static bool                             readRequest(const int& fd, Client& c);
         static bool                             sendResponse(const int& fd, Client& c);
         static void                             add(const int& fd, fd_set& set);
         static void                             del(const int& fd, fd_set& set);
         static void                             closeCnx(const int& fd);
+        static bool                             isServerSocket(const int& fd);
 };
 
 #endif

@@ -27,7 +27,7 @@ bool Config::isValid(void)
     return(_valid);
 }
 
-srvVect Config::getVirtualServers(void)
+srvVect& Config::getVirtualServers(void)
 {
     return(_virtualServers);
 }
@@ -181,7 +181,7 @@ void Config::addSrvConf(std::string& line)
 
     std::string     portStr;
     unsigned int    port;
-    std::string     index, root;
+    std::string     index, root = "";
     while (!tmpVars.empty())
     {
         sep = tmpVars.front().find('=');
@@ -233,6 +233,6 @@ void Config::addSrvConf(std::string& line)
         return;
     }
 
-    VirtualServer* tmp = new VirtualServer(port);
+    VirtualServer* tmp = new VirtualServer(port, root);        
     _virtualServers.push_back(tmp);
 }

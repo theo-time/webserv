@@ -26,7 +26,7 @@ class Client
 {
     public:
 
-        Client(const int& fd, struct sockaddr_in& clientAddress, VirtualServer& server);
+        Client(const int& fd, struct sockaddr_in& clientAddress);
         ~Client(void);
         
         Client& operator=(const Client& rhs);

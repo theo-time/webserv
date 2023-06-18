@@ -24,7 +24,8 @@ class VirtualServer
 {
     public:
 
-        VirtualServer(const unsigned int& port);
+        VirtualServer(void);
+        VirtualServer(const unsigned int& port, const std::string& root);
         VirtualServer(const VirtualServer& src);
         ~VirtualServer(void);
         
@@ -40,8 +41,6 @@ class VirtualServer
         void                setFd(int fd);
 
     private:
-
-        VirtualServer(void);
 
         void                setPort(unsigned int port);
         void                setHost(std::string host);

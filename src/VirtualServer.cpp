@@ -12,8 +12,8 @@
 
 #include "VirtualServer.hpp"
 
-VirtualServer::VirtualServer(const unsigned int& port) : 
-    _port(port), _name("www.default.com"), _index("index.html"), _root("/default/")
+VirtualServer::VirtualServer(const unsigned int& port, const std::string& root) : 
+    _port(port), _host("localhost"), _name("www.default.com"), _index("index.html"), _root(root)
 {}
 
 VirtualServer::~VirtualServer(void){}

@@ -14,72 +14,105 @@
 
 typedef std::vector<VirtualServer*>         srvVect;
 typedef std::map<int, Client*>              cliMap;
+typedef std::map<int, int>                  listenMap;
 fd_set                                      WebServ::_master_set_recv;
 fd_set                                      WebServ::_master_set_write;
 int                                         WebServ::_max_fd;
 cliMap                                      WebServ::_clients;
+listenMap                                   WebServ::_listeners;
 
 bool WebServ::runListeners(void)
 {
-    if (Config::getVirtualServers().empty())
+    if (Config::getVirtualServers().empty()) // TODO port par defaut ?
     {
         std::cout << "Error: no configured virtual server" << std::endl;
         return(false);
     }
 
-    // TODO boucler pour chaque VirtualServer, créer un seul socket par host:port
-
-    // Create an AF_INET6 stream socket to receive incoming connections on
-    int serverSocket = socket(AF_INET, SOCK_STREAM, 0);
-    if (serverSocket == -1) {
-        std::cerr << "Error : socket creation failed" << std::endl;
+    if (!init())
         return(false);
-    }
 
-    // Allow socket descriptor to be reuseable 
-    int on = 1;
-    int rc = setsockopt(serverSocket, SOL_SOCKET,  SO_REUSEADDR, (char *)&on, sizeof(on));
-    if (rc < 0)
+    if (!process())
+        return(false);
+
+    return(true);
+}
+
+bool WebServ::init(void)
+{
+    FD_ZERO(&_master_set_recv);
+    FD_ZERO(&_master_set_write);
+    
+    _max_fd = 0;
+
+    srvVect::iterator srvIt = Config::getVirtualServers().begin();
+    srvVect::iterator srvEnd = Config::getVirtualServers().end();
+
+    std::cout << "Config::getVirtualServers().size " << Config::getVirtualServers().size() << std::endl;
+
+    while(srvIt != srvEnd)
     {
-        std::cerr << "Error : setting socket options failed" << std::endl;
-        close(serverSocket);
-        return(false);
+        std::cout << "Starting virtual server " << (*srvIt)->getPort() << " " << (*srvIt)->getRoot() << std::endl;
+        if (_listeners.count((*srvIt)->getPort())) // TODO prendre en compte host
+        {
+            std::cout << "Binding " << (*srvIt)->getPort() << " to existing server socket" << std::endl;
+            (*srvIt)->setFd(_listeners[(*srvIt)->getPort()]);
+        }
+        else
+        {            
+            // Create server socket to receive incoming connections on
+            int serverSocket = socket(AF_INET, SOCK_STREAM, 0);
+            if (serverSocket == -1) {
+                std::cerr << "Error : socket creation failed" << std::endl;
+                return(false);
+            }
+            // Allow socket descriptor to be reuseable 
+            int on = 1;
+            int rc = setsockopt(serverSocket, SOL_SOCKET,  SO_REUSEADDR, (char *)&on, sizeof(on));
+            if (rc < 0)
+            {
+                std::cerr << "Error : setting socket options failed" << std::endl;
+                close(serverSocket);
+                return(false);
+            }
+            // Set socket to be nonblocking.  
+            rc = fcntl(serverSocket, F_SETFL, O_NONBLOCK);
+            if (rc < 0)
+            {
+                std::cerr << "Error : setting nonblocking option failed" << std::endl;
+                close(serverSocket);
+                return(false);
+            }
+            // Bind the socket
+            struct sockaddr_in  serverAddress;
+            serverAddress.sin_family = AF_INET;
+            serverAddress.sin_addr.s_addr = INADDR_ANY;
+            serverAddress.sin_port = htons((*srvIt)->getPort()); 
+            rc = bind(serverSocket, (struct sockaddr*)&serverAddress, sizeof(serverAddress));
+            if (rc < 0)
+            {
+                perror("server socket binding ");
+                std::cerr << "Error : socket binding failed" << std::endl;
+                close(serverSocket);
+                return(false);
+            }
+
+            // Set the listen back log
+            rc = listen(serverSocket, 32);
+            if (rc < 0)
+            {
+                std::cerr << "Error : socket listen failed" << std::endl;
+                close(serverSocket);
+                return(false);
+            }
+            std::cout << "Waiting for connexion: port " << (*srvIt)->getPort() << "..." << std::endl;
+            (*srvIt)->setFd(serverSocket);
+            add(serverSocket, _master_set_recv);
+            _listeners[(*srvIt)->getPort()] = serverSocket; 
+        }
+        srvIt++;
     }
-
-    // Set socket to be nonblocking.  
-    rc = fcntl(serverSocket, F_SETFL, O_NONBLOCK);
-    if (rc < 0)
-    {
-        std::cerr << "Error : setting nonblocking option failed" << std::endl;
-        close(serverSocket);
-        return(false);
-    }    
-
-    // Bind the socket
-    struct sockaddr_in  serverAddress;
-    serverAddress.sin_family = AF_INET;
-    serverAddress.sin_addr.s_addr = INADDR_ANY;
-    serverAddress.sin_port = htons(Config::getVirtualServers().at(0)->getPort()); 
-    rc = bind(serverSocket, (struct sockaddr*)&serverAddress, sizeof(serverAddress));
-    if (rc < 0)
-    {
-        std::cerr << "Error : socket binding failed" << std::endl;
-        close(serverSocket);
-        return(false);
-    }
-
-    // Set the listen back log
-    rc = listen(serverSocket, 32);
-    if (rc < 0)
-    {
-        std::cerr << "Error : socket listen failed" << std::endl;
-        close(serverSocket);
-        return(false);
-    }
-    Config::getVirtualServers().at(0)->setFd(serverSocket);
-    std::cout << "Waiting for connexion: port " << Config::getVirtualServers().at(0)->getPort() <<"..." << std::endl;
-
-    return(process());
+    return(true);
 }
 
 bool WebServ::process(void)
@@ -89,7 +122,6 @@ bool WebServ::process(void)
     fd_set          working_set_recv;
     fd_set          working_set_write;
 
-    init();
     timeout.tv_sec = 10;
     timeout.tv_usec = 0;
     while (true)
@@ -122,8 +154,8 @@ bool WebServ::process(void)
         }
         for (int i = 0; i <= _max_fd; ++i)
         {
-            if (FD_ISSET(i, &working_set_recv) && i == Config::getVirtualServers().at(0)->getFd() ) // TODO map servers puis count(i) 
-                acceptNewCnx(*Config::getVirtualServers().at(0));
+            if (FD_ISSET(i, &working_set_recv) && isServerSocket(i)) 
+                acceptNewCnx(i);
             /* {
                 if (!acceptNewCnx(*Config::getVirtualServers().at(0)))
                     return(false);
@@ -145,19 +177,7 @@ bool WebServ::process(void)
     return(true);
 }
 
-void WebServ::init(void)
-{
-    FD_ZERO(&_master_set_recv);
-    FD_ZERO(&_master_set_write);
-    
-    _max_fd = 0;
-
-    // add server sockets to _master_set_recv
-    int fd = Config::getVirtualServers().at(0)->getFd(); // TODO boucler sur Config::getVirtualServers()
-    add(fd, _master_set_recv);
-}
-
-bool WebServ::acceptNewCnx(VirtualServer &server)
+bool WebServ::acceptNewCnx(const int& fd)
 {
     int                 clientSocket;
     struct sockaddr_in  clientAddress;
@@ -165,7 +185,7 @@ bool WebServ::acceptNewCnx(VirtualServer &server)
 
     do
     {
-        clientSocket = accept(server.getFd(), (struct sockaddr *)&clientAddress, (socklen_t*)&clientAddressSize);
+        clientSocket = accept(fd, (struct sockaddr *)&clientAddress, (socklen_t*)&clientAddressSize);
         if (clientSocket < 0)
         {
             if (errno != EWOULDBLOCK) // TODO ne pas utiliser errno
@@ -195,7 +215,7 @@ bool WebServ::acceptNewCnx(VirtualServer &server)
         }
         
         add(clientSocket, _master_set_recv);
-        _clients[clientSocket] = new Client(clientSocket, clientAddress, server);
+        _clients[clientSocket] = new Client(clientSocket, clientAddress);
         std::cout << "  New incoming connection - fd " << clientSocket << std::endl;
     } while (clientSocket != -1);
 
@@ -315,4 +335,18 @@ void WebServ::stop(void)
         cliIt++;
     }
     _clients.clear();
+}
+
+bool WebServ::isServerSocket(const int& fd)
+{
+    listenMap::iterator lsIt        = _listeners.begin();
+    listenMap::iterator lsEnd       = _listeners.end();
+
+    while (lsIt != lsEnd)
+    {
+        if (lsIt->second == fd)
+            return(true);
+        lsIt++;
+    }
+    return(false);
 }
