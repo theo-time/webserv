@@ -14,10 +14,11 @@
 # define WEBSERV_HPP
 
 # include <sys/socket.h>
+# include <sys/poll.h>
+# include <sys/time.h>
 # include <arpa/inet.h>
 # include <unistd.h>
 # include <fcntl.h>
-# include <sys/time.h>
 
 # include <iostream>
 # include <cstring>
@@ -49,6 +50,8 @@ class WebServ
         static int                              _max_fd;
         static cliMap                           _clients;
         static listenMap                        _listeners;
+
+        static struct pollfd fds[200];
 
         static bool                             process(void);
         static bool                             init(void);
