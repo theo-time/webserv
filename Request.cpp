@@ -4,6 +4,9 @@
 Request::Request(int clientSocket, std::string request): clientSocket(clientSocket), request(request) {
     std::cout << "Request created" << std::endl;
 
+    // Conf file variables
+    std::string root = "/mnt/nfs/homes/teliet/dev/web_serv";
+
     // Parse request 
     std::string delimiter = " ";
     size_t pos = 0;
@@ -37,6 +40,7 @@ Request::Request(int clientSocket, std::string request): clientSocket(clientSock
     if (path == "/") {
         path = "/index.html";
     }
+    // path = root + path;
 
     std::cout << "Method: " << method << std::endl;
 
@@ -49,6 +53,12 @@ Request::Request(int clientSocket, std::string request): clientSocket(clientSock
 
 Request::~Request() {
     std::cout << "Request destroyed" << std::endl;
+}
+
+std::string getFileExtension(std::string filename)
+{
+    std::string extension = filename.substr(filename.find_last_of(".") + 1);
+    return extension;
 }
 
 void Request::handleRequest() 
@@ -78,9 +88,35 @@ void Request::handleRequest()
 
 
     // Build response
-    response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n" + fileContent;
+    std::string status = "200";
+    std::string statusText = "OK";
+    std::string contentType = "text/plain";
+    std::string filename = path.substr(path.find_last_of("/") + 1);
+
+    std::string extension = getFileExtension(path);
+    std::string contentDisposition = "inline";
+    // if extension is not displayable, download it
+    if(extension == "png" || extension == "jpg" || extension == "jpeg" || extension == "gif" || extension == "bmp" || extension == "ico") {
+        contentType = "image/" + extension;
+        contentDisposition = "attachment";
+    } else if (extension == "pdf") {
+        contentType = "application/pdf";
+        contentDisposition = "attachment";
+    } else if (extension == "css") {
+        contentType = "text/css";
+    } else if (extension == "js") {
+        contentType = "application/javascript";
+    } else if (extension == "txt") {
+        contentType = "text/plain";
+    } else if (extension == "html") {
+        contentType = "text/html";
+    } else {
+        contentType = "text/plain";
+    }
 
 
+    // response = "HTTP/1.1 " + status + " " + statusText + "\r\nContent-Type: " + contentType + "\r\nContent-Disposition: " + contentDisposition + "\r\n\r\n" + fileContent;
+    response = "HTTP/1.1 " + status + " " + statusText + "\r\nContent-Type: " + contentType + "\r\n\r\n" + fileContent;
 }
 
 // GETTERS

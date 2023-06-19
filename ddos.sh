@@ -2,5 +2,5 @@
 
 while true
 do
-    curl -s -X GET http://localhost:8080
+    curl -s -X GET http://localhost:8080/testHTML/index.html 
 done
