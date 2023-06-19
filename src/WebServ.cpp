@@ -323,8 +323,7 @@ void WebServ::closeCnx(const int& fd)
 
 void WebServ::stop(void)
 {
-    delete Config::getVirtualServers().at(0); // TODO boucler sur le vector
-    Config::getVirtualServers().clear();
+    Config::clear();
 
     cliMap::iterator      cliIt  = _clients.begin();
     cliMap::iterator      cliEnd  = _clients.end();

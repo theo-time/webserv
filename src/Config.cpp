@@ -236,3 +236,18 @@ void Config::addSrvConf(std::string& line)
     VirtualServer* tmp = new VirtualServer(port, root);        
     _virtualServers.push_back(tmp);
 }
+
+void Config::clear(void)
+{
+    if (!_virtualServers.empty ())
+    {
+        srvVect::iterator it    = _virtualServers.begin();
+        srvVect::iterator end   = _virtualServers.end();
+
+        while (it != end)
+        {
+            delete *it;
+            it++;
+        }
+    }
+}

@@ -34,7 +34,8 @@ class Config
 
         static void                             init(const std::string& filename);
         static bool                             isValid(void);
-        static srvVect&                          getVirtualServers(void);
+        static srvVect&                         getVirtualServers(void);
+        static void                             clear(void);
 
     private:
 
