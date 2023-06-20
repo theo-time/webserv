@@ -1,3 +1,0 @@
-# webserv
-
-jb branch

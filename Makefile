@@ -3,36 +3,41 @@
 #                                                         :::      ::::::::    #
 #    Makefile                                           :+:      :+:    :+:    #
 #                                                     +:+ +:+         +:+      #
-#    By: adcarnec <marvin@42.fr>                    +#+  +:+       +#+         #
+#    By: teliet <teliet@student.42.fr>              +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
-#    Created: 2023/06/13 14:36:41 by adcarnec          #+#    #+#              #
-#    Updated: 2023/06/13 14:36:46 by adcarnec         ###   ########.fr        #
+#    Created: 2022/09/29 20:41:39 by teliet            #+#    #+#              #
+#    Updated: 2023/06/13 16:35:11 by teliet           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
-NAME		=	webserv
-CC			=	c++
-FLAGS		=	-Wall -Wextra -Werror -std=c++98 -g3
-SRC			=	./src/main.cpp ./src/Config.cpp ./src/WebServ.cpp \
-				./src/VirtualServer.cpp ./src/Client.cpp
-OBJ			=	$(SRC:.cpp=.o)
-INC			=	./inc/*.hpp
-INC_PATH	=	./inc/
+NAME = webserv 
 
-all: $(NAME)
+SRC = main.cpp Request.cpp 
 
-$(NAME): $(OBJ) $(INC)
-	$(CC) $(FLAGS) -I$(INC_PATH) $(OBJ) -o $(NAME)
+OBJ = $(SRC:.cpp=.o)
 
-%.o: %.cpp $(INC)
-	$(CC) $(FLAGS) -I$(INC_PATH) -o $@ -c $<
+CC = c++
+
+HEADERS = -I ./
+
+FLAGS = -Wall -Wextra -Werror -std=c++98
+
+
+all: ${NAME}
+ 
+$(NAME): $(OBJ) 
+	$(CC) $(FLAGS) $(OBJ) -o $(NAME)
+	
+debug: $(LIBS) clean
+	$c(CC) $(SRC) $(HEADERS) -o $(NAME) 
+
+%.o: %.cpp
+	$(CC) $(HEADERS)  $(FLAGS) -c $< -o $@
 
 clean:
-	rm -f $(OBJ)
+	/bin/rm -f ${OBJ}
 
 fclean: clean
-	rm -f $(NAME)
+	/bin/rm -f ${NAME}
 
 re: fclean all
-
-.PHONY: re fclean clean all
