@@ -49,8 +49,6 @@ bool WebServ::init(void)
     srvVect::iterator srvIt = Config::getVirtualServers().begin();
     srvVect::iterator srvEnd = Config::getVirtualServers().end();
 
-    std::cout << "Config::getVirtualServers().size " << Config::getVirtualServers().size() << std::endl;
-
     while(srvIt != srvEnd)
     {
         std::cout << "Starting virtual server " << (*srvIt)->getPort() << " " << (*srvIt)->getRoot() << std::endl;
@@ -118,205 +116,14 @@ bool WebServ::init(void)
 
 bool WebServ::process(void)
 {
-  struct pollfd fds[200];
-  char   buffer[1024];
- int rc = 0;
- int nfds = 1;
- int current_size = 0;
- int new_sd = -1;
- int i, len;
-  /*************************************************************/
-  /* Initialize the pollfd structure                           */
-  /*************************************************************/
-  memset(fds, 0 , sizeof(fds));
+    struct timeval  timeout;    
+    int             ret;
+    fd_set          working_set_recv;
+    fd_set          working_set_write;
 
-  /*************************************************************/
-  /* Set up the initial listening socket                       */
-  /*************************************************************/
-
-  fds[0].fd = _listeners.begin()->second;
-  fds[0].events = POLLIN;
-
-  /*************************************************************/
-  /* Initialize the timeout to 3 minutes. If no                */
-  /* activity after 3 minutes this program will end.           */
-  /* timeout value is based on milliseconds.                   */
-  /*************************************************************/
-//  int timeout = (3 * 60 * 1000);
- int timeout = (10 * 1000);
-
-  /*************************************************************/
-  /* Loop waiting for incoming connects or for incoming data   */
-  /* on any of the connected sockets.                          */
-  /*************************************************************/
- while(true)
- {
-    /***********************************************************/
-    /* Call poll() and wait 3 minutes for it to complete.      */
-    /***********************************************************/
-    printf("Waiting on poll()...\n");
-    rc = poll(fds, nfds, timeout);
-
-    /***********************************************************/
-    /* Check to see if the poll call failed.                   */
-    /***********************************************************/
-    if (rc < 0)
-    {
-      perror("  poll() failed");
-      break;
-    }
-
-    /***********************************************************/
-    /* Check to see if the 3 minute time out expired.          */
-    /***********************************************************/
-    if (rc == 0)
-    {
-      printf("  poll() timed out.  End program.\n");
-      break;
-    }
-
-
-    /***********************************************************/
-    /* One or more descriptors are readable.  Need to          */
-    /* determine which ones they are.                          */
-    /***********************************************************/
-    current_size = nfds;
-    for (i = 0; i < current_size; i++)
-    {
-      /*********************************************************/
-      /* Loop through to find the descriptors that returned    */
-      /* POLLIN and determine whether it's the listening       */
-      /* or the active connection.                             */
-      /*********************************************************/
-      if(fds[i].revents == 0)
-        continue;
-
-      /*********************************************************/
-      /* If revents is not POLLIN, it's an unexpected result,  */
-      /* log and end the server.                               */
-      /*********************************************************/
-      if(fds[i].revents != POLLIN)
-      {
-        printf("  Error! revents = %d\n", fds[i].revents);
-        return(false);
-        break;
-
-      }
-      if (fds[i].fd == _listeners.begin()->second)
-      {
-        /*******************************************************/
-        /* Listening descriptor is readable.                   */
-        /*******************************************************/
-        printf("  Listening socket is readable\n");
-
-        /*******************************************************/
-        /* Accept all incoming connections that are            */
-        /* queued up on the listening socket before we         */
-        /* loop back and call poll again.                      */
-        /*******************************************************/
-        do
-        {
-          /*****************************************************/
-          /* Accept each incoming connection. If               */
-          /* accept fails with EWOULDBLOCK, then we            */
-          /* have accepted all of them. Any other              */
-          /* failure on accept will cause us to end the        */
-          /* server.                                           */
-          /*****************************************************/
-          new_sd = accept(_listeners.begin()->second, NULL, NULL);
-          if (new_sd < 0)
-          {
-            if (errno != EWOULDBLOCK)
-            {
-              perror("  accept() failed");
-              return(false);
-            }
-            break;
-          }
-          /*****************************************************/
-          /* Add the new incoming connection to the            */
-          /* pollfd structure                                  */
-          /*****************************************************/
-          printf("  New incoming connection - %d\n", new_sd);
-          fds[nfds].fd = new_sd;
-          fds[nfds].events = POLLIN;
-          nfds++;
-
-          /*****************************************************/
-          /* Loop back up and accept another incoming          */
-          /* connection                                        */
-          /*****************************************************/
-        } while (new_sd != -1);
-      }
-
-      /*********************************************************/
-      /* This is not the listening socket, therefore an        */
-      /* existing connection must be readable                  */
-      /*********************************************************/
-
-      else
-      {
-        printf("  Descriptor %d is readable\n", fds[i].fd);
-        /*******************************************************/
-        /* Receive all incoming data on this socket            */
-        /* before we loop back and call poll again.            */
-        /*******************************************************/
-
-        do
-        {
-          /*****************************************************/
-          /* Receive data on this connection until the         */
-          /* recv fails with EWOULDBLOCK. If any other         */
-          /* failure occurs, we will close the                 */
-          /* connection.                                       */
-          /*****************************************************/
-          rc = recv(fds[i].fd, buffer, sizeof(buffer), 0);
-          if (rc < 0)
-          {
-            if (errno != EWOULDBLOCK)
-            {
-              perror("  recv() failed");
-              return(false);
-            }
-            break;
-          }
-
-          /*****************************************************/
-          /* Check to see if the connection has been           */
-          /* closed by the client                              */
-          /*****************************************************/
-          if (rc == 0)
-          {
-            printf("  Connection closed\n");
-              return(false);
-            break;
-          }
-
-          /*****************************************************/
-          /* Data was received                                 */
-          /*****************************************************/
-          len = rc;
-          printf("  %d bytes received\n", len);
-
-          /*****************************************************/
-          /* Echo the data back to the client                  */
-          /*****************************************************/
-            char response[]  = "HTTP/1.1 200 OK\r\nContent-Length: 13\r\nConnection: close\r\n\r\nHello, world!";
-          rc = send(fds[i].fd, response, sizeof(response), 0);
-          if (rc < 0)
-          {
-            perror("  send() failed");
-              return(false);
-            break;
-          }
-
-        } while(true);
-      }
-    }
- } 
-
-    
-/*     while (true)
+    timeout.tv_sec = 10;
+    timeout.tv_usec = 0;
+    while (true)
     {
         working_set_recv = _master_set_recv;
         working_set_write = _master_set_write;
@@ -348,12 +155,24 @@ bool WebServ::process(void)
         {
             if (FD_ISSET(i, &working_set_recv) && isServerSocket(i)) 
                 acceptNewCnx(i);
+            /* {
+                if (!acceptNewCnx(*Config::getVirtualServers().at(0)))
+                    return(false);
+            } */
             else if (FD_ISSET(i, &working_set_recv) && _clients.count(i))
                 readRequest(i, *_clients[i]);
+            /* {
+                if (!readRequest(i, *_clients[i]))
+                    return(false);
+            }      */       
             else if (FD_ISSET(i, &working_set_write) && _clients.count(i))
                 sendResponse(i, *_clients[i]);
+            /* {
+                if (!sendResponse(i, *_clients[i]))
+                    return(false);
+            } */
         }
-    } */
+    }
     return(true);
 }
 

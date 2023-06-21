@@ -12,9 +12,19 @@
 
 #include "VirtualServer.hpp"
 
-VirtualServer::VirtualServer(const unsigned int& port, const std::string& root) : 
-    _port(port), _host("localhost"), _name("www.default.com"), _index("index.html"), _root(root)
-{}
+VirtualServer::VirtualServer(const unsigned int& port, const std::string& root, bool get, bool post, bool del) : 
+    _port(port), _root(root), _allowGet(get), _allowPost(post), _allowDel(del)
+{
+    init();
+}
+
+void VirtualServer::init(void)
+{
+    _host = "localhost";
+    _name = "";
+    _index = "index.html";
+    _clientMaxBodySize = Config::getClientMaxBodySize();
+}
 
 VirtualServer::~VirtualServer(void){}
 
@@ -95,4 +105,34 @@ void VirtualServer::setRoot(std::string root)
 std::string VirtualServer::getRoot(void) const
 {
     return(_root);
+}
+
+void VirtualServer::setLocationsConf(queue conf)
+{
+    _tmpLocationsConf = conf;
+}
+
+bool VirtualServer::isGetAllowed(void) const
+{
+    return(_allowGet);
+}
+
+bool VirtualServer::isPostAllowed(void) const
+{
+    return(_allowPost);
+}
+
+bool VirtualServer::isDelAllowed(void) const
+{
+    return(_allowDel);
+}
+
+unsigned int VirtualServer::getClientMaxBodySize(void)
+{
+    return(_clientMaxBodySize);
+}
+
+void VirtualServer::setClientMaxBodySize(unsigned int value)
+{
+    _clientMaxBodySize = value;
 }

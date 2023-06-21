@@ -15,6 +15,9 @@
 
 # include <iostream>
 # include <string>
+# include <queue>
+
+# include "Config.hpp"
 
 /*
 Represents 1 server config (One instance per server block in conf file)
@@ -23,9 +26,10 @@ _fd contains server socket
 class VirtualServer
 {
     public:
+        typedef std::queue<std::string>         queue;
 
         VirtualServer(void);
-        VirtualServer(const unsigned int& port, const std::string& root);
+        VirtualServer(const unsigned int& port, const std::string& root, bool get, bool post, bool del);
         VirtualServer(const VirtualServer& src);
         ~VirtualServer(void);
         
@@ -37,15 +41,23 @@ class VirtualServer
         std::string         getName(void) const;
         std::string         getIndex(void) const;
         std::string         getRoot(void) const;
+        unsigned int        getClientMaxBodySize(void);
+
+        bool                isGetAllowed(void) const;
+        bool                isPostAllowed(void) const;
+        bool                isDelAllowed(void) const;
         
         void                setFd(int fd);
-
-    private:
-
-        void                setPort(unsigned int port);
+        void                setLocationsConf(queue conf);
         void                setHost(std::string host);
         void                setName(std::string name);
         void                setIndex(std::string index);
+        void                setClientMaxBodySize(unsigned int value);
+
+    private:
+
+        void                init(void);
+        void                setPort(unsigned int port);
         void                setRoot(std::string root);
 
         unsigned int        _port;
@@ -54,6 +66,11 @@ class VirtualServer
         std::string         _index;
         std::string         _root;
         int                 _fd;
+        queue               _tmpLocationsConf;
+        bool                _allowGet;
+        bool                _allowPost;
+        bool                _allowDel;
+        unsigned int        _clientMaxBodySize;
 };
 
 #endif
