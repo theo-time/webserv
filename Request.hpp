@@ -8,6 +8,8 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <fstream>
+#include <sstream>
+#include <string>
 
 // TYPES 
 #define GET 1

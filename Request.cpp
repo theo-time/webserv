@@ -81,10 +81,19 @@ void Request::handleRequest()
         return;
     }
 
-    std::string line;
-    while (std::getline(file, line)) {
-        fileContent += line;
-    }
+    // read file  
+    // text file
+    // std::string line;
+    // while (std::getline(file, line)) {
+    //     fileContent += line;
+    // }
+    // file.close();
+
+    // binary file
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+    fileContent = buffer.str();
+
 
 
     // Build response
@@ -92,6 +101,11 @@ void Request::handleRequest()
     std::string statusText = "OK";
     std::string contentType = "text/plain";
     std::string filename = path.substr(path.find_last_of("/") + 1);
+
+    std::stringstream ss;
+    ss << fileContent.length();
+    std::string contentLength;
+    ss >> contentLength;
 
     std::string extension = getFileExtension(path);
     std::string contentDisposition = "inline";
@@ -115,8 +129,8 @@ void Request::handleRequest()
     }
 
 
-    // response = "HTTP/1.1 " + status + " " + statusText + "\r\nContent-Type: " + contentType + "\r\nContent-Disposition: " + contentDisposition + "\r\n\r\n" + fileContent;
-    response = "HTTP/1.1 " + status + " " + statusText + "\r\nContent-Type: " + contentType + "\r\n\r\n" + fileContent;
+    response = "HTTP/1.1 " + status + " " + statusText + "\r\nContent-Type: " + contentType + "\r\nContent-Disposition: " + contentDisposition + "; filename=\"" + filename + "\"\r\nContent-Length: " + contentLength + "\r\n\r\n" + fileContent;
+    // response = "HTTP/1.1 " + status + " " + statusText + "\r\nContent-Type: " + contentType + "\r\n\r\n" + fileContent;
 }
 
 // GETTERS
