@@ -265,14 +265,12 @@ bool WebServ::readRequest(const int &fd, ClientCnx &c)
 bool WebServ::sendResponse(const int &fd, ClientCnx &c)
 {
     std::cout << "  Sending response - fd " << fd << std::endl;
-    char response[]  = "HTTP/1.1 200 OK\r\nContent-Length: 13\r\nConnection: close\r\n\r\nHello, world!";
-
-    (void)c; 
-    int rc  = send(fd, response, sizeof(response), 0);
+    int rc  = send(fd, c.getResponse().c_str(), c.getResponse().length(), 0);
     if (rc < 0)
     {
         std::cerr << "  send() failed" << std::endl;
         closeCnx(fd);
+        del(fd, _master_set_write);
     }
     else
     {

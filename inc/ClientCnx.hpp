@@ -14,6 +14,7 @@
 # define CLIENTCNX_HPP
 
 # include <arpa/inet.h>
+# include <sstream>
 # include <iostream>
 # include <string>
 

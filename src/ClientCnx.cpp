@@ -19,7 +19,24 @@ _fd(src.getFd()), _clientAddress(src.getClientAddress()), _server(src.getServer(
 }
 
 ClientCnx::ClientCnx(const int& fd, struct sockaddr_in& clientAddress) :
-_fd(fd), _clientAddress(clientAddress) {}
+_fd(fd), _clientAddress(clientAddress) 
+{   
+    std::string         path = "./data/default/index.html";
+    std::ifstream       file(path.c_str());
+    std::stringstream   buffer;
+    std::string         fileContent;
+
+    buffer << file.rdbuf();
+    fileContent = buffer.str();
+
+    std::stringstream   ss;
+    ss << fileContent.length();
+    std::string         contentLength;
+    ss >> contentLength;
+    
+    _response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Disposition: inline; filename=\"index.html\"\r\nContent-Length: " + contentLength + "\r\n\r\n" + fileContent;
+    file.close();
+}
 
 ClientCnx::~ClientCnx(void){}
 
@@ -36,7 +53,7 @@ ClientCnx& ClientCnx::operator=(const ClientCnx& rhs)
 
 std::string ClientCnx::getResponse(void) const
 {
-    return("HTTP/1.1 200 OK\r\nContent-Length: 13\r\nConnection: close\r\n\r\nHello, world!");
+    return(_response);
 }
 
 void ClientCnx::newRequest(std::string req)
