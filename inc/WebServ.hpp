@@ -28,7 +28,7 @@
 # include <map>
 
 # include "Config.hpp"
-# include "Client.hpp"
+# include "ClientCnx.hpp"
 
 /* 
 Static class representing the engine 
@@ -38,7 +38,7 @@ class WebServ
     public:
 
         typedef std::vector<VirtualServer*>     srvVect;
-        typedef std::map<int, Client*>          cliMap;
+        typedef std::map<int, ClientCnx*>       cliMap;
         typedef std::map<int, int>              listenMap;
 
         static bool                             runListeners(void);
@@ -56,8 +56,8 @@ class WebServ
         static bool                             process(void);
         static bool                             init(void);
         static bool                             acceptNewCnx(const int& fd);
-        static bool                             readRequest(const int& fd, Client& c);
-        static bool                             sendResponse(const int& fd, Client& c);
+        static bool                             readRequest(const int& fd, ClientCnx& c);
+        static bool                             sendResponse(const int& fd, ClientCnx& c);
         static void                             add(const int& fd, fd_set& set);
         static void                             del(const int& fd, fd_set& set);
         static void                             closeCnx(const int& fd);

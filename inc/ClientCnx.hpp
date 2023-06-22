@@ -1,7 +1,7 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   Client.hpp                                         :+:      :+:    :+:   */
+/*   ClientCnx.hpp                                      :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: adcarnec <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
@@ -10,8 +10,8 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef CLIENT_HPP
-# define CLIENT_HPP
+#ifndef CLIENTCNX_HPP
+# define CLIENTCNX_HPP
 
 # include <arpa/inet.h>
 # include <iostream>
@@ -22,14 +22,14 @@
 /* 
 Contains client socket info, request and response
 */
-class Client
+class ClientCnx
 {
     public:
 
-        Client(const int& fd, struct sockaddr_in& clientAddress);
-        ~Client(void);
+        ClientCnx(const int& fd, struct sockaddr_in& clientAddress);
+        ~ClientCnx(void);
         
-        Client& operator=(const Client& rhs);
+        ClientCnx& operator=(const ClientCnx& rhs);
         
         // TODO créer un objet HttpRequest ou un appel CGI selon parsing
         void                newRequest(std::string req);
@@ -39,7 +39,7 @@ class Client
 
     private:
 
-        Client(const Client& src);
+        ClientCnx(const ClientCnx& src);
         
         int                 _fd;
         struct sockaddr_in  _clientAddress;

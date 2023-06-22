@@ -1,7 +1,7 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   Client.cpp                                         :+:      :+:    :+:   */
+/*   ClientCnx.cpp                                      :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: adcarnec <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
@@ -10,20 +10,20 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-# include "Client.hpp"
+# include "ClientCnx.hpp"
 
-Client::Client(const Client& src) : 
+ClientCnx::ClientCnx(const ClientCnx& src) : 
 _fd(src.getFd()), _clientAddress(src.getClientAddress()), _server(src.getServer())
 {
     *this = src;
 }
 
-Client::Client(const int& fd, struct sockaddr_in& clientAddress) :
+ClientCnx::ClientCnx(const int& fd, struct sockaddr_in& clientAddress) :
 _fd(fd), _clientAddress(clientAddress) {}
 
-Client::~Client(void){}
+ClientCnx::~ClientCnx(void){}
 
-Client& Client::operator=(const Client& rhs)
+ClientCnx& ClientCnx::operator=(const ClientCnx& rhs)
 {
     if (this != &rhs)
     {
@@ -34,42 +34,42 @@ Client& Client::operator=(const Client& rhs)
     return(*this);
 }
 
-std::string Client::getResponse(void) const
+std::string ClientCnx::getResponse(void) const
 {
     return("HTTP/1.1 200 OK\r\nContent-Length: 13\r\nConnection: close\r\n\r\nHello, world!");
 }
 
-void Client::newRequest(std::string req)
+void ClientCnx::newRequest(std::string req)
 {
     std::cout << req << std::endl;
 }
 
-void Client::setFd(int fd)
+void ClientCnx::setFd(int fd)
 {
     _fd = fd;
 }
 
-int Client::getFd(void) const
+int ClientCnx::getFd(void) const
 {
     return(_fd);
 }
 
-void Client::setClientAddress(struct sockaddr_in clientAddress)
+void ClientCnx::setClientAddress(struct sockaddr_in clientAddress)
 {
     _clientAddress = clientAddress;
 }
 
-struct sockaddr_in Client::getClientAddress(void) const
+struct sockaddr_in ClientCnx::getClientAddress(void) const
 {
     return(_clientAddress);
 }
 
-void Client::setServer(VirtualServer& server)
+void ClientCnx::setServer(VirtualServer& server)
 {
     _server = server;
 }
 
-VirtualServer Client::getServer(void) const
+VirtualServer ClientCnx::getServer(void) const
 {
     return(_server);
 }

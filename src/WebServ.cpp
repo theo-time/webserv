@@ -13,7 +13,7 @@
 #include "WebServ.hpp"
 
 typedef std::vector<VirtualServer*>         srvVect;
-typedef std::map<int, Client*>              cliMap;
+typedef std::map<int, ClientCnx*>           cliMap;
 typedef std::map<int, int>                  listenMap;
 fd_set                                      WebServ::_master_set_recv;
 fd_set                                      WebServ::_master_set_write;
@@ -214,14 +214,14 @@ bool WebServ::acceptNewCnx(const int& fd)
         }
         
         add(clientSocket, _master_set_recv);
-        _clients[clientSocket] = new Client(clientSocket, clientAddress);
+        _clients[clientSocket] = new ClientCnx(clientSocket, clientAddress);
         std::cout << "  New incoming connection - fd " << clientSocket << std::endl;
     } while (clientSocket != -1);
 
     return(true);
 }
 
-bool WebServ::readRequest(const int &fd, Client &c)
+bool WebServ::readRequest(const int &fd, ClientCnx &c)
 {
     std::cout << "  Reading request - fd " << fd << std::endl;
     char        buffer[1024];
@@ -262,7 +262,7 @@ bool WebServ::readRequest(const int &fd, Client &c)
     return(true);
 }
 
-bool WebServ::sendResponse(const int &fd, Client &c)
+bool WebServ::sendResponse(const int &fd, ClientCnx &c)
 {
     std::cout << "  Sending response - fd " << fd << std::endl;
     char response[]  = "HTTP/1.1 200 OK\r\nContent-Length: 13\r\nConnection: close\r\n\r\nHello, world!";
@@ -331,7 +331,7 @@ void WebServ::stop(void)
     cliMap::iterator      cliEnd  = _clients.end();
     while(cliIt != cliEnd)
     {
-        Client* tmp = cliIt->second;
+        ClientCnx* tmp = cliIt->second;
         delete tmp;
         cliIt++;
     }
