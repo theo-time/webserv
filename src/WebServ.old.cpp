@@ -14,13 +14,11 @@
 
 typedef std::vector<VirtualServer*>         srvVect;
 typedef std::map<int, ClientCnx*>           cliMap;
-typedef std::map<ClientCnx*, int>           uriMap;
 typedef std::map<int, int>                  listenMap;
 fd_set                                      WebServ::_master_set_recv;
 fd_set                                      WebServ::_master_set_write;
 int                                         WebServ::_max_fd;
 cliMap                                      WebServ::_clients;
-uriMap                                      WebServ::_reqRessources;
 listenMap                                   WebServ::_listeners;
 
 bool WebServ::runListeners(void)
@@ -157,12 +155,22 @@ bool WebServ::process(void)
         {
             if (FD_ISSET(i, &working_set_recv) && isServerSocket(i)) 
                 acceptNewCnx(i);
-            else if (FD_ISSET(i, &working_set_recv) && isRessourceFd(i))
-                readRessource(i);
+            /* {
+                if (!acceptNewCnx(*Config::getVirtualServers().at(0)))
+                    return(false);
+            } */
             else if (FD_ISSET(i, &working_set_recv) && _clients.count(i))
                 readRequest(i, *_clients[i]);
+            /* {
+                if (!readRequest(i, *_clients[i]))
+                    return(false);
+            }      */       
             else if (FD_ISSET(i, &working_set_write) && _clients.count(i))
                 sendResponse(i, *_clients[i]);
+            /* {
+                if (!sendResponse(i, *_clients[i]))
+                    return(false);
+            } */
         }
     }
     return(true);
@@ -292,19 +300,6 @@ void WebServ::del(const int& fd, fd_set& set)
     }
 }
 
-void WebServ::addToRecvSet(const int& fd, ClientCnx& c)
-{
-    add(fd, _master_set_recv);
-    _reqRessources[&c] = fd;
-}
-
-void WebServ::delFromRecvSet(const int& fd, ClientCnx& c)
-{
-    del(fd, _master_set_recv);
-    close(fd);
-    _reqRessources.erase(&c);
-}
-
 void WebServ::closeCnx(const int& fd)
 {
     std::cout << "  Closing cnx - fd " << fd << std::endl;
@@ -341,20 +336,6 @@ void WebServ::stop(void)
     _clients.clear();
 }
 
-bool WebServ::isRessourceFd(const int& fd)
-{
-    uriMap::iterator lsIt        = _reqRessources.begin();
-    uriMap::iterator lsEnd       = _reqRessources.end();
-
-    while (lsIt != lsEnd)
-    {
-        if (lsIt->second == fd)
-            return(true);
-        lsIt++;
-    }
-    return(false);
-}
-
 bool WebServ::isServerSocket(const int& fd)
 {
     listenMap::iterator lsIt        = _listeners.begin();
@@ -367,10 +348,4 @@ bool WebServ::isServerSocket(const int& fd)
         lsIt++;
     }
     return(false);
-}
-
-bool WebServ::readRessource(const int& fd)
-{
-    (void)fd;
-    return(true);
 }

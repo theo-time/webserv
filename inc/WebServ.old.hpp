@@ -39,22 +39,16 @@ class WebServ
 
         typedef std::vector<VirtualServer*>     srvVect;
         typedef std::map<int, ClientCnx*>       cliMap;
-        typedef std::map<ClientCnx*, int>       uriMap;
         typedef std::map<int, int>              listenMap;
 
         static bool                             runListeners(void);
         static void                             stop(void);
-        
-        static void                             closeCnx(const int& fd);
-        static void                             addToRecvSet(const int& fd, ClientCnx& c);
-        static void                             delFromRecvSet(const int& fd, ClientCnx& c);
 
     private:    
         static fd_set                           _master_set_recv;
         static fd_set                           _master_set_write;
         static int                              _max_fd;
         static cliMap                           _clients;
-        static uriMap                           _reqRessources;
         static listenMap                        _listeners;
 
         static struct pollfd fds[200];
@@ -62,13 +56,12 @@ class WebServ
         static bool                             process(void);
         static bool                             init(void);
         static bool                             acceptNewCnx(const int& fd);
-        static bool                             readRessource(const int& fd);
         static bool                             readRequest(const int& fd, ClientCnx& c);
         static bool                             sendResponse(const int& fd, ClientCnx& c);
         static void                             add(const int& fd, fd_set& set);
         static void                             del(const int& fd, fd_set& set);
+        static void                             closeCnx(const int& fd);
         static bool                             isServerSocket(const int& fd);
-        static bool                             isRessourceFd(const int& fd);
 };
 
 #endif
