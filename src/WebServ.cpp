@@ -14,14 +14,16 @@
 
 typedef std::vector<VirtualServer*>         srvVect;
 typedef std::map<int, ClientCnx*>           cliMap;
-typedef std::map<ClientCnx*, int>           uriMap;
+typedef std::map<ClientCnx*, std::string>   uriCliMap;
 typedef std::map<int, int>                  listenMap;
+typedef std::map<int, std::string>          fdUriMap;
 fd_set                                      WebServ::_master_set_recv;
 fd_set                                      WebServ::_master_set_write;
 int                                         WebServ::_max_fd;
 cliMap                                      WebServ::_clients;
-uriMap                                      WebServ::_reqRessources;
+uriCliMap                                   WebServ::_reqRessources;
 listenMap                                   WebServ::_listeners;
+fdUriMap                                    WebServ::_fdRessources;
 
 bool WebServ::runListeners(void)
 {
@@ -157,7 +159,7 @@ bool WebServ::process(void)
         {
             if (FD_ISSET(i, &working_set_recv) && isServerSocket(i)) 
                 acceptNewCnx(i);
-            else if (FD_ISSET(i, &working_set_recv) && isRessourceFd(i))
+            else if (FD_ISSET(i, &working_set_recv) && _fdRessources.count(i))
                 readRessource(i);
             else if (FD_ISSET(i, &working_set_recv) && _clients.count(i))
                 readRequest(i, *_clients[i]);
@@ -292,19 +294,6 @@ void WebServ::del(const int& fd, fd_set& set)
     }
 }
 
-void WebServ::addToRecvSet(const int& fd, ClientCnx& c)
-{
-    add(fd, _master_set_recv);
-    _reqRessources[&c] = fd;
-}
-
-void WebServ::delFromRecvSet(const int& fd, ClientCnx& c)
-{
-    del(fd, _master_set_recv);
-    close(fd);
-    _reqRessources.erase(&c);
-}
-
 void WebServ::closeCnx(const int& fd)
 {
     std::cout << "  Closing cnx - fd " << fd << std::endl;
@@ -341,20 +330,6 @@ void WebServ::stop(void)
     _clients.clear();
 }
 
-bool WebServ::isRessourceFd(const int& fd)
-{
-    uriMap::iterator lsIt        = _reqRessources.begin();
-    uriMap::iterator lsEnd       = _reqRessources.end();
-
-    while (lsIt != lsEnd)
-    {
-        if (lsIt->second == fd)
-            return(true);
-        lsIt++;
-    }
-    return(false);
-}
-
 bool WebServ::isServerSocket(const int& fd)
 {
     listenMap::iterator lsIt        = _listeners.begin();
@@ -371,6 +346,75 @@ bool WebServ::isServerSocket(const int& fd)
 
 bool WebServ::readRessource(const int& fd)
 {
-    (void)fd;
+    std::cout << "Reading ressource from fd - " << fd << std::endl;
+
+    std::string     fileContent = "";
+    char            buf[BUFFER_SIZE + 1];
+    int             ret = BUFFER_SIZE;
+
+    buf[0] = 0;
+    while (ret == BUFFER_SIZE)
+    {
+        ret = read(fd, buf, BUFFER_SIZE);
+        buf[ret] = 0;
+        fileContent = fileContent + buf;
+    }
+    close(fd);
+    del(fd, _master_set_recv);
+    
+    if (ret == -1)
+    {
+        // TODO fileContent = msg erreur
+    }
+
+    uriCliMap::iterator     it = _reqRessources.begin();
+    while (it != _reqRessources.end())
+    {
+        if (it->second == _fdRessources[fd])
+        {
+            it->first->setFileContent(fileContent);
+        }
+        it++;
+    }
+    
+    it = _reqRessources.begin();
+    while (_reqRessources.size() > 0 && it != _reqRessources.end())
+    {
+        if (it->second == _fdRessources[fd])
+        {
+            _reqRessources.erase(it);
+        }
+        else
+            it++;
+    }
+    _fdRessources.erase(fd);
+
     return(true);
+}
+
+void WebServ::getRessource(const std::string& path, ClientCnx& c)
+{
+    if (!isListedRessource(path))
+    {
+        int fd = open(path.c_str(), O_RDONLY);
+        if (fd == -1)
+        {
+            return;
+        }
+        add(fd, _master_set_recv);
+        _fdRessources[fd] = path;
+    }
+    _reqRessources[&c] = path;
+}
+
+bool WebServ::isListedRessource(const std::string& path)
+{              
+    fdUriMap::iterator  it = _fdRessources.begin();
+    while (it != _fdRessources.end())
+    {
+        if (it->second == path)
+            return(true);
+        it++;
+    }
+    return(false);
 }

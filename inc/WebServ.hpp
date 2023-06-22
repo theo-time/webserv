@@ -13,6 +13,8 @@
 #ifndef WEBSERV_HPP
 # define WEBSERV_HPP
 
+# define BUFFER_SIZE 1024
+
 # include <sys/socket.h>
 # include <sys/poll.h>
 # include <sys/time.h>
@@ -29,6 +31,7 @@
 
 # include "Config.hpp"
 # include "ClientCnx.hpp"
+class ClientCnx;
 
 /* 
 Static class representing the engine 
@@ -37,25 +40,25 @@ class WebServ
 {
     public:
 
-        typedef std::vector<VirtualServer*>     srvVect;
-        typedef std::map<int, ClientCnx*>       cliMap;
-        typedef std::map<ClientCnx*, int>       uriMap;
-        typedef std::map<int, int>              listenMap;
+        typedef std::vector<VirtualServer*>         srvVect;
+        typedef std::map<int, ClientCnx*>           cliMap;
+        typedef std::map<ClientCnx*, std::string>   uriCliMap;
+        typedef std::map<int, std::string>          fdUriMap;
+        typedef std::map<int, int>                  listenMap;
 
         static bool                             runListeners(void);
         static void                             stop(void);
         
-        static void                             closeCnx(const int& fd);
-        static void                             addToRecvSet(const int& fd, ClientCnx& c);
-        static void                             delFromRecvSet(const int& fd, ClientCnx& c);
+        static void                             getRessource(const std::string& path, ClientCnx& c);
 
     private:    
         static fd_set                           _master_set_recv;
         static fd_set                           _master_set_write;
         static int                              _max_fd;
-        static cliMap                           _clients;
-        static uriMap                           _reqRessources;
         static listenMap                        _listeners;
+        static cliMap                           _clients;
+        static uriCliMap                        _reqRessources;
+        static fdUriMap                         _fdRessources;
 
         static struct pollfd fds[200];
 
@@ -67,8 +70,9 @@ class WebServ
         static bool                             sendResponse(const int& fd, ClientCnx& c);
         static void                             add(const int& fd, fd_set& set);
         static void                             del(const int& fd, fd_set& set);
+        static void                             closeCnx(const int& fd);
         static bool                             isServerSocket(const int& fd);
-        static bool                             isRessourceFd(const int& fd);
+        static bool                             isListedRessource(const std::string& path);
 };
 
 #endif

@@ -18,6 +18,7 @@
 # include <iostream>
 # include <string>
 
+# include "WebServ.hpp"
 # include "VirtualServer.hpp"
 
 /* 
@@ -30,17 +31,19 @@ class ClientCnx
         ClientCnx(const int& fd, struct sockaddr_in& clientAddress);
         ~ClientCnx(void);
         
-        ClientCnx& operator=(const ClientCnx& rhs);
-        
         // TODO créer un objet HttpRequest ou un appel CGI selon parsing
         void                newRequest(std::string req);
         
         // TODO renvoyer le contenu de l'objet HttpResponse
         std::string         getResponse(void) const;
+        
+        void                setFileContent(std::string& fileContent);
 
     private:
 
+        ClientCnx(void);
         ClientCnx(const ClientCnx& src);
+        ClientCnx& operator=(const ClientCnx& rhs);
         
         int                 _fd;
         struct sockaddr_in  _clientAddress;

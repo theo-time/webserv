@@ -21,23 +21,12 @@ _fd(src.getFd()), _clientAddress(src.getClientAddress()), _server(src.getServer(
 ClientCnx::ClientCnx(const int& fd, struct sockaddr_in& clientAddress) :
 _fd(fd), _clientAddress(clientAddress) 
 {   
-    std::string         path = "./data/default/index.html";
-    std::ifstream       file(path.c_str());
-    std::stringstream   buffer;
-    std::string         fileContent;
-
-    buffer << file.rdbuf();
-    fileContent = buffer.str();
-
-    std::stringstream   ss;
-    std::string         contentLength;
-    ss << fileContent.length();
-    ss >> contentLength;
-    
-    _response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Disposition: inline; filename=\"index.html\"\r\nContent-Length: " + contentLength + "\r\n\r\n" + fileContent;
-    file.close();
+    std::string         path = "./data/default/index.html";    
+    _response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Disposition: inline; filename=\"index.html\"\r\nContent-Length: " ;
+    WebServ::getRessource(path, *this);
 }
 
+ClientCnx::ClientCnx(void){}
 ClientCnx::~ClientCnx(void){}
 
 ClientCnx& ClientCnx::operator=(const ClientCnx& rhs)
@@ -47,8 +36,20 @@ ClientCnx& ClientCnx::operator=(const ClientCnx& rhs)
         _fd = rhs.getFd() ;
         _clientAddress = rhs.getClientAddress();
         _server = rhs.getServer();
+        _response = rhs.getResponse();
     }
     return(*this);
+}
+
+void ClientCnx::setFileContent(std::string& fileContent)
+{
+    std::stringstream   ss;
+    std::string         contentLength;
+
+    ss << fileContent.length();
+    ss >> contentLength;
+
+    _response = _response + contentLength + "\r\n\r\n" + fileContent;
 }
 
 std::string ClientCnx::getResponse(void) const
