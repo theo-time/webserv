@@ -17,13 +17,16 @@ const unsigned int                          Config::_clientMaxBodySize_max = 5 *
 unsigned int                                Config::_clientMaxBodySize = 1024 * 1024;
 bool                                        Config::_valid = false;
 
-typedef std::queue<std::string>             queue;
-typedef std::vector<VirtualServer*>         srvVect;
+typedef std::queue<std::string>                 strQueue;
+typedef std::map<int, std::string>              intStrMap;
+typedef std::map<std::string, VirtualServer*>   srvMap;
+typedef std::vector<VirtualServer*>             srvVect;
 
 srvVect                                     Config::_virtualServers;
-queue                                       Config::_tmpVarConf;
-queue                                       Config::_tmpSrvConf;
+strQueue                                    Config::_tmpVarConf;
+strQueue                                    Config::_tmpSrvConf;
 std::string                                 Config::_tmpConfData;
+srvMap                                      Config::_serverNames;
 
 bool Config::isValid(void)
 {
@@ -53,11 +56,22 @@ void Config::init(const std::string& filename)
     }
 
     std::cout << "  Found " << _tmpSrvConf.size() << " virtual server configuration(s)" << std::endl;
+    int i = 0;
     while (!_tmpSrvConf.empty())
     {
-        addSrvConf(_tmpSrvConf.front());
+        addSrvConf(_tmpSrvConf.front(), ++i);
         _tmpSrvConf.pop();
     }
+    
+    std::cout << "Found  " << _serverNames.size() << " server name mapping(s)" << std::endl;
+    srvMap::iterator it = _serverNames.begin();
+    while (it != _serverNames.end())
+    {
+        std::cout << "      " << it-> first << " => " << it->second->getRoot() << std::endl;
+        it++;
+    }
+    std::cout << std::endl;
+    
 
     _valid=true;
 }
@@ -96,6 +110,8 @@ bool Config::checkConfFile(const std::string& filename)
             std::cout << "Error: empty configuration file: " << filename << std::endl;
             return(false);
         }
+
+        //TODO if (_tmpConfData.findFirstOf(liste caractères interdits))
 
         //remove white spaces and end of line
         std::string::iterator it = _tmpConfData.begin();
@@ -206,12 +222,12 @@ void Config::addVarConf(std::string& line)
     std::cout << "  Warning: unknown key: " << line << std::endl;
 }
 
-void Config::addSrvConf(std::string& line)
+void Config::addSrvConf(std::string& line, int i)
 {
-    std::cout << "  parsing server config:" << std::endl;
-    std::cout << line << std::endl;
+    std::cout << "  Parsing config #" << i << std::endl;
+    // std::cout << line << std::endl;
     
-    queue           tmpVars, tmpLocations;
+    strQueue        tmpVars, tmpLocations;
     std::string     tmpLine = line;
     std::size_t     sep;
 
@@ -237,10 +253,18 @@ void Config::addSrvConf(std::string& line)
         line.erase(0, sep + 1);
     }
 
-    std::string     portStr;
-    unsigned int    port;
-    std::string     index, root, host = "";
-    bool            isGetAllowed, isPostAllowed, isDelAllowed = false;
+    std::string     portStr = "";
+    std::string     serverName = "";
+    std::string     maxBodySizeStr = "";
+    unsigned int    port = -1;
+    unsigned int    maxBodySize = -1;
+    intStrMap       tmpErrorPages;
+    std::string     index = "";
+    std::string     root = "";
+    std::string     host = "";
+    bool            isGetAllowed = false;
+    bool            isPostAllowed = false;
+    bool            isDelAllowed = false;
     while (!tmpVars.empty())
     {
         sep = tmpVars.front().find('=');
@@ -258,8 +282,8 @@ void Config::addSrvConf(std::string& line)
             }
             portStr = valueStr;
             port = static_cast<unsigned int>(tmpValue);
-            std::cout << "      key = " << key;
-            std::cout << ", value = " << port << std::endl;
+            // std::cout << "      key = " << key;
+            // std::cout << ", value = " << port << std::endl;
             tmpVars.pop();
             continue;
         }
@@ -267,8 +291,17 @@ void Config::addSrvConf(std::string& line)
         if(key == "host")
         {
             host = valueStr;
-            std::cout << "      key = " << key;
-            std::cout << ", value = " << valueStr << std::endl;
+            // std::cout << "      key = " << key;
+            // std::cout << ", value = " << valueStr << std::endl;
+            tmpVars.pop();
+            continue;
+        }
+
+        if(key == "server_name")
+        {
+            serverName = valueStr;
+            // std::cout << "      key = " << key;
+            // std::cout << ", value = " << valueStr << std::endl;
             tmpVars.pop();
             continue;
         }
@@ -276,8 +309,8 @@ void Config::addSrvConf(std::string& line)
         if(key == "index")
         {
             index = valueStr;
-            std::cout << "      key = " << key;
-            std::cout << ", value = " << index << std::endl;
+            // std::cout << "      key = " << key;
+            // std::cout << ", value = " << index << std::endl;
             tmpVars.pop();
             continue;
         }
@@ -285,16 +318,16 @@ void Config::addSrvConf(std::string& line)
         if(key == "root")
         {
             root = valueStr;
-            std::cout << "      key = " << key;
-            std::cout << ", value = " << root << std::endl;
+            // std::cout << "      key = " << key;
+            // std::cout << ", value = " << root << std::endl;
             tmpVars.pop();
             continue;
         }
 
         if(key == "methods")
         {
-            std::cout << "      key = " << key;
-            std::cout << ", value = " << valueStr << std::endl;
+            // std::cout << "      key = " << key;
+            // std::cout << ", value = " << valueStr << std::endl;
             while (!valueStr.empty())
             {
                 std::string tmp = "";
@@ -319,9 +352,39 @@ void Config::addSrvConf(std::string& line)
             tmpVars.pop();
             continue;
         }
-        
 
-        std::cout << "      Warning: unknown key: " << tmpVars.front() << std::endl;
+        sep = key.find("error_page:");
+        if(sep != std::string::npos)
+        {
+            std::stringstream   ss;
+            int                 code;
+            ss << key.substr(11, key.length());
+            ss >> code;
+            // std::cout << "      key = " << code;
+            // std::cout << ", value = " << valueStr << std::endl;
+            tmpErrorPages[code] = valueStr;
+            tmpVars.pop();
+            continue;
+        }
+
+        if(key == "client_max_body_size")
+        {
+            char*               endPtr      = NULL;
+            unsigned long       tmpValue = strtoul(valueStr.c_str(), &endPtr, 0);
+            if  (endPtr == valueStr || endPtr != &(valueStr[valueStr.size()]))
+            {
+                std::cout << "Error: invalid input: " << tmpVars.front() << std::endl;
+                return;
+            }
+            maxBodySizeStr = valueStr;
+            maxBodySize = static_cast<unsigned int>(tmpValue);
+            // std::cout << "      key = " << key;
+            // std::cout << ", value = " << maxBodySize << std::endl;
+            tmpVars.pop();
+            continue;
+        }
+        
+        std::cout << "      Warning: unknown key: " << key << " value:" << valueStr << std::endl;
         tmpVars.pop();
     }
 
@@ -336,7 +399,18 @@ void Config::addSrvConf(std::string& line)
         tmp->setLocationsConf(tmpLocations);
     if (!host.empty())
         tmp->setHost(host);
+    if (!tmpErrorPages.empty())
+        tmp->setErrorPages(tmpErrorPages);
+    if (!maxBodySizeStr.empty())
+        tmp->setClientMaxBodySize(maxBodySize);
+    if (!serverName.empty())
+    {
+        tmp->setName(serverName);
+        std::string alias = serverName + ":" + portStr;
+        _serverNames[alias] = tmp;
+    }
     _virtualServers.push_back(tmp);
+    std::cout << "  " << *tmp  << std::endl; 
 }
 
 

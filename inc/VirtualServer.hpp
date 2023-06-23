@@ -16,6 +16,7 @@
 # include <iostream>
 # include <string>
 # include <queue>
+# include <map>
 
 # include "Config.hpp"
 
@@ -26,7 +27,8 @@ _fd contains server socket
 class VirtualServer
 {
     public:
-        typedef std::queue<std::string>         queue;
+        typedef std::queue<std::string>         strQueue;
+        typedef std::map<int, std::string>      intStrMap;
 
         VirtualServer(void);
         VirtualServer(const unsigned int& port, const std::string& root, bool get, bool post, bool del);
@@ -42,13 +44,15 @@ class VirtualServer
         std::string         getIndex(void) const;
         std::string         getRoot(void) const;
         unsigned int        getClientMaxBodySize(void);
+        intStrMap&          getErrorPages(void);
 
         bool                isGetAllowed(void) const;
         bool                isPostAllowed(void) const;
         bool                isDelAllowed(void) const;
         
         void                setFd(int fd);
-        void                setLocationsConf(queue conf);
+        void                setLocationsConf(strQueue conf);
+        void                setErrorPages(intStrMap conf);
         void                setHost(std::string host);
         void                setName(std::string name);
         void                setIndex(std::string index);
@@ -66,11 +70,14 @@ class VirtualServer
         std::string         _index;
         std::string         _root;
         int                 _fd;
-        queue               _tmpLocationsConf;
+        intStrMap           _errorPages;
+        strQueue            _tmpLocationsConf;
         bool                _allowGet;
         bool                _allowPost;
         bool                _allowDel;
         unsigned int        _clientMaxBodySize;
 };
+
+std::ostream& operator<<(std::ostream& o, VirtualServer& me);
 
 #endif

@@ -55,11 +55,11 @@ bool WebServ::init(void)
 
     while(srvIt != srvEnd)
     {
-        std::cout << "Starting virtual server " << (*srvIt)->getPort() << " " << (*srvIt)->getRoot() << std::endl;
+        std::cout << "Starting virtual server " << (*srvIt)->getPort() << " " << (*srvIt)->getRoot() << "..." << std::endl;
         if (_listeners.count((*srvIt)->getPort())) // TODO prendre en compte host
         {
-            std::cout << "Binding " << (*srvIt)->getPort() << " to existing server socket" << std::endl;
             (*srvIt)->setFd(_listeners[(*srvIt)->getPort()]);
+            std::cout << "... binding to existing server socket - fd " << (*srvIt)->getFd() << std::endl;
         }
         else
         {            
@@ -108,7 +108,7 @@ bool WebServ::init(void)
                 close(serverSocket);
                 return(false);
             }
-            std::cout << "Waiting for connexion: port " << (*srvIt)->getPort() << "..." << std::endl;
+            std::cout << "... waiting for connexion: port " << (*srvIt)->getPort() << std::endl;
             (*srvIt)->setFd(serverSocket);
             add(serverSocket, _master_set_recv);
             _listeners[(*srvIt)->getPort()] = serverSocket; 
@@ -131,7 +131,7 @@ bool WebServ::process(void)
     {
         working_set_recv = _master_set_recv;
         working_set_write = _master_set_write;
-        std::cout << "  Preparing select() " << std::endl;
+        std::cout << "Preparing select() " << std::endl;
         for (int i = 0; i <= _max_fd; ++i)
         {
             if (FD_ISSET(i, &working_set_recv))
