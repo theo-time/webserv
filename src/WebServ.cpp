@@ -13,17 +13,17 @@
 #include "WebServ.hpp"
 
 typedef std::vector<VirtualServer*>         srvVect;
-typedef std::map<int, ClientCnx*>           cliMap;
-typedef std::map<ClientCnx*, std::string>   uriCliMap;
-typedef std::map<int, int>                  listenMap;
-typedef std::map<int, std::string>          fdUriMap;
+typedef std::map<int, ClientCnx*>           intCliMap;
+typedef std::map<ClientCnx*, std::string>   cliStrMap;
+typedef std::map<int, int>                  intMap;
+typedef std::map<int, std::string>          intStrMap;
 fd_set                                      WebServ::_master_set_recv;
 fd_set                                      WebServ::_master_set_write;
 int                                         WebServ::_max_fd;
-cliMap                                      WebServ::_clients;
-uriCliMap                                   WebServ::_reqRessources;
-listenMap                                   WebServ::_listeners;
-fdUriMap                                    WebServ::_fdRessources;
+intCliMap                                   WebServ::_clients;
+cliStrMap                                   WebServ::_reqRessources;
+intMap                                      WebServ::_listeners;
+intStrMap                                   WebServ::_fdRessources;
 
 bool WebServ::runListeners(void)
 {
@@ -56,7 +56,7 @@ bool WebServ::init(void)
     while(srvIt != srvEnd)
     {
         std::cout << "Starting virtual server " << (*srvIt)->getPort() << " " << (*srvIt)->getRoot() << "..." << std::endl;
-        if (_listeners.count((*srvIt)->getPort())) // TODO prendre en compte host
+        if (_listeners.count((*srvIt)->getPort())) // TODO prendre en compte host?
         {
             (*srvIt)->setFd(_listeners[(*srvIt)->getPort()]);
             std::cout << "... binding to existing server socket - fd " << (*srvIt)->getFd() << std::endl;
@@ -94,7 +94,6 @@ bool WebServ::init(void)
             rc = bind(serverSocket, (struct sockaddr*)&serverAddress, sizeof(serverAddress));
             if (rc < 0)
             {
-                perror("server socket binding ");
                 std::cerr << "Error : socket binding failed" << std::endl;
                 close(serverSocket);
                 return(false);
@@ -131,6 +130,8 @@ bool WebServ::process(void)
     {
         working_set_recv = _master_set_recv;
         working_set_write = _master_set_write;
+
+        // TODO cout à supprimer
         std::cout << "Preparing select() " << std::endl;
         for (int i = 0; i <= _max_fd; ++i)
         {
@@ -218,7 +219,7 @@ bool WebServ::acceptNewCnx(const int& fd)
 bool WebServ::readRequest(const int &fd, ClientCnx &c)
 {
     std::cout << "  Reading request - fd " << fd << std::endl;
-    char        buffer[1024];
+    char        buffer[BUFFER_SIZE];
     int         rc = 0;
     
     buffer[0] = 0;
@@ -275,6 +276,82 @@ bool WebServ::sendResponse(const int &fd, ClientCnx &c)
     return(true);
 }
 
+bool WebServ::readRessource(const int& fd)
+{
+    std::cout << "Reading ressource from fd - " << fd << std::endl;
+
+    std::string     fileContent = "";
+    char            buf[BUFFER_SIZE + 1];
+    int             ret = BUFFER_SIZE;
+
+    buf[0] = 0;
+    while (ret == BUFFER_SIZE)
+    {
+        ret = read(fd, buf, BUFFER_SIZE);
+        buf[ret] = 0;
+        fileContent = fileContent + buf;
+    }
+    close(fd);
+    del(fd, _master_set_recv);
+    
+    if (ret == -1)
+    {
+        // TODO fileContent = msg erreur
+    }
+
+    cliStrMap::iterator     it = _reqRessources.begin();
+    while (it != _reqRessources.end())
+    {
+        if (it->second == _fdRessources[fd])
+        {
+            it->first->setFileContent(fileContent);
+        }
+        it++;
+    }
+    
+    it = _reqRessources.begin();
+    while (_reqRessources.size() > 0 && it != _reqRessources.end())
+    {
+        if (it->second == _fdRessources[fd])
+        {
+            _reqRessources.erase(it);
+        }
+        else
+            it++;
+    }
+    _fdRessources.erase(fd);
+
+    return(true);
+}
+
+void WebServ::getRessource(const std::string& path, ClientCnx& c)
+{
+    if (!isListedRessource(path))
+    {
+        int fd = open(path.c_str(), O_RDONLY);
+        if (fd == -1)
+        {
+            return;
+        }
+        add(fd, _master_set_recv);
+        _fdRessources[fd] = path;
+    }
+    _reqRessources[&c] = path;
+}
+
+bool WebServ::isListedRessource(const std::string& path)
+{              
+    intStrMap::iterator  it = _fdRessources.begin();
+    while (it != _fdRessources.end())
+    {
+        if (it->second == path)
+            return(true);
+        it++;
+    }
+    return(false);
+}
+
+
 void WebServ::add(const int& fd, fd_set& set)
 {
     FD_SET(fd, &set);
@@ -319,8 +396,8 @@ void WebServ::stop(void)
 
     Config::clear();
 
-    cliMap::iterator      cliIt  = _clients.begin();
-    cliMap::iterator      cliEnd  = _clients.end();
+    intCliMap::iterator      cliIt  = _clients.begin();
+    intCliMap::iterator      cliEnd  = _clients.end();
     while(cliIt != cliEnd)
     {
         ClientCnx* tmp = cliIt->second;
@@ -332,89 +409,14 @@ void WebServ::stop(void)
 
 bool WebServ::isServerSocket(const int& fd)
 {
-    listenMap::iterator lsIt        = _listeners.begin();
-    listenMap::iterator lsEnd       = _listeners.end();
+    intMap::iterator lsIt        = _listeners.begin();
+    intMap::iterator lsEnd       = _listeners.end();
 
     while (lsIt != lsEnd)
     {
         if (lsIt->second == fd)
             return(true);
         lsIt++;
-    }
-    return(false);
-}
-
-bool WebServ::readRessource(const int& fd)
-{
-    std::cout << "Reading ressource from fd - " << fd << std::endl;
-
-    std::string     fileContent = "";
-    char            buf[BUFFER_SIZE + 1];
-    int             ret = BUFFER_SIZE;
-
-    buf[0] = 0;
-    while (ret == BUFFER_SIZE)
-    {
-        ret = read(fd, buf, BUFFER_SIZE);
-        buf[ret] = 0;
-        fileContent = fileContent + buf;
-    }
-    close(fd);
-    del(fd, _master_set_recv);
-    
-    if (ret == -1)
-    {
-        // TODO fileContent = msg erreur
-    }
-
-    uriCliMap::iterator     it = _reqRessources.begin();
-    while (it != _reqRessources.end())
-    {
-        if (it->second == _fdRessources[fd])
-        {
-            it->first->setFileContent(fileContent);
-        }
-        it++;
-    }
-    
-    it = _reqRessources.begin();
-    while (_reqRessources.size() > 0 && it != _reqRessources.end())
-    {
-        if (it->second == _fdRessources[fd])
-        {
-            _reqRessources.erase(it);
-        }
-        else
-            it++;
-    }
-    _fdRessources.erase(fd);
-
-    return(true);
-}
-
-void WebServ::getRessource(const std::string& path, ClientCnx& c)
-{
-    if (!isListedRessource(path))
-    {
-        int fd = open(path.c_str(), O_RDONLY);
-        if (fd == -1)
-        {
-            return;
-        }
-        add(fd, _master_set_recv);
-        _fdRessources[fd] = path;
-    }
-    _reqRessources[&c] = path;
-}
-
-bool WebServ::isListedRessource(const std::string& path)
-{              
-    fdUriMap::iterator  it = _fdRessources.begin();
-    while (it != _fdRessources.end())
-    {
-        if (it->second == path)
-            return(true);
-        it++;
     }
     return(false);
 }

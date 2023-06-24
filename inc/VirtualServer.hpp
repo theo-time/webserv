@@ -43,7 +43,7 @@ class VirtualServer
         std::string         getName(void) const;
         std::string         getIndex(void) const;
         std::string         getRoot(void) const;
-        unsigned int        getClientMaxBodySize(void);
+        unsigned int        getClientMaxBodySize(void) const;
         intStrMap&          getErrorPages(void);
 
         bool                isGetAllowed(void) const;

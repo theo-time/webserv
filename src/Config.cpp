@@ -1,7 +1,7 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   Config.cpp                                        :+:      :+:    :+:   */
+/*   Config.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: adcarnec <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
@@ -12,31 +12,23 @@
 
 #include "Config.hpp"
 
-const unsigned int                          Config::_clientMaxBodySize_min = 1024 * 1024;
-const unsigned int                          Config::_clientMaxBodySize_max = 5 * 1024 * 1024;
-unsigned int                                Config::_clientMaxBodySize = 1024 * 1024;
-bool                                        Config::_valid = false;
+const unsigned int                              Config::_clientMaxBodySize_min = 1024 * 1024;
+const unsigned int                              Config::_clientMaxBodySize_max = 5 * 1024 * 1024;
+unsigned int                                    Config::_clientMaxBodySize = 1024 * 1024;
+bool                                            Config::_valid = false;
 
 typedef std::queue<std::string>                 strQueue;
 typedef std::map<int, std::string>              intStrMap;
 typedef std::map<std::string, VirtualServer*>   srvMap;
 typedef std::vector<VirtualServer*>             srvVect;
 
-srvVect                                     Config::_virtualServers;
-strQueue                                    Config::_tmpVarConf;
-strQueue                                    Config::_tmpSrvConf;
-std::string                                 Config::_tmpConfData;
-srvMap                                      Config::_serverNames;
+srvVect                                         Config::_virtualServers;
+srvMap                                          Config::_serverNames;
 
-bool Config::isValid(void)
-{
-    return(_valid);
-}
+strQueue                                        Config::_tmpVarConf;
+strQueue                                        Config::_tmpSrvConf;
+std::string                                     Config::_tmpConfData;
 
-srvVect& Config::getVirtualServers(void)
-{
-    return(_virtualServers);
-}
 
 void Config::init(const std::string& filename)
 {
@@ -56,7 +48,7 @@ void Config::init(const std::string& filename)
     }
 
     std::cout << "  Found " << _tmpSrvConf.size() << " virtual server configuration(s)" << std::endl;
-    int i = 0;
+    int i = 0; // used to display conf number
     while (!_tmpSrvConf.empty())
     {
         addSrvConf(_tmpSrvConf.front(), ++i);
@@ -72,7 +64,6 @@ void Config::init(const std::string& filename)
     }
     std::cout << std::endl;
     
-
     _valid=true;
 }
 
@@ -225,7 +216,6 @@ void Config::addVarConf(std::string& line)
 void Config::addSrvConf(std::string& line, int i)
 {
     std::cout << "  Parsing config #" << i << std::endl;
-    // std::cout << line << std::endl;
     
     strQueue        tmpVars, tmpLocations;
     std::string     tmpLine = line;
@@ -282,8 +272,6 @@ void Config::addSrvConf(std::string& line, int i)
             }
             portStr = valueStr;
             port = static_cast<unsigned int>(tmpValue);
-            // std::cout << "      key = " << key;
-            // std::cout << ", value = " << port << std::endl;
             tmpVars.pop();
             continue;
         }
@@ -291,8 +279,6 @@ void Config::addSrvConf(std::string& line, int i)
         if(key == "host")
         {
             host = valueStr;
-            // std::cout << "      key = " << key;
-            // std::cout << ", value = " << valueStr << std::endl;
             tmpVars.pop();
             continue;
         }
@@ -300,8 +286,6 @@ void Config::addSrvConf(std::string& line, int i)
         if(key == "server_name")
         {
             serverName = valueStr;
-            // std::cout << "      key = " << key;
-            // std::cout << ", value = " << valueStr << std::endl;
             tmpVars.pop();
             continue;
         }
@@ -309,8 +293,6 @@ void Config::addSrvConf(std::string& line, int i)
         if(key == "index")
         {
             index = valueStr;
-            // std::cout << "      key = " << key;
-            // std::cout << ", value = " << index << std::endl;
             tmpVars.pop();
             continue;
         }
@@ -318,16 +300,12 @@ void Config::addSrvConf(std::string& line, int i)
         if(key == "root")
         {
             root = valueStr;
-            // std::cout << "      key = " << key;
-            // std::cout << ", value = " << root << std::endl;
             tmpVars.pop();
             continue;
         }
 
         if(key == "methods")
         {
-            // std::cout << "      key = " << key;
-            // std::cout << ", value = " << valueStr << std::endl;
             while (!valueStr.empty())
             {
                 std::string tmp = "";
@@ -360,8 +338,6 @@ void Config::addSrvConf(std::string& line, int i)
             int                 code;
             ss << key.substr(11, key.length());
             ss >> code;
-            // std::cout << "      key = " << code;
-            // std::cout << ", value = " << valueStr << std::endl;
             tmpErrorPages[code] = valueStr;
             tmpVars.pop();
             continue;
@@ -378,8 +354,6 @@ void Config::addSrvConf(std::string& line, int i)
             }
             maxBodySizeStr = valueStr;
             maxBodySize = static_cast<unsigned int>(tmpValue);
-            // std::cout << "      key = " << key;
-            // std::cout << ", value = " << maxBodySize << std::endl;
             tmpVars.pop();
             continue;
         }
@@ -410,56 +384,8 @@ void Config::addSrvConf(std::string& line, int i)
         _serverNames[alias] = tmp;
     }
     _virtualServers.push_back(tmp);
-    std::cout << "  " << *tmp  << std::endl; 
+    std::cout << "  " << *tmp  << std::endl;
 }
-
-
-/*     if (srv)
-    {
-        if (!location)
-        {
-            found = line.find("location=");
-            if (found != std::string::npos)
-            {
-                location = true;
-            }
-        }
-
-        found = line.find('}');
-        if (found != std::string::npos)
-        {
-            if (location)
-                location = false;
-            else
-            {
-                line.erase(line.begin() + found, line.end()); // TODO a checker
-                srv = false;
-            }
-        }
-        srvConf = srvConf + line;
-        if (!srv)
-        {
-            std::cout << "srvConf : " << srvConf << std::endl;
-            _tmpSrvConf.push(srvConf);
-            srvConf.clear();
-        }
-    }
-    else
-    {
-        found = line.find("server{");
-        if (found == 0)
-            srv = true;
-        else
-            _tmpVarConf.push(line);
-    } */
-/*     
-    if (!location && !srv)
-        return(true);
-    else
-    {
-        std::cout << "Error: missing closing brace for virtual server configuration: " << srvConf << std::endl;
-        return(false);
-    } */
     
 void Config::clear(void)
 {
@@ -476,7 +402,17 @@ void Config::clear(void)
     }
 }
 
-unsigned int Config::getClientMaxBodySize(void)
+unsigned int& Config::getClientMaxBodySize(void)
 {
     return(_clientMaxBodySize);
+}
+
+bool& Config::isValid(void)
+{
+    return(_valid);
+}
+
+srvVect& Config::getVirtualServers(void)
+{
+    return(_virtualServers);
 }

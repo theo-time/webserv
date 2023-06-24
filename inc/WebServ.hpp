@@ -15,10 +15,6 @@
 
 # define BUFFER_SIZE 1024
 
-# include <sys/socket.h>
-# include <sys/poll.h>
-# include <sys/time.h>
-# include <arpa/inet.h>
 # include <unistd.h>
 # include <fcntl.h>
 
@@ -41,38 +37,36 @@ class WebServ
     public:
 
         typedef std::vector<VirtualServer*>         srvVect;
-        typedef std::map<int, ClientCnx*>           cliMap;
-        typedef std::map<ClientCnx*, std::string>   uriCliMap;
-        typedef std::map<int, std::string>          fdUriMap;
-        typedef std::map<int, int>                  listenMap;
+        typedef std::map<int, ClientCnx*>           intCliMap;
+        typedef std::map<ClientCnx*, std::string>   cliStrMap;
+        typedef std::map<int, std::string>          intStrMap;
+        typedef std::map<int, int>                  intMap;
 
-        static bool                             runListeners(void);
-        static void                             stop(void);
-        
-        static void                             getRessource(const std::string& path, ClientCnx& c);
+        static bool                                 runListeners(void);
+        static void                                 getRessource(const std::string& path, ClientCnx& c);
+        static void                                 stop(void);
 
-    private:    
-        static fd_set                           _master_set_recv;
-        static fd_set                           _master_set_write;
-        static int                              _max_fd;
-        static listenMap                        _listeners;
-        static cliMap                           _clients;
-        static uriCliMap                        _reqRessources;
-        static fdUriMap                         _fdRessources;
+    private:
 
-        static struct pollfd fds[200];
+        static fd_set                               _master_set_recv;
+        static fd_set                               _master_set_write;
+        static int                                  _max_fd;
+        static intMap                               _listeners;
+        static intCliMap                            _clients;
+        static cliStrMap                            _reqRessources;
+        static intStrMap                            _fdRessources;
 
-        static bool                             process(void);
-        static bool                             init(void);
-        static bool                             acceptNewCnx(const int& fd);
-        static bool                             readRessource(const int& fd);
-        static bool                             readRequest(const int& fd, ClientCnx& c);
-        static bool                             sendResponse(const int& fd, ClientCnx& c);
-        static void                             add(const int& fd, fd_set& set);
-        static void                             del(const int& fd, fd_set& set);
-        static void                             closeCnx(const int& fd);
-        static bool                             isServerSocket(const int& fd);
-        static bool                             isListedRessource(const std::string& path);
+        static bool                                 init(void);
+        static bool                                 process(void);
+        static bool                                 acceptNewCnx(const int& fd);
+        static bool                                 readRessource(const int& fd);
+        static bool                                 readRequest(const int& fd, ClientCnx& c);
+        static bool                                 sendResponse(const int& fd, ClientCnx& c);
+        static bool                                 isServerSocket(const int& fd);
+        static bool                                 isListedRessource(const std::string& path);
+        static void                                 add(const int& fd, fd_set& set);
+        static void                                 del(const int& fd, fd_set& set);
+        static void                                 closeCnx(const int& fd);
 };
 
 #endif

@@ -18,13 +18,13 @@ VirtualServer::VirtualServer(const unsigned int& port, const std::string& root, 
     _port(port), _root(root), _allowGet(get), _allowPost(post), _allowDel(del)
 {
     init();
-    std::cout << *this << std::endl;
 }
 
 void VirtualServer::init(void)
 {
     _host               = "localhost";
     _name               = "";
+    _fd                 = -1;
     _index              = "index.html";
     _errorPages[404]    = "./default/404.html";
     _errorPages[500]    = "./default/500.html";
@@ -78,6 +78,17 @@ void VirtualServer::setErrorPages(intStrMap conf)
         //TODO check code
         _errorPages[it->first] = _root + it->second;
         it++;
+    }
+}
+
+void VirtualServer::setLocationsConf(strQueue conf)
+{
+    _tmpLocationsConf = conf;
+    
+    while (!_tmpLocationsConf.empty())
+    {
+        std::cout << "      locations:" << _tmpLocationsConf.front() << std::endl;
+        _tmpLocationsConf.pop();
     }
 }
 
@@ -158,17 +169,6 @@ std::string VirtualServer::getRoot(void) const
     return(_root);
 }
 
-void VirtualServer::setLocationsConf(strQueue conf)
-{
-    _tmpLocationsConf = conf;
-    
-    while (!_tmpLocationsConf.empty())
-    {
-        std::cout << "      locations:" << _tmpLocationsConf.front() << std::endl;
-        _tmpLocationsConf.pop();
-    }
-}
-
 bool VirtualServer::isGetAllowed(void) const
 {
     return(_allowGet);
@@ -184,7 +184,7 @@ bool VirtualServer::isDelAllowed(void) const
     return(_allowDel);
 }
 
-unsigned int VirtualServer::getClientMaxBodySize(void)
+unsigned int VirtualServer::getClientMaxBodySize(void) const
 {
     return(_clientMaxBodySize);
 }
