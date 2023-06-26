@@ -15,10 +15,14 @@
 
 # include <iostream>
 # include <string>
+# include <vector>
 # include <queue>
 # include <map>
 
 # include "Config.hpp"
+// # include "Location.hpp"
+
+class Location;
 
 /*
 Represents 1 server config (One instance per server block in conf file)
@@ -27,6 +31,7 @@ _fd contains server socket
 class VirtualServer
 {
     public:
+        typedef std::vector<Location*>          vectLocation;
         typedef std::queue<std::string>         strQueue;
         typedef std::map<int, std::string>      intStrMap;
 
@@ -45,6 +50,7 @@ class VirtualServer
         std::string         getRoot(void) const;
         unsigned int        getClientMaxBodySize(void) const;
         intStrMap&          getErrorPages(void);
+        vectLocation&       getLocations(void);
 
         bool                isGetAllowed(void) const;
         bool                isPostAllowed(void) const;
@@ -71,6 +77,7 @@ class VirtualServer
         std::string         _root;
         int                 _fd;
         intStrMap           _errorPages;
+        vectLocation        _locations;
         strQueue            _tmpLocationsConf;
         bool                _allowGet;
         bool                _allowPost;

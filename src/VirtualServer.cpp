@@ -13,6 +13,7 @@
 #include "VirtualServer.hpp"
 
 typedef std::map<int, std::string>      intStrMap;
+typedef std::vector<Location*>          vectLocation;
 
 VirtualServer::VirtualServer(const unsigned int& port, const std::string& root, bool get, bool post, bool del) : 
     _port(port), _root(root), _allowGet(get), _allowPost(post), _allowDel(del)
@@ -142,6 +143,11 @@ std::string VirtualServer::getName(void) const
 intStrMap& VirtualServer::getErrorPages(void)
 {
     return(_errorPages);
+}
+
+vectLocation& VirtualServer::getLocations(void)
+{
+    return(_locations);
 }
 
 unsigned int VirtualServer::getPort(void) const
