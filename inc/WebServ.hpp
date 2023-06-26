@@ -26,8 +26,8 @@
 # include <map>
 
 # include "Config.hpp"
-# include "ClientCnx.hpp"
-class ClientCnx;
+
+class Request;
 
 /* 
 Static class representing the engine 
@@ -37,13 +37,13 @@ class WebServ
     public:
 
         typedef std::vector<VirtualServer*>         srvVect;
-        typedef std::map<int, ClientCnx*>           intCliMap;
-        typedef std::map<ClientCnx*, std::string>   cliStrMap;
+        typedef std::map<int, Request*>           intCliMap;
+        typedef std::map<Request*, std::string>   cliStrMap;
         typedef std::map<int, std::string>          intStrMap;
         typedef std::map<int, int>                  intMap;
 
         static bool                                 runListeners(void);
-        static void                                 getRessource(const std::string& path, ClientCnx& c);
+        static void                                 getRessource(const std::string& path, Request& c);
         static void                                 stop(void);
 
     private:
@@ -52,7 +52,7 @@ class WebServ
         static fd_set                               _master_set_write;
         static int                                  _max_fd;
         static intMap                               _listeners;
-        static intCliMap                            _clients;
+        static intCliMap                            _requests;
         static cliStrMap                            _reqRessources;
         static intStrMap                            _fdRessources;
 
@@ -60,8 +60,8 @@ class WebServ
         static bool                                 process(void);
         static bool                                 acceptNewCnx(const int& fd);
         static bool                                 readRessource(const int& fd);
-        static bool                                 readRequest(const int& fd, ClientCnx& c);
-        static bool                                 sendResponse(const int& fd, ClientCnx& c);
+        static bool                                 readRequest(const int& fd, Request& c);
+        static bool                                 sendResponse(const int& fd, Request& c);
         static bool                                 isServerSocket(const int& fd);
         static bool                                 isListedRessource(const std::string& path);
         static void                                 add(const int& fd, fd_set& set);

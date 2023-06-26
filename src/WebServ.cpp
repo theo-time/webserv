@@ -11,16 +11,17 @@
 /* ************************************************************************** */
 
 #include "WebServ.hpp"
+#include "Request.hpp"
 
 typedef std::vector<VirtualServer*>         srvVect;
-typedef std::map<int, ClientCnx*>           intCliMap;
-typedef std::map<ClientCnx*, std::string>   cliStrMap;
+typedef std::map<int, Request*>           intCliMap;
+typedef std::map<Request*, std::string>   cliStrMap;
 typedef std::map<int, int>                  intMap;
 typedef std::map<int, std::string>          intStrMap;
 fd_set                                      WebServ::_master_set_recv;
 fd_set                                      WebServ::_master_set_write;
 int                                         WebServ::_max_fd;
-intCliMap                                   WebServ::_clients;
+intCliMap                                   WebServ::_requests;
 cliStrMap                                   WebServ::_reqRessources;
 intMap                                      WebServ::_listeners;
 intStrMap                                   WebServ::_fdRessources;
@@ -119,13 +120,13 @@ bool WebServ::init(void)
 
 bool WebServ::process(void)
 {
-    struct timeval  timeout;    
+    // struct timeval  timeout;    
     int             ret;
     fd_set          working_set_recv;
     fd_set          working_set_write;
 
-    timeout.tv_sec = 10;
-    timeout.tv_usec = 0;
+    // timeout.tv_sec = 10;
+    // timeout.tv_usec = 0;
     while (true)
     {
         working_set_recv = _master_set_recv;
@@ -143,7 +144,7 @@ bool WebServ::process(void)
                 std::cout << "  fd - " << i << " : not working set" << std::endl;
         }
 
-        ret = select(_max_fd + 1, &working_set_recv, &working_set_write, NULL, &timeout);
+        ret = select(_max_fd + 1, &working_set_recv, &working_set_write, NULL, 0);
         if (ret < 0)
         {
             std::cerr << "  select() failed" << std::endl;
@@ -162,10 +163,10 @@ bool WebServ::process(void)
                 acceptNewCnx(i);
             else if (FD_ISSET(i, &working_set_recv) && _fdRessources.count(i))
                 readRessource(i);
-            else if (FD_ISSET(i, &working_set_recv) && _clients.count(i))
-                readRequest(i, *_clients[i]);
-            else if (FD_ISSET(i, &working_set_write) && _clients.count(i))
-                sendResponse(i, *_clients[i]);
+            else if (FD_ISSET(i, &working_set_recv) && _requests.count(i))
+                readRequest(i, *_requests[i]);
+            else if (FD_ISSET(i, &working_set_write) && _requests.count(i))
+                sendResponse(i, *_requests[i]);
         }
     }
     return(true);
@@ -209,14 +210,14 @@ bool WebServ::acceptNewCnx(const int& fd)
         }
         
         add(clientSocket, _master_set_recv);
-        _clients[clientSocket] = new ClientCnx(clientSocket, clientAddress);
+        _requests[clientSocket] = new Request(clientSocket);
         std::cout << "  New incoming connection - fd " << clientSocket << std::endl;
     } while (clientSocket != -1);
 
     return(true);
 }
 
-bool WebServ::readRequest(const int &fd, ClientCnx &c)
+bool WebServ::readRequest(const int &fd, Request &c)
 {
     std::cout << "  Reading request - fd " << fd << std::endl;
     char        buffer[BUFFER_SIZE];
@@ -249,18 +250,20 @@ bool WebServ::readRequest(const int &fd, ClientCnx &c)
     }
 
     std::cout << "  " << request.size() << " bytes received\n***************\n" << std::endl;
-    c.newRequest(request);
+    c.setRequestString(request);
+    c.parseRequest();
+    // c.getConfig();
+    c.handleRequest();
     memset(buffer, 0, sizeof(buffer)); // TODO ft_memset
     del(fd, _master_set_recv);
-    add(fd, _master_set_write);
 
     return(true);
 }
 
-bool WebServ::sendResponse(const int &fd, ClientCnx &c)
+bool WebServ::sendResponse(const int &fd, Request &c)
 {
     std::cout << "  Sending response - fd " << fd << std::endl;
-    int rc  = send(fd, c.getResponse().c_str(), c.getResponse().length(), 0);
+    int rc  = send(fd, c.getResponseString().c_str(), c.getResponseString().length(), 0);
     if (rc < 0)
     {
         std::cerr << "  send() failed" << std::endl;
@@ -305,6 +308,8 @@ bool WebServ::readRessource(const int& fd)
         if (it->second == _fdRessources[fd])
         {
             it->first->setFileContent(fileContent);
+            it->first->buildResponse();
+            add(it->first->getClientSocket(), _master_set_write);
         }
         it++;
     }
@@ -321,10 +326,12 @@ bool WebServ::readRessource(const int& fd)
     }
     _fdRessources.erase(fd);
 
+    
+
     return(true);
 }
 
-void WebServ::getRessource(const std::string& path, ClientCnx& c)
+void WebServ::getRessource(const std::string& path, Request& c)
 {
     if (!isListedRessource(path))
     {
@@ -385,8 +392,8 @@ void WebServ::closeCnx(const int& fd)
     }
 
     close(fd);
-    delete _clients.at(fd);
-    _clients.erase(fd);
+    delete _requests.at(fd);
+    _requests.erase(fd);
 }
 
 void WebServ::stop(void)
@@ -396,15 +403,15 @@ void WebServ::stop(void)
 
     Config::clear();
 
-    intCliMap::iterator      cliIt  = _clients.begin();
-    intCliMap::iterator      cliEnd  = _clients.end();
+    intCliMap::iterator      cliIt  = _requests.begin();
+    intCliMap::iterator      cliEnd  = _requests.end();
     while(cliIt != cliEnd)
     {
-        ClientCnx* tmp = cliIt->second;
+        Request* tmp = cliIt->second;
         delete tmp;
         cliIt++;
     }
-    _clients.clear();
+    _requests.clear();
 }
 
 bool WebServ::isServerSocket(const int& fd)
