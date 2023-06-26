@@ -39,17 +39,84 @@ _name(name), _type("std"), _autoIndex(false), _allowGet(false), _allowPost(false
         return;
     }
 
-/*     
-    std::string     root = "";
-    std::string     index = "";
-    std::string     path = "";
-    std::string     extension = "";
-    std::string     maxBodySizeStr = "";
-    unsigned int    maxBodySize = -1;
-    bool            confGet = false;
-    bool            confPost = false;
-    bool            confDel = false;
-    bool            confAutoIndex = false; */
+    if (tmpVars.front().substr(0, 4) == "cgi_")
+    {
+        _type = "cgi";
+        while (!tmpVars.empty())
+        {
+            sep = tmpVars.front().find('=');
+            std::string key = tmpVars.front().substr(0, sep);
+            std::string valueStr = tmpVars.front().substr(sep + 1, tmpVars.front().length() - sep - 1);
+
+            if (key == "cgi_root" )
+            {
+                _root = valueStr;
+                std::cout << "key: " << key << " value:" << valueStr << std::endl;
+                tmpVars.pop();
+                continue;
+            }
+
+            if (key == "cgi_path" )
+            {
+                _path = valueStr;
+                std::cout << "key: " << key << " value:" << valueStr << std::endl;
+                tmpVars.pop();
+                continue;
+            }
+
+            if (key == "cgi_pgname" )
+            {
+                _pgname = valueStr;
+                std::cout << "key: " << key << " value:" << valueStr << std::endl;
+                tmpVars.pop();
+                continue;
+            }
+            
+            sep = key.find("cgi_error_page:");
+            if(sep != std::string::npos)
+            {
+                std::stringstream   ss;
+                int                 code;
+                ss << key.substr(15, key.length());
+                ss >> code;
+                _errorPages[code] = valueStr; // TODO check code
+                std::cout << "key: " << code << " value:" << valueStr << std::endl;
+                tmpVars.pop();
+                continue;
+            }
+
+            if(key == "cgi_methods")
+            {
+                while (!valueStr.empty())
+                {
+                    std::string tmp = "";
+                    sep = valueStr.find(",");
+                    if (sep == std::string::npos)
+                    {
+                        tmp = valueStr;
+                        valueStr.clear();
+                    }
+                    else
+                    {
+                        tmp = valueStr.substr(0, sep);
+                        valueStr.erase(0, sep + 1);
+                    }
+                    if (tmp == "GET")
+                        _allowGet = true;
+                    else if (tmp == "POST")
+                        _allowPost = true;
+                    else if (tmp == "DELETE")
+                        _allowDel = true;
+                }
+                tmpVars.pop();
+                continue;
+            }
+            std::cout << "      Warning: unknown key: " << key << " value:" << valueStr << std::endl;
+            tmpVars.pop();
+        }
+
+        return;
+    }
 
     while (!tmpVars.empty())
     {
@@ -57,22 +124,22 @@ _name(name), _type("std"), _autoIndex(false), _allowGet(false), _allowPost(false
         std::string key = tmpVars.front().substr(0, sep);
         std::string valueStr = tmpVars.front().substr(sep + 1, tmpVars.front().length() - sep - 1);
 
-        if (key == "cgi_root" )
+        if (key == "root" )
         {
-            _type = "cgi";
-            _path = valueStr;
+            _root = valueStr;
             std::cout << "key: " << key << " value:" << valueStr << std::endl;
             tmpVars.pop();
-            break;
+            continue;
         }
-/*
 
-        =./cgi-bin;
-	    cgi_methods=GET,POST;
-        cgi_path=/bin/bash;
-        cgi_pgname=myCGIscript.sh;
-        cgi_error_page:400=/cgi_400.html;
-*/
+        if (key == "index" )
+        {
+            _index = valueStr;
+            std::cout << "key: " << key << " value:" << valueStr << std::endl;
+            tmpVars.pop();
+            continue;
+        }
+
         std::cout << "      Warning: unknown key: " << key << " value:" << valueStr << std::endl;
         tmpVars.pop();
     }
@@ -255,9 +322,9 @@ std::string Location::getPath(void) const
     return(_path);
 }
 
-std::string Location::getExtension(void) const
+std::string Location::getPgName(void) const
 {
-    return(_extension);
+    return(_pgname);
 }
 
 unsigned int Location::getClientMaxBodySize(void) const

@@ -38,7 +38,7 @@ class Location
         std::string         getRoot(void) const;
         std::string         getIndex(void) const;
         std::string         getPath(void) const;
-        std::string         getExtension(void) const;
+        std::string         getPgName(void) const;
         unsigned int        getClientMaxBodySize(void) const;
         intStrMap&          getErrorPages(void);
         bool                isGetAllowed(void) const;
@@ -56,7 +56,7 @@ class Location
         std::string         _root;
         std::string         _index;
         std::string         _path;
-        std::string         _extension;
+        std::string         _pgname;
         bool                _autoIndex;
         bool                _allowGet;
         bool                _allowPost;
