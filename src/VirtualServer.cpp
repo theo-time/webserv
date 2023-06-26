@@ -32,7 +32,14 @@ void VirtualServer::init(void)
     _clientMaxBodySize  = Config::getClientMaxBodySize();
 }
 
-VirtualServer::~VirtualServer(void){}
+VirtualServer::~VirtualServer(void)
+{
+    while (!_locations.empty())
+    {
+        delete _locations[0];
+        _locations.erase(_locations.begin());
+    }
+}
 
 VirtualServer::VirtualServer(void){}
 
@@ -88,7 +95,25 @@ void VirtualServer::setLocationsConf(strQueue conf)
     
     while (!_tmpLocationsConf.empty())
     {
-        std::cout << "      locations:" << _tmpLocationsConf.front() << std::endl;
+        std::size_t     sep = _tmpLocationsConf.front().find("{");
+
+        if (sep == std::string::npos)
+        {
+            std::cout << "Error: invalid location configuration: " << _tmpLocationsConf.front() << std::endl;
+            _tmpLocationsConf.pop();
+            continue;
+        }
+
+        std::string     name = _tmpLocationsConf.front().substr(0, sep);
+        std::string     conf = _tmpLocationsConf.front().substr(sep + 1);
+        if (name.empty() || conf.empty())
+        {
+            std::cout << "Error: invalid location configuration: " << _tmpLocationsConf.front() << std::endl;
+            _tmpLocationsConf.pop();
+            continue;
+        }
+
+        _locations.push_back(new Location(name, conf));
         _tmpLocationsConf.pop();
     }
 }

@@ -20,7 +20,7 @@
 # include <map>
 
 # include "Config.hpp"
-// # include "Location.hpp"
+# include "Location.hpp"
 
 class Location;
 

@@ -28,7 +28,7 @@ class Location
         typedef std::queue<std::string>         strQueue;
         typedef std::map<int, std::string>      intStrMap;
 
-        Location(const std::string& conf);
+        Location(const std::string& name, const std::string& conf);
         ~Location(void);
         
         Location& operator=(const Location& rhs);
