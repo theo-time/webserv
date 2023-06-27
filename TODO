@@ -1,0 +1,4 @@
+- implementer POST 
+- Gerer le routing des requetes 
+- Pouvoir envoyer des reponses sans body/lecture de fichier
+- Verifier la syntaxe generale de la requete ?

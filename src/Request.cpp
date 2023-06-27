@@ -31,27 +31,25 @@ void Request::parseRequest(){
 
     // verify method
     if(method == "GET") {
-        type = 1;
+        methodCode = 1;
     } else if (method == "POST") {
-        type = 2;
+        methodCode = 2;
     } else if (method == "DELETE") {
-        type = 3;
+        methodCode = 3;
     } else {
-        type = 0;
+        methodCode = 0;
     }
 
     // verify path
     if (path == "/") {
         path = "/index.html";
     }
+
     // path = root + path;
     std::cout << " - PARSING COMPLETED -" << method << std::endl;
     std::cout << "Method: " << method << std::endl;
-
     std::cout << "Path: " << path << std::endl;
-
     std::cout << "Protocol: " << protocol << std::endl;
-
 }
 
 std::string getFileExtension(std::string filename)
@@ -73,8 +71,8 @@ void Request::buildResponse()
     _response.setStatusCode("200");
     _response.setStatusText("OK"); 
     _response.setProtocol("HTTP/1.1");
-    _response.setFilename(extension);
-    _response.setExtension(filename);
+    _response.setFilename(filename);
+    _response.setExtension(extension);
 
     // if extension is not displayable, download it
     if(extension == "png" || extension == "jpg" || extension == "jpeg" || extension == "gif" || extension == "bmp" || extension == "ico") {
@@ -106,6 +104,65 @@ Request::~Request() {
     std::cout << "Request destroyed" << std::endl;
 }
 
+void Request::get() 
+{
+    std::ifstream my_file(path.c_str());
+    if (!my_file.good())
+    {
+        std::cout << "File not found" << std::endl;
+        _response.setStatusCode("404");
+        _response.setStatusText("Not Found");
+        _response.setContentType("text/html");
+        WebServ::getRessource("./data/default/404.html", *this);
+    }
+    else 
+    {
+        _response.setStatusCode("200");
+        _response.setStatusText("OK");
+        std::cout << "Requesting ressource at path : " << path << std::endl;
+        WebServ::getRessource(path, *this);
+    }
+}
+
+void Request::post() 
+{
+    std::cout << "POST" << std::endl;
+}
+
+void Request::mdelete() 
+{
+    std::cout << "DELETE" << std::endl;
+    std::ifstream my_file(path.c_str());
+
+    if (!my_file.good())
+    {
+        std::cout << "File not found" << std::endl;
+        _response.setStatusCode("404");
+        _response.setStatusText("Not Found");
+        _response.setContentType("text/html");
+        WebServ::getRessource("./data/default/404.html", *this);
+    }
+    else 
+    {
+        _response.setStatusCode("200");
+        _response.setStatusText("OK");
+        std::cout << "Requesting ressource at path : " << path << std::endl;
+        if(!remove(path.c_str()))
+        {
+            std::cout << "File deleted" << std::endl;
+            // TODO : send 200 response without body
+        }
+        else
+        {
+            std::cout << "Error deleting file" << std::endl;
+            _response.setStatusCode("500");
+            _response.setStatusText("Internal Server Error");
+            _response.setContentType("text/html");
+            WebServ::getRessource("./data/default/500.html", *this);
+        }
+
+    }
+}
 
 void Request::handleRequest() 
 {
@@ -116,31 +173,32 @@ void Request::handleRequest()
     std::cout << "Handle request" << std::endl;
     std::string fileContent;
 
-    if (type != GET) 
-        responseString = "HTTP/1.1 405 Method Not Allowed\r\nContent-Type: text/plain\r\n\r\n405 Method Not Allowed";
+    if(cgi_mode)
+    {
+        
+    }
 
     // Read file (add "." before path to read from current directory)
-    path = "." + path;
-    // std::ifstream file(path.c_str());     
+    path = "." + path; // TODO : add root to path
 
-    // // Check if file exists
-    // if (!file.good())
-    // {
-    //     responseString = "HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\n\r\n404 Not Found";
-    //     // WebServ::getRessource(path, *this);
-    //     std::cout << "File not found" << std::endl;
-    //     return;
-    // }
-    std::cout << "Requesting ressource at path : " << path << std::endl;
-    WebServ::getRessource(path, *this);
-    // response = "HTTP/1.1 " + status + " " + statusText + "\r\nContent-Type: " + contentType + "\r\n\r\n" + fileContent;
+    // Method routing
+    if (methodCode == GET)
+        this->get();
+    if(methodCode == POST)
+        this->post();
+    if(methodCode == DELETE)
+        this->mdelete();
+    if(methodCode == UNKNOWN)
+    {
+        std::cout << "Unknown method" << std::endl;
+        _response.setStatusCode("501");
+        _response.setStatusText("Not Implemented");
+        _response.setContentType("text/html");
+        WebServ::getRessource("./data/default/501.html", *this);
+    }
 }
 
 // GETTERS
-
-int Request::getType() {
-    return type;
-}
 
 std::string Request::getPath() {
     return path;

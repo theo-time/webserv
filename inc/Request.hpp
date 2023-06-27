@@ -30,7 +30,8 @@ class Request {
         std::string requestString;
         std::string responseString;
         std::string fileContent;
-        int type;
+        int methodCode;
+        bool cgi_mode;
 
         VirtualServer       _server;
         Response            _response;  
@@ -48,10 +49,11 @@ class Request {
         std::string getResponseString();
         void setFileContent(std::string &fileContent);
         void setResponseString(std::string &response);
-        // void setMethod(std::string &method);
-        // void setPath(std::string &path);
-        // void setProtocol(std::string &protocol);
         void setRequestString(std::string &request);
+
+        void get();
+        void post();
+        void mdelete();
 
         void parseRequest();
         void handleRequest();
