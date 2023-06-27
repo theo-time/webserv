@@ -54,8 +54,15 @@ void Config::init(const std::string& filename)
         addSrvConf(_tmpSrvConf.front(), ++i);
         _tmpSrvConf.pop();
     }
-    
-    std::cout << "Found  " << _serverNames.size() << " server name mapping(s)" << std::endl;
+        
+    srvVect::iterator itv = _virtualServers.begin();
+    while (itv != _virtualServers.end())
+    {
+        std::cout << "      " << **itv << std::endl;
+        itv++;
+    }
+
+    std::cout << "  Found  " << _serverNames.size() << " server name mapping(s)" << std::endl;
     srvMap::iterator it = _serverNames.begin();
     while (it != _serverNames.end())
     {
@@ -384,7 +391,6 @@ void Config::addSrvConf(std::string& line, int i)
         _serverNames[alias] = tmp;
     }
     _virtualServers.push_back(tmp);
-    std::cout << "  " << *tmp  << std::endl;
 }
     
 void Config::clear(void)

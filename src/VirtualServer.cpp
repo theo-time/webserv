@@ -46,22 +46,29 @@ VirtualServer::VirtualServer(void){}
 std::ostream& operator<<(std::ostream& o, VirtualServer& me)
 {
     std::cout << "Virtual Server configuration" << std::endl;
-    std::cout << "      port                " << me.getPort() << std::endl;
-    std::cout << "      host                " << me.getHost() << std::endl;
-    std::cout << "      name                " << me.getName() << std::endl;
-    std::cout << "      index               " << me.getIndex() << std::endl;
-    std::cout << "      root                " << me.getRoot() << std::endl;
-    std::cout << "      fd                  " << me.getFd() << std::endl;
-    std::cout << "      allowGet            " << me.isGetAllowed() << std::endl;
-    std::cout << "      allowPost           " << me.isPostAllowed() << std::endl;
-    std::cout << "      allowDel            " << me.isDelAllowed() << std::endl;
-    std::cout << "      clientMaxBodySize   " << me.getClientMaxBodySize() << std::endl;
+    std::cout << "          port                " << me.getPort() << std::endl;
+    std::cout << "          host                " << me.getHost() << std::endl;
+    std::cout << "          name                " << me.getName() << std::endl;
+    std::cout << "          index               " << me.getIndex() << std::endl;
+    std::cout << "          root                " << me.getRoot() << std::endl;
+    std::cout << "          fd                  " << me.getFd() << std::endl;
+    std::cout << "          allowGet            " << me.isGetAllowed() << std::endl;
+    std::cout << "          allowPost           " << me.isPostAllowed() << std::endl;
+    std::cout << "          allowDel            " << me.isDelAllowed() << std::endl;
+    std::cout << "          clientMaxBodySize   " << me.getClientMaxBodySize() << std::endl;
 
     intStrMap::iterator it = me.getErrorPages().begin();
     while (it != me.getErrorPages().end())
     {
-        std::cout << "      " << it-> first << "                 " << it->second << std::endl;
+        std::cout << "          " << it-> first << "                 " << it->second << std::endl;
         it++;
+    }
+
+    vectLocation::iterator itv = me.getLocations().begin();
+    while (itv != me.getLocations().end())
+    {
+        std::cout << "          " << **itv << std::endl;
+        itv++;
     }
     
     return(o);
