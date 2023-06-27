@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   WebServ.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: adcarnec <marvin@42.fr>                    +#+  +:+       +#+        */
+/*   By: teliet <teliet@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/13 14:37:16 by adcarnec          #+#    #+#             */
-/*   Updated: 2023/06/13 14:37:20 by adcarnec         ###   ########.fr       */
+/*   Updated: 2023/06/27 17:31:39 by teliet           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -67,6 +67,7 @@ class WebServ
         static void                                 add(const int& fd, fd_set& set);
         static void                                 del(const int& fd, fd_set& set);
         static void                                 closeCnx(const int& fd);
+        static void                                 getRequestConfig(Request& c);
 };
 
 #endif

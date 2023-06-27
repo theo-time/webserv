@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   VirtualServer.hpp                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: adcarnec <marvin@42.fr>                    +#+  +:+       +#+        */
+/*   By: teliet <teliet@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/13 14:37:16 by adcarnec          #+#    #+#             */
-/*   Updated: 2023/06/13 14:37:20 by adcarnec         ###   ########.fr       */
+/*   Updated: 2023/06/27 17:53:10 by teliet           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -48,9 +48,11 @@ class VirtualServer
         std::string         getName(void) const;
         std::string         getIndex(void) const;
         std::string         getRoot(void) const;
+        std::string         getListen(void) const;
         unsigned int        getClientMaxBodySize(void) const;
         intStrMap&          getErrorPages(void);
         vectLocation&       getLocations(void);
+        
 
         bool                isGetAllowed(void) const;
         bool                isPostAllowed(void) const;
@@ -63,6 +65,7 @@ class VirtualServer
         void                setName(std::string name);
         void                setIndex(std::string index);
         void                setClientMaxBodySize(unsigned int value);
+        void                setListen(std::string listen);
 
     private:
 
@@ -71,6 +74,7 @@ class VirtualServer
         void                setRoot(std::string root);
 
         unsigned int        _port;
+        std::string         _listen;
         std::string         _host;
         std::string         _name;
         std::string         _index;

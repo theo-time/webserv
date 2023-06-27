@@ -9,23 +9,27 @@ Request::Request(int clientSocket): clientSocket(clientSocket) {
 
 
 void Request::parseRequest(){
-    std::cout << "Request created" << std::endl;
-
-    // Parse request 
+    std::cout << "--------- REQUEST TO PARSE -------" << std::endl;
+    std::cout << requestString << std::endl;
+    std::cout << "--------- ++++++++++++++++ -------" << std::endl;
+    // Parse first line
+    std::string firstLine = requestString.substr(0, requestString.find("\r\n"));
+    requestString.erase(0, requestString.find("\r\n") + 2);
     std::string delimiter = " ";
     size_t pos = 0;
     std::string token;
     int i = 0;
-    while ((pos = requestString.find(delimiter)) != std::string::npos) {
-        token = requestString.substr(0, pos);
+    while ((pos = firstLine.find(delimiter))) {
+        token = firstLine.substr(0, pos);
         if (i == 0) {
             method = token;
         } else if (i == 1) {
             path = token;
         } else if (i == 2) {
-            protocol = token;
+            protocol = firstLine;
+            break;
         }
-        requestString.erase(0, pos + delimiter.length());
+        firstLine.erase(0, pos + delimiter.length());
         i++;
     }
 
@@ -45,11 +49,37 @@ void Request::parseRequest(){
         path = "/index.html";
     }
 
+    // Parse headers 
+    delimiter = "\r\n";
+    pos = 0;
+    i = 0;
+    while ((pos = requestString.find(delimiter)) != std::string::npos) {
+        token = requestString.substr(0, pos);
+        requestString.erase(0, pos + delimiter.length());
+        std::string delimiter2 = ": ";
+        size_t pos2 = 0;
+        std::string token2;
+        int j = 0;
+        while ((pos2 = token.find(delimiter2)) != std::string::npos) {
+            token2 = token.substr(0, pos2);
+            token.erase(0, pos2 + delimiter2.length());
+            if (j == 0) {
+                headers[token2] = token;
+            }
+            j++;
+        }
+        i++;
+    }
+
+
     // path = root + path;
-    std::cout << " - PARSING COMPLETED -" << method << std::endl;
-    std::cout << "Method: " << method << std::endl;
-    std::cout << "Path: " << path << std::endl;
-    std::cout << "Protocol: " << protocol << std::endl;
+    // std::cout << " - PARSING COMPLETED - " << std::endl;
+    // std::cout << "Method: " << method << std::endl;
+    // std::cout << "Path: " << path << std::endl;
+    // std::cout << "Protocol: " << protocol << std::endl;
+    // std::cout << "Headers: " << std::endl;
+    // for (std::map<std::string, std::string>::iterator it=headers.begin(); it!=headers.end(); ++it)
+    //     std::cout << it->first << " => " << it->second << '\n';
 }
 
 std::string getFileExtension(std::string filename)

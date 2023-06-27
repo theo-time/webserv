@@ -23,23 +23,29 @@
 
 class Request {
     private:
-        int clientSocket;
+        /* Header */
         std::string method;
         std::string path;
         std::string protocol;
         std::string requestString;
         std::string responseString;
         std::string fileContent;
+        std::map<std::string, std::string> headers;
+
         int methodCode;
+        int clientSocket;
         bool cgi_mode;
 
-        VirtualServer       _server;
+        VirtualServer*       _config;
         Response            _response;  
 
     public:
+        /* Constructors & Destructors */
+        Request();
         Request(int clientSocket);
         ~Request();
 
+        /* Getters & Setters */
         int getType();
         std::string getPath();
         std::string getProtocol();
@@ -51,10 +57,11 @@ class Request {
         void setResponseString(std::string &response);
         void setRequestString(std::string &request);
 
+        /* Methods */
+
         void get();
         void post();
         void mdelete();
-
         void parseRequest();
         void handleRequest();
         void buildResponse();

@@ -6,7 +6,7 @@
 /*   By: teliet <teliet@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/13 14:37:03 by adcarnec          #+#    #+#             */
-/*   Updated: 2023/06/27 16:19:03 by teliet           ###   ########.fr       */
+/*   Updated: 2023/06/27 18:28:14 by teliet           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -427,3 +427,45 @@ bool WebServ::isServerSocket(const int& fd)
     }
     return(false);
 }
+
+
+// static void     getRequestConfig(Request& request)
+// {
+//     std::vector <VirtualServer*>    matching_servers;
+//    /* Search matching listen */
+//     std::vector <VirtualServer*>::iterator    it = Config::getVirtualServers().begin();
+//     std::vector <VirtualServer*>::iterator    end = Config::getVirtualServers().end();
+//     while (it != end)
+//     {
+//         if ((*it)->getFd() == request.getClientSocket())
+//             matching_servers.push_back(*it);
+//         it++;
+//     }
+
+//     /* Search matching server_name */
+//     it = matching_servers.begin();
+//     end = matching_servers.end();
+//     while (it != end)
+//     {
+//         if ((*it)->getName() == request.getHost())
+//         {
+//             request.setVirtualServer(*it);
+//             return;
+//         }
+//         it++;
+//     }
+//     /* Search default server */
+//     it = matching_servers.begin();
+//     end = matching_servers.end();
+//     while (it != end)
+//     {
+//         if ((*it)->getName() == "")
+//         {
+//             request.setVirtualServer(*it);
+//             return;
+//         }
+//         it++;
+//     }
+//     /* No matching server found */
+//     request.setVirtualServer(NULL);
+// }
