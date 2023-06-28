@@ -6,7 +6,7 @@
 /*   By: teliet <teliet@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/13 14:37:03 by adcarnec          #+#    #+#             */
-/*   Updated: 2023/06/27 18:28:14 by teliet           ###   ########.fr       */
+/*   Updated: 2023/06/28 12:54:24 by teliet           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -210,14 +210,14 @@ bool WebServ::acceptNewCnx(const int& fd)
         }
         
         add(clientSocket, _master_set_recv);
-        _requests[clientSocket] = new Request(clientSocket);
+        _requests[clientSocket] = new Request(clientSocket, fd);
         std::cout << "  New incoming connection - fd " << clientSocket << std::endl;
     } while (clientSocket != -1);
 
     return(true);
 }
 
-bool WebServ::readRequest(const int &fd, Request &c)
+bool WebServ::readRequest(const int &fd, Request &request)
 {
     std::cout << "  Reading request - fd " << fd << std::endl;
     char        buffer[BUFFER_SIZE];
@@ -225,7 +225,7 @@ bool WebServ::readRequest(const int &fd, Request &c)
     
     buffer[0] = 0;
 
-    std::string request("");
+    std::string requestRawString("");
     while (true)
     {
         rc = recv(fd, buffer, sizeof(buffer), 0);
@@ -246,14 +246,14 @@ bool WebServ::readRequest(const int &fd, Request &c)
             return(true);
         }
         buffer[rc] = 0;
-        request.append(buffer);
+        requestRawString.append(buffer);
     }
 
-    std::cout << "  " << request.size() << " bytes received\n***************\n" << std::endl;
-    c.setRequestString(request);
-    c.parseRequest();
-    // c.getConfig();
-    c.handleRequest();
+    std::cout << "  " << requestRawString.size() << " bytes received\n***************\n" << std::endl;
+    request.setRequestString(requestRawString);
+    request.parseRequest();
+    WebServ::getRequestConfig(request);
+    request.handleRequest();
     memset(buffer, 0, sizeof(buffer)); // TODO ft_memset
     del(fd, _master_set_recv);
 
@@ -429,43 +429,47 @@ bool WebServ::isServerSocket(const int& fd)
 }
 
 
-// static void     getRequestConfig(Request& request)
-// {
-//     std::vector <VirtualServer*>    matching_servers;
-//    /* Search matching listen */
-//     std::vector <VirtualServer*>::iterator    it = Config::getVirtualServers().begin();
-//     std::vector <VirtualServer*>::iterator    end = Config::getVirtualServers().end();
-//     while (it != end)
-//     {
-//         if ((*it)->getFd() == request.getClientSocket())
-//             matching_servers.push_back(*it);
-//         it++;
-//     }
+void     WebServ::getRequestConfig(Request& request)
+{
+    std::cout << "------- Config Routing ----------" << std::endl;
 
-//     /* Search matching server_name */
-//     it = matching_servers.begin();
-//     end = matching_servers.end();
-//     while (it != end)
-//     {
-//         if ((*it)->getName() == request.getHost())
-//         {
-//             request.setVirtualServer(*it);
-//             return;
-//         }
-//         it++;
-//     }
-//     /* Search default server */
-//     it = matching_servers.begin();
-//     end = matching_servers.end();
-//     while (it != end)
-//     {
-//         if ((*it)->getName() == "")
-//         {
-//             request.setVirtualServer(*it);
-//             return;
-//         }
-//         it++;
-//     }
-//     /* No matching server found */
-//     request.setVirtualServer(NULL);
-// }
+    std::cout << "request socket fd :" << request.getServerSocket() << std::endl;
+    
+    std::vector <VirtualServer*>    matching_servers;
+   /* Search matching socket */
+    std::vector <VirtualServer*>::iterator    it = Config::getVirtualServers().begin();
+    std::vector <VirtualServer*>::iterator    end = Config::getVirtualServers().end();
+    while (it != end)
+    {
+        std::cout << "server socket fd :" << (*it)->getFd() << std::endl;
+        if ((*it)->getFd() == request.getServerSocket())
+            matching_servers.push_back(*it);
+        it++;
+    }
+    std::cout << "Matching servers by socket : " << matching_servers.size() << std::endl;
+    if(matching_servers.size() == 0)
+    {
+        std::cout << "No matching server found" << std::endl;
+        std::cout << "|-------- End of Config Routing ---------|" << std::endl;
+        request.setConfig(NULL);
+        return;
+    }
+    
+    /* Search matching server_name */
+    it = matching_servers.begin();
+    end = matching_servers.end();
+    request.setConfig(*it); // First by default
+    while (it != end)
+    {
+        if ((*it)->getName() == request.getHeader("Host"))
+        {
+            request.setConfig(*it);
+            return;
+        }
+        it++;
+    }
+    std::cout << "Matching servers by name : " << matching_servers.size() << std::endl;
+    
+    std::cout << "|-------- End of Config Routing ---------|" << std::endl;
+    // TODO : throw error
+}

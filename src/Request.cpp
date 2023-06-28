@@ -3,7 +3,7 @@
 #include <fstream>
 
 
-Request::Request(int clientSocket): clientSocket(clientSocket) {
+Request::Request(int clientSocket, int serverSocket) : clientSocket(clientSocket), serverSocket(serverSocket) {
     std::cout << "Request created" << std::endl;
 }
 
@@ -250,11 +250,27 @@ int Request::getClientSocket() {
     return clientSocket;
 }
 
+int Request::getServerSocket() {
+    return serverSocket;
+}
+
 std::string Request::getResponseString() {
     return _response.getResponse();
 }
 
+std::string Request::getHeader(std::string key) {
+    return headers[key];
+}
+
+VirtualServer* Request::getConfig() {
+    return _config;
+}
+
 // SETTERS 
+
+void Request::setConfig(VirtualServer* config) {
+    _config = config;
+}
 
 void Request::setFileContent(std::string &fc)
 {

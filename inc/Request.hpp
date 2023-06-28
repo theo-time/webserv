@@ -33,16 +33,17 @@ class Request {
         std::map<std::string, std::string> headers;
 
         int methodCode;
-        int clientSocket;
         bool cgi_mode;
 
         VirtualServer*       _config;
         Response            _response;  
+        int clientSocket;
+        int serverSocket;
 
     public:
         /* Constructors & Destructors */
         Request();
-        Request(int clientSocket);
+        Request(int clientSocket, int serverSocket);
         ~Request();
 
         /* Getters & Setters */
@@ -52,10 +53,14 @@ class Request {
         std::string getMethod();
         std::string getRequestString();
         int         getClientSocket();
+        int         getServerSocket();
         std::string getResponseString();
+        std::string getHeader(std::string key);
+        VirtualServer* getConfig();
         void setFileContent(std::string &fileContent);
         void setResponseString(std::string &response);
         void setRequestString(std::string &request);
+        void setConfig(VirtualServer* config);
 
         /* Methods */
 
