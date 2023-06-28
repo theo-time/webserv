@@ -8,6 +8,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <fstream>
+#include "CGI.hpp"
 
 // TYPES 
 #define GET 1

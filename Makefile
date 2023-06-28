@@ -3,16 +3,16 @@
 #                                                         :::      ::::::::    #
 #    Makefile                                           :+:      :+:    :+:    #
 #                                                     +:+ +:+         +:+      #
-#    By: teliet <teliet@student.42.fr>              +#+  +:+       +#+         #
+#    By: jde-la-f <jde-la-f@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2022/09/29 20:41:39 by teliet            #+#    #+#              #
-#    Updated: 2023/06/13 16:35:11 by teliet           ###   ########.fr        #
+#    Updated: 2023/06/28 10:46:41 by jde-la-f         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
 NAME = webserv 
 
-SRC = main.cpp Request.cpp 
+SRC = main.cpp Request.cpp CGI.cpp
 
 OBJ = $(SRC:.cpp=.o)
 
@@ -20,7 +20,7 @@ CC = c++
 
 HEADERS = -I ./
 
-FLAGS = -Wall -Wextra -Werror -std=c++98
+FLAGS = -Wall -Wextra -Werror -std=c++98 -g
 
 
 all: ${NAME}

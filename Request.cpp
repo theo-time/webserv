@@ -1,5 +1,7 @@
 #include "Request.hpp"
 #include <fstream>
+#include <sys/wait.h>
+
 
 std::string getFileExtension(const std::string& url)
 {
@@ -16,7 +18,6 @@ std::string getFileExtension(const std::string& url)
 
     return extension;
 }
-
 
 Request::Request(int clientSocket, std::string request): clientSocket(clientSocket), request(request) {
     std::cout << "Request created" << std::endl;
@@ -39,60 +40,11 @@ Request::Request(int clientSocket, std::string request): clientSocket(clientSock
         i++;
     }
 
-    extension = getFileExtension(path);
-    const char* scriptPath = "script.py";
-    const char* argv[] = { "python", scriptPath, nullptr };
-    const char* envp[] = { nullptr };
+    CGI cgi;
 
+    cgi.executeCGI();
 
-    int pipefd[2];
-    if (pipe(pipefd) == -1)
-    {
-        perror("pipe failed");
-    }
-
-    pid_t pid = fork(); // Fork the process
-
-    if (pid == -1)
-    {
-        perror("fork failed");
-    }
-    else if (pid == 0)  // Child process
-    {
-        close(pipefd[0]); // Close the read end of the pipe
-
-        // Redirect stdout to the write end of the pipe
-        dup2(pipefd[1], STDOUT_FILENO);
-        close(pipefd[1]);
-        execve("/usr/bin/python3", const_cast<char**>(argv), const_cast<char**>(envp));
-        perror("execve failed");
-    }
-    else {  // Parent process
-        close(pipefd[1]); // Close the write end of the pipe
-
-        // Read the output from the child process
-        char buffer[4096];
-        ssize_t bytesRead;
-
-        while ((bytesRead = read(pipefd[0], buffer, sizeof(buffer))) > 0)
-        {
-            outputCGI.append(buffer, bytesRead);
-        }
-
-        close(pipefd[0]); // Close the read end of the pipe
-
-        int status;
-        waitpid(pid, &status, 0); // Wait for the child process to finish
-
-        if (WIFEXITED(status) == 0)
-        {
-            std::cout << "Script output:\n" << outputCGI << std::endl;
-        }
-        else
-        {
-            std::cout << "Child process terminated abnormally" << std::endl;
-        }
-    }
+    outputCGI = cgi.getOutputCGI();
 
     // verify path
     if (path == "/") {
@@ -139,7 +91,7 @@ void Request::prepareResponse()
 
 
     // Build response
-    if (extension == "py") {
+    if (getFileExtension("script.py") == "py") {
         response = "HTTP/1.1 200 OK\r\n" + outputCGI;
     }
     else {

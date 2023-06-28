@@ -14,6 +14,19 @@
 #include <cstring>
 #include <sstream>
 #include <sys/wait.h>
+#include <iostream>
+#include <unistd.h>
+#include <fstream>
+#include <cstring>
+#include <sstream>
+#include <sys/wait.h>
+#include <cstdlib>
+#include <string>
+#include <unistd.h>
+#include <stdexcept>
+#include <string>
+#include <cstdlib>
+#include <iostream>
 
 class CGI {
     private:
@@ -26,13 +39,14 @@ class CGI {
         std::string path;
 
     public:
-        CGI(Request *, const std::string &, const std::string& exec = "");
+        CGI();
 		~CGI();
 	
 	
 	/* ===================================================================
 	 ======================= PUBLIC METHODS ============================*/
 		void executeCGI();
+        std::string getOutputCGI();
 };
 
 #endif

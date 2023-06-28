@@ -1,22 +1,8 @@
 #include "CGI.hpp"
+#include <string>
+#include <iostream>
 
-std::string getFileExtension(const std::string& url)
-{
-    // Find the position of the last dot in the URL
-    size_t dotPos = url.rfind('.');
-    if (dotPos == std::string::npos)
-    {
-        // No dot found, return empty string or handle error
-        return "";
-    }
-
-    // Extract the substring starting from the dot position
-    std::string extension = url.substr(dotPos + 1);
-
-    return extension;
-}
-
-CGI::CGI(Request *req, const std::string &realUri, const std::string& exec)
+CGI::CGI()
 {	
 	std::string tmpBuf;
 	
@@ -24,8 +10,8 @@ CGI::CGI(Request *req, const std::string &realUri, const std::string& exec)
 	if (!(pwd = getcwd(NULL, 0)))
 		throw std::runtime_error("Error in getcwd command in cgi constructor\n");
 
-	_realUri = pwd + ("/" + realUri);
-	_exec = _realUri;
+	_realUri = std::string(pwd) + "/script.py";
+	_exec = std::string("/usr/bin/python3");
 
     // TEST FOR req = GET
     int _req_meth = GET;
@@ -45,6 +31,8 @@ CGI::CGI(Request *req, const std::string &realUri, const std::string& exec)
 	_envvar[i++] = strdup("SERVER_PROTOCOL=HTTP/1.1");
 	_envvar[i++] = strdup("REDIRECT_STATUS=200");
 	
+    std::cout << "STILL ALIVE\n" << outputCGI << std::endl;
+
 	if (_req_meth == GET){
 
         /*
@@ -60,18 +48,19 @@ CGI::CGI(Request *req, const std::string &realUri, const std::string& exec)
         /*
         if (!_exec.compare("php-cgi"))
             _envvar[i++] = strdup("REQUEST_METHOD=POST");*/	
-		
-		std::string contentLength = std::to_string(_req_body.size());
-        std::string tmpBuf = "CONTENT_LENGTH=" + contentLength;
+		std::stringstream intToString;
+		intToString << _req_body.size();
+        std::string tmpBuf = "CONTENT_LENGTH=" + intToString.str();
         _envvar[i++] = strdup(tmpBuf.c_str());
 	}
 	
 	_envvar[i++] = NULL;
+    if ((_args = new char*[3]) == NULL)
+		throw std::runtime_error("Error on a cgi malloc\n");
 
 	_args[0] = strdup(_exec.c_str());
 	_args[1] = strdup(_realUri.c_str());
 	_args[2] = NULL;
-	
 }
 
 CGI::~CGI()
@@ -89,11 +78,6 @@ CGI::~CGI()
 
 void CGI::executeCGI()
 {
-    extension = getFileExtension(path);
-    const char* scriptPath = "script.py";
-    const char* argv[] = { "python", scriptPath, nullptr };
-    const char* envp[] = { nullptr };
-
 
     int pipefd[2];
     if (pipe(pipefd) == -1)
@@ -114,7 +98,7 @@ void CGI::executeCGI()
         // Redirect stdout to the write end of the pipe
         dup2(pipefd[1], STDOUT_FILENO);
         close(pipefd[1]);
-        execve("/usr/bin/python3", const_cast<char**>(argv), const_cast<char**>(envp));
+        execve(_args[0], _args, _envvar);
         perror("execve failed");
     }
     else {  // Parent process
@@ -145,3 +129,6 @@ void CGI::executeCGI()
     }
 }
 
+std::string CGI::getOutputCGI() {
+    return outputCGI;
+}
