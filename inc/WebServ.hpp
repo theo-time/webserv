@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   WebServ.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: teliet <teliet@student.42.fr>              +#+  +:+       +#+        */
+/*   By: jde-la-f <jde-la-f@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/13 14:37:16 by adcarnec          #+#    #+#             */
-/*   Updated: 2023/06/27 17:31:39 by teliet           ###   ########.fr       */
+/*   Updated: 2023/06/29 18:27:29 by jde-la-f         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -45,6 +45,9 @@ class WebServ
         static bool                                 runListeners(void);
         static void                                 getRessource(const std::string& path, Request& c);
         static void                                 stop(void);
+        static void                                 add(const int& fd, fd_set& set);
+        static fd_set                               & getMasterSetWrite();
+        static void                                 addResponseToQueue(Request *request);
 
     private:
 
@@ -64,7 +67,6 @@ class WebServ
         static bool                                 sendResponse(const int& fd, Request& c);
         static bool                                 isServerSocket(const int& fd);
         static bool                                 isListedRessource(const std::string& path);
-        static void                                 add(const int& fd, fd_set& set);
         static void                                 del(const int& fd, fd_set& set);
         static void                                 closeCnx(const int& fd);
         static void                                 getRequestConfig(Request& c);

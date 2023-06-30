@@ -1,4 +1,5 @@
 #include "Request.hpp"
+#include "CGI.hpp"
 
 #include <fstream>
 
@@ -203,9 +204,16 @@ void Request::handleRequest()
     std::cout << "Handle request" << std::endl;
     std::string fileContent;
 
-    if(cgi_mode)
+    if(0)
     {
-        
+        CGI cgi;
+
+        cgi.executeCGI();
+
+        responseString = cgi.getOutputCGI();
+        std::cout << responseString << std::endl;
+        WebServ::addResponseToQueue(this);
+        return;
     }
 
     // Read file (add "." before path to read from current directory)

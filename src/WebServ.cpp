@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   WebServ.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: teliet <teliet@student.42.fr>              +#+  +:+       +#+        */
+/*   By: jde-la-f <jde-la-f@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/13 14:37:03 by adcarnec          #+#    #+#             */
-/*   Updated: 2023/06/28 12:54:24 by teliet           ###   ########.fr       */
+/*   Updated: 2023/06/29 18:26:59 by jde-la-f         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -358,10 +358,15 @@ bool WebServ::isListedRessource(const std::string& path)
     return(false);
 }
 
+void WebServ::addResponseToQueue(Request *request)
+{
+    add(request->getClientSocket(), _master_set_write);
+}
 
 void WebServ::add(const int& fd, fd_set& set)
 {
     FD_SET(fd, &set);
+    std::cout << "fd:" << fd << std::endl;
 
     if (fd > _max_fd)
         _max_fd = fd;
@@ -472,4 +477,8 @@ void     WebServ::getRequestConfig(Request& request)
     
     std::cout << "|-------- End of Config Routing ---------|" << std::endl;
     // TODO : throw error
+}
+
+fd_set &    WebServ::getMasterSetWrite() {
+    return(_master_set_write);
 }

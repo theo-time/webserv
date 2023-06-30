@@ -3,10 +3,10 @@
 #                                                         :::      ::::::::    #
 #    Makefile                                           :+:      :+:    :+:    #
 #                                                     +:+ +:+         +:+      #
-#    By: teliet <teliet@student.42.fr>              +#+  +:+       +#+         #
+#    By: jde-la-f <jde-la-f@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2023/06/13 14:36:41 by adcarnec          #+#    #+#              #
-#    Updated: 2023/06/28 12:31:39 by teliet           ###   ########.fr        #
+#    Updated: 2023/06/29 17:55:04 by jde-la-f         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -14,7 +14,8 @@ NAME		=	webserv
 CC			=	c++
 FLAGS		=	-Wall -Wextra -Werror -std=c++98 -g3
 SRC			=	./src/main.cpp ./src/Config.cpp ./src/WebServ.cpp \
-				./src/VirtualServer.cpp ./src/Request.cpp ./src/Location.cpp ./src/Response.cpp 
+				./src/VirtualServer.cpp ./src/Request.cpp ./src/Location.cpp ./src/Response.cpp \
+				./src/CGI.cpp
 OBJ			=	$(SRC:.cpp=.o)
 INC			=	./inc/*.hpp
 INC_PATH	=	./inc/
