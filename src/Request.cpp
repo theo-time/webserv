@@ -204,7 +204,9 @@ void Request::handleRequest()
     std::cout << "Handle request" << std::endl;
     std::string fileContent;
 
-    if(0)
+    //std::cout << getFileExtension(path) << std::endl;
+
+    if((getFileExtension(path) == "py") && (methodCode == GET || methodCode == POST))
     {
         CGI cgi;
 
