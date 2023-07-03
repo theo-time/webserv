@@ -208,21 +208,12 @@ void Request::handleRequest()
 
     if((getFileExtension(path) == "py") && (methodCode == GET || methodCode == POST))
     {
-        CGI cgi;
+        CGI cgi(path);
+        std::cout << "PATH :" << path << std::endl;
 
         cgi.executeCGI();
-
-        //responseString = "HTTP/1.1 200 OK \r\n" + cgi.getOutputCGI();
-        _response.setStatusCode("200");
-        _response.setStatusText("OK");
-        _response.setContentType("text/html");
-        _response.setProtocol("HTTP/1.1");
-        _response.setBody(cgi.getOutputCGI());
-        _response.buildHeader();
-        _response.buildResponse();
-        //std::cout << "getResponseString = " << getResponseString() << std::endl;
+        _response = cgi.getResponseCGI();
         WebServ::addCGIResponseToQueue(this);
-
         return;
     }
 

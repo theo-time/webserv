@@ -27,6 +27,7 @@
 #include <string>
 #include <cstdlib>
 #include <iostream>
+# include "Response.hpp"
 
 class CGI {
     private:
@@ -38,15 +39,17 @@ class CGI {
         std::string outputCGI;
         std::string path;
 
+        Response            _response;
+
     public:
-        CGI();
+        CGI(std::string);
 		~CGI();
 	
 	
 	/* ===================================================================
 	 ======================= PUBLIC METHODS ============================*/
 		void executeCGI();
-        std::string getOutputCGI();
+        Response getResponseCGI();
 };
 
 #endif

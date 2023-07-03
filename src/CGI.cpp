@@ -2,7 +2,7 @@
 #include <string>
 #include <iostream>
 
-CGI::CGI()
+CGI::CGI(std::string str)
 {	
 	std::string tmpBuf;
 	
@@ -10,7 +10,7 @@ CGI::CGI()
 	if (!(pwd = getcwd(NULL, 0)))
 		throw std::runtime_error("Error in getcwd command in cgi constructor\n");
 
-	_realUri = std::string(pwd) + "/script.py";
+	_realUri = std::string(pwd) + str;
 	_exec = std::string("/usr/bin/python3");
 
     // TEST FOR req = GET
@@ -116,17 +116,16 @@ void CGI::executeCGI()
         int status;
         waitpid(pid, &status, 0); // Wait for the child process to finish
 
-        // if (WIFEXITED(status) == 0)
-        // {
-        //     std::cout << "Script output:\n" << outputCGI << std::endl;
-        // }
-        // else
-        // {
-        //     std::cout << "Child process terminated abnormally" << std::endl;
-        // }
+        _response.setStatusCode("200");
+        _response.setStatusText("OK");
+        _response.setContentType("text/html");
+        _response.setProtocol("HTTP/1.1");
+        _response.setBody(outputCGI);
+        _response.buildHeader();
+        _response.buildResponse();
     }
 }
 
-std::string CGI::getOutputCGI() {
-    return outputCGI;
+Response CGI::getResponseCGI() {
+    return _response;
 }
