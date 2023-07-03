@@ -2,28 +2,35 @@
 import cgi
 import os
 
-# Set the upload folder
-UPLOAD_FOLDER = '/tmp'
-
-# Create an instance of the FieldStorage class to get the uploaded file
+# Create an instance of the FieldStorage class to parse the request
 form = cgi.FieldStorage()
 
-# Check if the file field is present in the form
-if 'filename' not in form:
-    print("No file uploaded")
+# Get the uploaded file object
+file_item = form['filename']
+
+# Check if the file was successfully uploaded
+if file_item.file:
+    # Specify the desired location to save the uploaded file
+    file_path = '/' + os.path.basename(file_item.filename)
+
+    # Save the uploaded file to the specified location
+    with open(file_path, 'wb') as file:
+        file.write(file_item.file.read())
+
+    # Generate a response indicating a successful upload
+    print('Content-Type: text/html')
+    print()
+    print('<html>')
+    print('<body>')
+    print('<h1>File Upload Successful!</h1>')
+    print('</body>')
+    print('</html>')
 else:
-    fileitem = form['filename']
-
-    # Check if the file was uploaded successfully
-    if fileitem.filename:
-        # Get the filename and path
-        filename = os.path.basename(fileitem.filename)
-        filepath = os.path.join(UPLOAD_FOLDER, filename)
-
-        # Save the file to the upload folder
-        with open(filepath, 'wb') as f:
-            f.write(fileitem.file.read())
-
-        print("File uploaded successfully")
-    else:
-        print("No file uploaded")
+    # Generate a response indicating a failed upload
+    print('Content-Type: text/html')
+    print()
+    print('<html>')
+    print('<body>')
+    print('<h1>File Upload Failed!</h1>')
+    print('</body>')
+    print('</html>')

@@ -12,6 +12,7 @@ Request::Request(int clientSocket, int serverSocket) : clientSocket(clientSocket
 void Request::parseRequest(){
     std::cout << "--------- REQUEST TO PARSE -------" << std::endl;
     std::cout << requestString << std::endl;
+    requestString2 = requestString;
     std::cout << "--------- ++++++++++++++++ -------" << std::endl;
     // Parse first line
     std::string firstLine = requestString.substr(0, requestString.find("\r\n"));
@@ -39,6 +40,7 @@ void Request::parseRequest(){
         methodCode = 1;
     } else if (method == "POST") {
         methodCode = 2;
+        retrieveHeaderAndBody(requestString2);
     } else if (method == "DELETE") {
         methodCode = 3;
     } else {
@@ -82,6 +84,48 @@ void Request::parseRequest(){
     // for (std::map<std::string, std::string>::iterator it=headers.begin(); it!=headers.end(); ++it)
     //     std::cout << it->first << " => " << it->second << '\n';
 }
+
+void Request::retrieveHeaderAndBody(const std::string& input) {
+    std::string boundaryPrefix = "boundary=";
+    size_t startPos = input.find(boundaryPrefix);
+    if (startPos == std::string::npos) {
+        // "boundary" identifier not found
+        return;
+    }
+
+    startPos += boundaryPrefix.length();
+    size_t endPos = input.find_first_of("\r\n", startPos);
+
+    if (endPos == std::string::npos) {
+        // Line break not found
+        return;
+    }
+
+    std::string boundaryValue = input.substr(startPos, endPos - startPos);
+    boundaryValue = "--" + boundaryValue;
+
+    std::cout << "boundaryValue :" << boundaryValue << std::endl;
+
+    // Find the start and end positions of the body
+    std::string bodyStart = boundaryValue;
+    size_t bodyStartPos = input.find(bodyStart);
+    if (bodyStartPos == std::string::npos) {
+        std::cout << "BODY START NOT FOUND" << std::endl;
+        return;
+    }
+
+    bodyStartPos += bodyStart.length();
+    size_t bodyEndPos = input.find(boundaryValue + "--", bodyStartPos);
+    if (bodyEndPos == std::string::npos) {
+        std::cout << "BODY END NOT FOUND" << std::endl;
+        return;
+    }
+
+    // Extract the header and body
+    header = input.substr(0, bodyStartPos - bodyStart.length());
+    body = input.substr(bodyStartPos, bodyEndPos - bodyStartPos);
+}
+
 
 std::string getFileExtension(std::string filename)
 {
@@ -208,8 +252,14 @@ void Request::handleRequest()
 
     if((getFileExtension(path) == "py") && (methodCode == GET || methodCode == POST))
     {
+        if (methodCode == POST){
+            retrieveHeaderAndBody(requestString2);
+        }
+
         CGI cgi(path);
         std::cout << "PATH :" << path << std::endl;
+
+        std::cout << "BODY :" << body << std::endl;
 
         cgi.executeCGI();
         _response = cgi.getResponseCGI();
