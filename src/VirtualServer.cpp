@@ -124,7 +124,7 @@ void VirtualServer::setLocationsConf(strQueue conf)
             continue;
         }
 
-        _locations.push_back(new Location(name, conf));
+        _locations.push_back(new Location(name, _root, _index, _allowGet, _allowPost, _allowDel, _clientMaxBodySize, _errorPages, conf));
         _tmpLocationsConf.pop();
     }
 }
