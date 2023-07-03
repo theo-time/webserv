@@ -181,6 +181,8 @@ Request::~Request() {
 
 void Request::get() 
 {
+    std::cout << "GET" << std::endl;
+    std::cout << "Path: " << path << std::endl;
     std::ifstream my_file(path.c_str());
     if (!my_file.good())
     {
@@ -241,9 +243,22 @@ void Request::mdelete()
 
 void Request::handleRequest() 
 {
+    // --------- PATH PARSING ---------
 
     // Conf file variables
-    std::string root = "/mnt/nfs/homes/teliet/dev/web_serv";
+    std::string root = _config->getRoot(); 
+    std::string index = _config->getIndex();
+
+    // add root to path 
+    path = "." + root + path;
+
+    // If path is a directory, add default index name to path
+    if (path[path.length() - 1] == '/') {
+        path = path + index;
+    }
+
+    std::cout << "Effective path: " << path << std::endl;
+    // --------- END OF PATH PARSING ---------
 
     std::cout << "Handle request" << std::endl;
     std::string fileContent;
@@ -266,9 +281,6 @@ void Request::handleRequest()
         WebServ::addCGIResponseToQueue(this);
         return;
     }
-
-    // Read file (add "." before path to read from current directory)
-    path = "." + path; // TODO : add root to path
 
     // Method routing
     if (methodCode == GET)

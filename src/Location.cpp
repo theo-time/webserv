@@ -15,8 +15,20 @@
 typedef std::queue<std::string>         strQueue;
 typedef std::map<int, std::string>      intStrMap;
 
-Location::Location(const std::string& name, const std::string& conf) :
-_name(name), _type("std"), _autoIndex(false), _allowGet(false), _allowPost(false), _allowDel(false), _clientMaxBodySize(Config::getClientMaxBodySize())
+Location::Location(const std::string& name, const std::string& root, const std::string& index, 
+            const bool allowGet, const bool allowPost, const bool allowDel, 
+            const unsigned int clientMaxBodySize, const intStrMap errorPages) :
+_name(name), _type("std"), _root(root), _index(index), 
+_autoIndex(false), _allowGet(allowGet), _allowPost(allowPost), _allowDel(allowDel), 
+_clientMaxBodySize(clientMaxBodySize), _errorPages(errorPages)
+{}
+
+Location::Location(const std::string& name, const std::string& root, const std::string& index, 
+            const bool allowGet, const bool allowPost, const bool allowDel, 
+            const unsigned int clientMaxBodySize, const intStrMap errorPages, const std::string& conf)  :
+_name(name), _type("std"), _root(root), _index(index), 
+_autoIndex(false), _allowGet(allowGet), _allowPost(allowPost), _allowDel(allowDel), 
+_clientMaxBodySize(clientMaxBodySize), _errorPages(errorPages)
 {
     std::string     tmpLine = conf;
     strQueue        tmpVars;
