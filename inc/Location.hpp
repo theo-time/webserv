@@ -28,7 +28,12 @@ class Location
         typedef std::queue<std::string>         strQueue;
         typedef std::map<int, std::string>      intStrMap;
 
-        Location(const std::string& name, const std::string& conf);
+        Location(const std::string& name, const std::string& root, const std::string& index, 
+            const bool allowGet, const bool allowPost, const bool allowDel, 
+            const unsigned int clientMaxBodySize, const intStrMap errorPages);
+        Location(const std::string& name, const std::string& root, const std::string& index, 
+            const bool allowGet, const bool allowPost, const bool allowDel, 
+            const unsigned int clientMaxBodySize, const intStrMap errorPages, const std::string& conf);
         ~Location(void);
         
         Location& operator=(const Location& rhs);
