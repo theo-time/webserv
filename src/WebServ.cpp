@@ -358,9 +358,25 @@ bool WebServ::isListedRessource(const std::string& path)
     return(false);
 }
 
-void WebServ::addResponseToQueue(Request *request)
+void WebServ::addCGIResponseToQueue(Request *request)
 {
+
     add(request->getClientSocket(), _master_set_write);
+
+    // add(request->getClientSocket(), _master_set_write);
+    /*
+    cliStrMap::iterator     it = _reqRessources.begin();
+    while (it != _reqRessources.end())
+    {
+        if (it->second == _fdRessources[fd])
+        {
+            it->first->setFileContent(fileContent);
+            it->first->buildResponse();
+            add(it->first->getClientSocket(), _master_set_write);
+        }
+        it++;
+    }
+    */
 }
 
 void WebServ::add(const int& fd, fd_set& set)

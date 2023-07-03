@@ -212,9 +212,17 @@ void Request::handleRequest()
 
         cgi.executeCGI();
 
-        responseString = cgi.getOutputCGI();
-        std::cout << responseString << std::endl;
-        WebServ::addResponseToQueue(this);
+        //responseString = "HTTP/1.1 200 OK \r\n" + cgi.getOutputCGI();
+        _response.setStatusCode("200");
+        _response.setStatusText("OK");
+        _response.setContentType("text/html");
+        _response.setProtocol("HTTP/1.1");
+        _response.setBody(cgi.getOutputCGI());
+        _response.buildHeader();
+        _response.buildResponse();
+        //std::cout << "getResponseString = " << getResponseString() << std::endl;
+        WebServ::addCGIResponseToQueue(this);
+
         return;
     }
 

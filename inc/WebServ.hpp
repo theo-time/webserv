@@ -47,7 +47,7 @@ class WebServ
         static void                                 stop(void);
         static void                                 add(const int& fd, fd_set& set);
         static fd_set                               & getMasterSetWrite();
-        static void                                 addResponseToQueue(Request *request);
+        static void                                 addCGIResponseToQueue(Request *request);
 
     private:
 

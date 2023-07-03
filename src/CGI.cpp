@@ -30,8 +30,6 @@ CGI::CGI()
 	_envvar[i++] = strdup(("PATH_INFO=" + _realUri).c_str());
 	_envvar[i++] = strdup("SERVER_PROTOCOL=HTTP/1.1");
 	_envvar[i++] = strdup("REDIRECT_STATUS=200");
-	
-    std::cout << "STILL ALIVE\n" << outputCGI << std::endl;
 
 	if (_req_meth == GET){
 
@@ -118,14 +116,14 @@ void CGI::executeCGI()
         int status;
         waitpid(pid, &status, 0); // Wait for the child process to finish
 
-        if (WIFEXITED(status) == 0)
-        {
-            std::cout << "Script output:\n" << outputCGI << std::endl;
-        }
-        else
-        {
-            std::cout << "Child process terminated abnormally" << std::endl;
-        }
+        // if (WIFEXITED(status) == 0)
+        // {
+        //     std::cout << "Script output:\n" << outputCGI << std::endl;
+        // }
+        // else
+        // {
+        //     std::cout << "Child process terminated abnormally" << std::endl;
+        // }
     }
 }
 
