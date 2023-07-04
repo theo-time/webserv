@@ -28,6 +28,9 @@ class Request {
         std::string path;
         std::string protocol;
         std::string requestString;
+        std::string requestString2;
+        std::string header;
+        std::string body;
         std::string responseString;
         std::string fileContent;
         std::map<std::string, std::string> headers;
@@ -71,6 +74,7 @@ class Request {
         void handleRequest();
         void buildResponse();
         bool fileExists();
+        void retrieveHeaderAndBody(const std::string& input);
 };
 
 #endif
