@@ -12,7 +12,7 @@
 #include <string>
 
 # include "WebServ.hpp"
-# include "VirtualServer.hpp"
+# include "Location.hpp"
 # include "Response.hpp"
 
 // TYPES 
@@ -28,6 +28,9 @@ class Request {
         std::string path;
         std::string protocol;
         std::string requestString;
+        std::string requestString2;
+        std::string header;
+        std::string body;
         std::string responseString;
         std::string fileContent;
         std::map<std::string, std::string> headers;
@@ -35,7 +38,7 @@ class Request {
         int methodCode;
         bool cgi_mode;
 
-        VirtualServer*       _config;
+        Location*       _config;
         Response            _response;  
         int clientSocket;
         int serverSocket;
@@ -56,11 +59,11 @@ class Request {
         int         getServerSocket();
         std::string getResponseString();
         std::string getHeader(std::string key);
-        VirtualServer* getConfig();
+        Location* getConfig();
         void setFileContent(std::string &fileContent);
         void setResponseString(std::string &response);
         void setRequestString(std::string &request);
-        void setConfig(VirtualServer* config);
+        void setConfig(Location* config);
 
         /* Methods */
 
@@ -71,6 +74,7 @@ class Request {
         void handleRequest();
         void buildResponse();
         bool fileExists();
+        void retrieveHeaderAndBody(const std::string& input);
 };
 
 #endif

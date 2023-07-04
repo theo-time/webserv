@@ -12,6 +12,7 @@ Request::Request(int clientSocket, int serverSocket) : clientSocket(clientSocket
 void Request::parseRequest(){
     std::cout << "--------- REQUEST TO PARSE -------" << std::endl;
     std::cout << requestString << std::endl;
+    requestString2 = requestString;
     std::cout << "--------- ++++++++++++++++ -------" << std::endl;
     // Parse first line
     std::string firstLine = requestString.substr(0, requestString.find("\r\n"));
@@ -39,6 +40,7 @@ void Request::parseRequest(){
         methodCode = 1;
     } else if (method == "POST") {
         methodCode = 2;
+        retrieveHeaderAndBody(requestString2);
     } else if (method == "DELETE") {
         methodCode = 3;
     } else {
@@ -82,6 +84,48 @@ void Request::parseRequest(){
     // for (std::map<std::string, std::string>::iterator it=headers.begin(); it!=headers.end(); ++it)
     //     std::cout << it->first << " => " << it->second << '\n';
 }
+
+void Request::retrieveHeaderAndBody(const std::string& input) {
+    std::string boundaryPrefix = "boundary=";
+    size_t startPos = input.find(boundaryPrefix);
+    if (startPos == std::string::npos) {
+        // "boundary" identifier not found
+        return;
+    }
+
+    startPos += boundaryPrefix.length();
+    size_t endPos = input.find_first_of("\r\n", startPos);
+
+    if (endPos == std::string::npos) {
+        // Line break not found
+        return;
+    }
+
+    std::string boundaryValue = input.substr(startPos, endPos - startPos);
+    boundaryValue = "--" + boundaryValue;
+
+    std::cout << "boundaryValue :" << boundaryValue << std::endl;
+
+    // Find the start and end positions of the body
+    std::string bodyStart = boundaryValue;
+    size_t bodyStartPos = input.find(bodyStart);
+    if (bodyStartPos == std::string::npos) {
+        std::cout << "BODY START NOT FOUND" << std::endl;
+        return;
+    }
+
+    bodyStartPos += bodyStart.length();
+    size_t bodyEndPos = input.find(boundaryValue + "--", bodyStartPos);
+    if (bodyEndPos == std::string::npos) {
+        std::cout << "BODY END NOT FOUND" << std::endl;
+        return;
+    }
+
+    // Extract the header and body
+    header = input.substr(0, bodyStartPos - bodyStart.length());
+    body = input.substr(bodyStartPos, bodyEndPos - bodyStartPos);
+}
+
 
 std::string getFileExtension(std::string filename)
 {
@@ -137,6 +181,8 @@ Request::~Request() {
 
 void Request::get() 
 {
+    std::cout << "GET" << std::endl;
+    std::cout << "Path: " << path << std::endl;
     std::ifstream my_file(path.c_str());
     if (!my_file.good())
     {
@@ -197,9 +243,22 @@ void Request::mdelete()
 
 void Request::handleRequest() 
 {
+    // --------- PATH PARSING ---------
 
     // Conf file variables
-    std::string root = "/mnt/nfs/homes/teliet/dev/web_serv";
+    std::string root = _config->getRoot(); 
+    std::string index = _config->getIndex();
+
+    // add root to path 
+    path = "." + root + path;
+
+    // If path is a directory, add default index name to path
+    if (path[path.length() - 1] == '/') {
+        path = path + index;
+    }
+
+    std::cout << "Effective path: " << path << std::endl;
+    // --------- END OF PATH PARSING ---------
 
     std::cout << "Handle request" << std::endl;
     std::string fileContent;
@@ -208,17 +267,20 @@ void Request::handleRequest()
 
     if((getFileExtension(path) == "py") && (methodCode == GET || methodCode == POST))
     {
+        if (methodCode == POST){
+            retrieveHeaderAndBody(requestString2);
+        }
+
         CGI cgi(path);
         std::cout << "PATH :" << path << std::endl;
+
+        std::cout << "BODY :" << body << std::endl;
 
         cgi.executeCGI();
         _response = cgi.getResponseCGI();
         WebServ::addCGIResponseToQueue(this);
         return;
     }
-
-    // Read file (add "." before path to read from current directory)
-    path = "." + path; // TODO : add root to path
 
     // Method routing
     if (methodCode == GET)
@@ -271,13 +333,13 @@ std::string Request::getHeader(std::string key) {
     return headers[key];
 }
 
-VirtualServer* Request::getConfig() {
+Location* Request::getConfig() {
     return _config;
 }
 
 // SETTERS 
 
-void Request::setConfig(VirtualServer* config) {
+void Request::setConfig(Location* config) {
     _config = config;
 }
 

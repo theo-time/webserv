@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   WebServ.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jde-la-f <jde-la-f@student.42.fr>          +#+  +:+       +#+        */
+/*   By: teliet <teliet@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/13 14:37:03 by adcarnec          #+#    #+#             */
-/*   Updated: 2023/06/29 18:26:59 by jde-la-f         ###   ########.fr       */
+/*   Updated: 2023/07/04 11:54:42 by teliet           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -477,20 +477,43 @@ void     WebServ::getRequestConfig(Request& request)
     }
     
     /* Search matching server_name */
+    VirtualServer *server;
     it = matching_servers.begin();
     end = matching_servers.end();
-    request.setConfig(*it); // First by default
+    server = *it; // First by default
     while (it != end)
     {
         if ((*it)->getName() == request.getHeader("Host"))
         {
-            request.setConfig(*it);
+            server = *it;
             return;
         }
         it++;
     }
     std::cout << "Matching servers by name : " << matching_servers.size() << std::endl;
     
+    /* Search matching location */
+    std::vector <Location*>  locations = server->getLocations();
+    std::vector <Location*>::iterator    locIt;
+    std::vector <Location*>::iterator    locEnd;
+    std::string                         path = request.getPath();
+    std::string                         location_path;
+    locIt = locations.begin();
+    locEnd = locations.end();
+    std::cout << "locations size " << server->getLocations().size() << std::endl;
+    request.setConfig(server->getLocations()[0]); // first by default
+    while(locIt != locEnd)
+    {
+        // std::cout <<  (**locIt) << std::endl;
+        location_path = (**locIt).getName();
+        std::cout << "location path " << location_path << std::endl;
+        std::cout << "request path " << path << std::endl;
+        if (path.find(location_path) == 0)
+            request.setConfig(*locIt);
+        locIt++;
+    }
+
+
     std::cout << "|-------- End of Config Routing ---------|" << std::endl;
     // TODO : throw error
 }

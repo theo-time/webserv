@@ -45,11 +45,14 @@ CGI::CGI(std::string str)
         
         /*
         if (!_exec.compare("php-cgi"))
-            _envvar[i++] = strdup("REQUEST_METHOD=POST");*/	
+            _envvar[i++] = strdup("REQUEST_METHOD=POST");*/
+        tmpBuf = "QUERY_STRING=" + _query_str;
+		_envvar[i++] = strdup(tmpBuf.c_str());
 		std::stringstream intToString;
 		intToString << _req_body.size();
         std::string tmpBuf = "CONTENT_LENGTH=" + intToString.str();
         _envvar[i++] = strdup(tmpBuf.c_str());
+        _envvar[i++] = strdup(("SCRIPT_FILENAME=" + _realUri).c_str());
 	}
 	
 	_envvar[i++] = NULL;
