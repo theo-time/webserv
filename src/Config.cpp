@@ -524,6 +524,7 @@ void Config::clear(void)
             delete *it;
             it++;
         }
+        _virtualServers.clear();
     }
 }
 

@@ -41,9 +41,7 @@ int main(int ac, char** av)
         return(-1);
 
     if (!WebServ::runListeners())
-        return(-1);
+        WebServ::stop();
 
-        
-    WebServ::stop();
     return 0;
 }
