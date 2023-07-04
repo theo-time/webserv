@@ -6,7 +6,7 @@
 /*   By: teliet <teliet@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/13 14:37:03 by adcarnec          #+#    #+#             */
-/*   Updated: 2023/07/04 13:00:51 by teliet           ###   ########.fr       */
+/*   Updated: 2023/07/04 15:03:50 by teliet           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -370,6 +370,8 @@ bool WebServ::isListedRessource(const std::string& path)
 
 void WebServ::addCGIResponseToQueue(Request *request)
 {
+    std::cout << "****** addCGIResponseToQueue" << request->getClientSocket() << std::endl;
+    std::cout << request->getResponseString() << std::endl;
     add(request->getClientSocket(), _master_set_write);
 
 }

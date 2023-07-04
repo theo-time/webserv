@@ -241,6 +241,24 @@ void Request::mdelete()
     }
 }
 
+std::string Request::getRedirectionHTML(std::string url)
+{
+    std::stringstream ss;
+
+    ss << "<!DOCTYPE html>" << std::endl;
+    ss << "<html>" << std::endl;
+    ss << "<head>" << std::endl;
+    ss << "<title>Redirection</title>" << std::endl;
+    ss << "<meta http-equiv=\"refresh\" content=\"0; url=" << url << "\" />" << std::endl;
+    ss << "</head>" << std::endl;
+    ss << "<body>" << std::endl;
+    ss << "<p>Redirection vers <a href=\"" << url << "\">" << url << "</a></p>" << std::endl;
+    ss << "</body>" << std::endl;
+    ss << "</html>" << std::endl;
+
+    return ss.str();
+}
+
 void Request::handleRequest() 
 {
     // --------- PATH PARSING ---------
@@ -285,6 +303,23 @@ void Request::handleRequest()
 
         cgi.executeCGI();
         _response = cgi.getResponseCGI();
+        WebServ::addCGIResponseToQueue(this);
+        return;
+    }
+
+    // Check redirection
+    if(_config->getType() == "http")
+    {
+        std::cout << "-------- Redirection -------" << std::endl;
+        fileContent = getRedirectionHTML(_config->getPath());
+        _response.setStatusCode("303");
+        _response.setStatusText("Other");
+        _response.setContentType("text/html");
+        _response.setProtocol("HTTP/1.1");
+        _response.setBody(fileContent);
+        _response.buildHeader();
+        _response.buildResponse();
+        // std::cout << _response.getResponse() << std::endl;
         WebServ::addCGIResponseToQueue(this);
         return;
     }
