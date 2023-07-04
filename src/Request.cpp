@@ -40,7 +40,7 @@ void Request::parseRequest(){
         methodCode = 1;
     } else if (method == "POST") {
         methodCode = 2;
-        retrieveHeaderAndBody(requestString2);
+        //retrieveHeaderAndBody(requestString2);
     } else if (method == "DELETE") {
         methodCode = 3;
     } else {
@@ -267,16 +267,17 @@ void Request::handleRequest()
 
     if((getFileExtension(path) == "py") && (methodCode == GET || methodCode == POST))
     {
-        if (methodCode == POST){
-            retrieveHeaderAndBody(requestString2);
-        }
+        //if (methodCode == POST){
+        //    retrieveHeaderAndBody(requestString2);
+        //}
 
-        CGI cgi(path);
+        CGI cgi(*this);
         std::cout << "PATH :" << path << std::endl;
 
-        std::cout << "BODY :" << body << std::endl;
+        //std::cout << "BODY :" << body << std::endl;
 
         cgi.executeCGI();
+        std::cout << "STILL ALIVE" << std::endl;
         _response = cgi.getResponseCGI();
         WebServ::addCGIResponseToQueue(this);
         return;
@@ -309,8 +310,16 @@ std::string Request::getProtocol() {
     return protocol;
 }
 
+std::string Request::getBody() {
+    return body;
+}
+
 std::string Request::getMethod() {
     return method;
+}
+
+int Request::getMethodCode() {
+    return methodCode;
 }
 
 std::string Request::getRequestString() {

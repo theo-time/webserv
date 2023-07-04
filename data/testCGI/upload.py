@@ -1,9 +1,9 @@
-#!/usr/bin/env python3
+#!/usr/bin/python3
 import cgi
 import os
 
 # Create an instance of the FieldStorage class to parse the request
-form = cgi.FieldStorage()
+form = cgi.FieldStorage(keep_blank_values=1)
 
 # Get the uploaded file object
 file_item = form['filename']

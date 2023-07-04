@@ -42,7 +42,7 @@ class CGI {
         Response            _response;
 
     public:
-        CGI(std::string);
+        CGI(Request & req);
 		~CGI();
 	
 	
@@ -50,6 +50,7 @@ class CGI {
 	 ======================= PUBLIC METHODS ============================*/
 		void executeCGI();
         Response getResponseCGI();
+        std::string getContentType(Request & req);
 };
 
 #endif
