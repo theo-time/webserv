@@ -75,14 +75,14 @@ void Request::parseRequest(){
     }
 
 
-    // path = root + path;
+
     // std::cout << " - PARSING COMPLETED - " << std::endl;
     // std::cout << "Method: " << method << std::endl;
     // std::cout << "Path: " << path << std::endl;
     // std::cout << "Protocol: " << protocol << std::endl;
     // std::cout << "Headers: " << std::endl;
-    // for (std::map<std::string, std::string>::iterator it=headers.begin(); it!=headers.end(); ++it)
-    //     std::cout << it->first << " => " << it->second << '\n';
+    for (std::map<std::string, std::string>::iterator it=headers.begin(); it!=headers.end(); ++it)
+        std::cout << it->first << " => " << it->second << '\n';
 }
 
 void Request::retrieveHeaderAndBody(const std::string& input) {
@@ -241,6 +241,24 @@ void Request::mdelete()
     }
 }
 
+std::string Request::getRedirectionHTML(std::string url)
+{
+    std::stringstream ss;
+
+    ss << "<!DOCTYPE html>" << std::endl;
+    ss << "<html>" << std::endl;
+    ss << "<head>" << std::endl;
+    ss << "<title>Redirection</title>" << std::endl;
+    ss << "<meta http-equiv=\"refresh\" content=\"0; url=" << url << "\" />" << std::endl;
+    ss << "</head>" << std::endl;
+    ss << "<body>" << std::endl;
+    ss << "<p>Redirection vers <a href=\"" << url << "\">" << url << "</a></p>" << std::endl;
+    ss << "</body>" << std::endl;
+    ss << "</html>" << std::endl;
+
+    return ss.str();
+}
+
 void Request::handleRequest() 
 {
     // --------- PATH PARSING ---------
@@ -249,12 +267,19 @@ void Request::handleRequest()
     std::string root = _config->getRoot(); 
     std::string index = _config->getIndex();
 
-    // add root to path 
-    path = "." + root + path;
+
+    if(_config->getName() != "_internal")
+        path.replace(path.find(_config->getName()), _config->getName().length(), _config->getRoot());
+    else 
+        path = root + path;
+
+    // add dot to start of path 
+    path = "." + path;
 
     // If path is a directory, add default index name to path
-    if (path[path.length() - 1] == '/') {
-        path = path + index;
+    if (opendir(path.c_str()))
+    {
+        path = path + "/" + index;
     }
 
     std::cout << "Effective path: " << path << std::endl;
@@ -279,6 +304,23 @@ void Request::handleRequest()
         cgi.executeCGI();
         std::cout << "STILL ALIVE" << std::endl;
         _response = cgi.getResponseCGI();
+        WebServ::addCGIResponseToQueue(this);
+        return;
+    }
+
+    // Check redirection
+    if(_config->getType() == "http")
+    {
+        std::cout << "-------- Redirection -------" << std::endl;
+        fileContent = getRedirectionHTML(_config->getPath());
+        _response.setStatusCode("303");
+        _response.setStatusText("Other");
+        _response.setContentType("text/html");
+        _response.setProtocol("HTTP/1.1");
+        _response.setBody(fileContent);
+        _response.buildHeader();
+        _response.buildResponse();
+        // std::cout << _response.getResponse() << std::endl;
         WebServ::addCGIResponseToQueue(this);
         return;
     }
@@ -342,13 +384,13 @@ std::string Request::getHeader(std::string key) {
     return headers[key];
 }
 
-VirtualServer* Request::getConfig() {
+Location* Request::getConfig() {
     return _config;
 }
 
 // SETTERS 
 
-void Request::setConfig(VirtualServer* config) {
+void Request::setConfig(Location* config) {
     _config = config;
 }
 

@@ -10,9 +10,12 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <sys/types.h>
+#include <dirent.h>
+
 
 # include "WebServ.hpp"
-# include "VirtualServer.hpp"
+# include "Location.hpp"
 # include "Response.hpp"
 
 // TYPES 
@@ -36,7 +39,7 @@ class Request {
         int methodCode;
         bool cgi_mode;
 
-        VirtualServer*       _config;
+        Location*       _config;
         Response            _response;  
         int clientSocket;
         int serverSocket;
@@ -62,11 +65,11 @@ class Request {
         int         getServerSocket();
         std::string getResponseString();
         std::string getHeader(std::string key);
-        VirtualServer* getConfig();
+        Location* getConfig();
         void setFileContent(std::string &fileContent);
         void setResponseString(std::string &response);
         void setRequestString(std::string &request);
-        void setConfig(VirtualServer* config);
+        void setConfig(Location* config);
 
         /* Methods */
 
@@ -78,6 +81,7 @@ class Request {
         void buildResponse();
         bool fileExists();
         void retrieveHeaderAndBody(const std::string& input);
+        std::string getRedirectionHTML(std::string url);
 };
 
 #endif

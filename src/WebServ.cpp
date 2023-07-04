@@ -3,15 +3,16 @@
 /*                                                        :::      ::::::::   */
 /*   WebServ.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jde-la-f <jde-la-f@student.42.fr>          +#+  +:+       +#+        */
+/*   By: teliet <teliet@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/13 14:37:03 by adcarnec          #+#    #+#             */
-/*   Updated: 2023/06/29 18:26:59 by jde-la-f         ###   ########.fr       */
+/*   Updated: 2023/07/04 15:03:50 by teliet           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "WebServ.hpp"
 #include "Request.hpp"
+#include "VirtualServer.hpp"
 
 typedef std::vector<VirtualServer*>         srvVect;
 typedef std::map<int, Request*>           intCliMap;
@@ -115,6 +116,7 @@ bool WebServ::init(void)
         }
         srvIt++;
     }
+    add(0, _master_set_recv);
     return(true);
 }
 
@@ -159,7 +161,15 @@ bool WebServ::process(void)
         }
         for (int i = 0; i <= _max_fd; ++i)
         {
-            if (FD_ISSET(i, &working_set_recv) && isServerSocket(i)) 
+            if (FD_ISSET(i, &working_set_recv) && i == 0) 
+            {
+                std::string buffer;
+                std::getline(std::cin, buffer);
+
+                if (buffer == "EXIT")
+                    return(false);
+            }
+            else if (FD_ISSET(i, &working_set_recv) && isServerSocket(i)) 
                 acceptNewCnx(i);
             else if (FD_ISSET(i, &working_set_recv) && _fdRessources.count(i))
                 readRessource(i);
@@ -360,23 +370,10 @@ bool WebServ::isListedRessource(const std::string& path)
 
 void WebServ::addCGIResponseToQueue(Request *request)
 {
-
+    std::cout << "****** addCGIResponseToQueue" << request->getClientSocket() << std::endl;
+    std::cout << request->getResponseString() << std::endl;
     add(request->getClientSocket(), _master_set_write);
 
-    // add(request->getClientSocket(), _master_set_write);
-    /*
-    cliStrMap::iterator     it = _reqRessources.begin();
-    while (it != _reqRessources.end())
-    {
-        if (it->second == _fdRessources[fd])
-        {
-            it->first->setFileContent(fileContent);
-            it->first->buildResponse();
-            add(it->first->getClientSocket(), _master_set_write);
-        }
-        it++;
-    }
-    */
 }
 
 void WebServ::add(const int& fd, fd_set& set)
@@ -420,19 +417,24 @@ void WebServ::closeCnx(const int& fd)
 void WebServ::stop(void)
 {
 
-    //TODO close sockets
-
     Config::clear();
 
     intCliMap::iterator      cliIt  = _requests.begin();
-    intCliMap::iterator      cliEnd  = _requests.end();
-    while(cliIt != cliEnd)
+    while(cliIt != _requests.end())
     {
         Request* tmp = cliIt->second;
         delete tmp;
         cliIt++;
     }
     _requests.clear();
+
+    for (int i = 3; i <= _max_fd; ++i)
+    {
+        if (FD_ISSET(i, &_master_set_recv)) 
+            close(i);
+        else if (FD_ISSET(i, &_master_set_write))
+            close(i);
+    }
 }
 
 bool WebServ::isServerSocket(const int& fd)
@@ -477,20 +479,43 @@ void     WebServ::getRequestConfig(Request& request)
     }
     
     /* Search matching server_name */
+    VirtualServer *server;
     it = matching_servers.begin();
     end = matching_servers.end();
-    request.setConfig(*it); // First by default
+    server = *it; // First by default
     while (it != end)
     {
         if ((*it)->getName() == request.getHeader("Host"))
         {
-            request.setConfig(*it);
+            server = *it;
             return;
         }
         it++;
     }
     std::cout << "Matching servers by name : " << matching_servers.size() << std::endl;
     
+    /* Search matching location */
+    std::vector <Location*>  locations = server->getLocations();
+    std::vector <Location*>::iterator    locIt;
+    std::vector <Location*>::iterator    locEnd;
+    std::string                         path = request.getPath();
+    std::string                         location_path;
+    locIt = locations.begin();
+    locEnd = locations.end();
+    // std::cout << "locations size " << server->getLocations().size() << std::endl;
+    request.setConfig(server->getLocations()[0]); // first by default
+    while(locIt != locEnd)
+    {
+        // std::cout <<  (**locIt) << std::endl;
+        location_path = (**locIt).getName();
+        // std::cout << "location path " << location_path << std::endl;
+        // std::cout << "request path " << path << std::endl;
+        if (path.find(location_path) == 0)
+            request.setConfig(*locIt);
+        locIt++;
+    }
+
+
     std::cout << "|-------- End of Config Routing ---------|" << std::endl;
     // TODO : throw error
 }

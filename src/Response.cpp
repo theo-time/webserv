@@ -41,5 +41,5 @@ void Response::buildHeader()
 void Response::buildResponse()
 {
     response = header + body;
-    std::cout << "----- Response : ----" << std::endl << response << std::endl;
+    // std::cout << "----- Response : ----" << std::endl << response << std::endl;
 }

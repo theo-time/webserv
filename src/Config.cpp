@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "Config.hpp"
+#include "VirtualServer.hpp"
 
 const unsigned int                              Config::_clientMaxBodySize_min = 1024 * 1024;
 const unsigned int                              Config::_clientMaxBodySize_max = 5 * 1024 * 1024;
@@ -42,7 +43,9 @@ void Config::init(const std::string& filename)
     }
 
     while (!_tmpVarConf.empty())
-    {
+    {/* 
+        if (!addVarConf(_tmpVarConf.front()))
+            return; */
         addVarConf(_tmpVarConf.front());
         _tmpVarConf.pop();
     }
@@ -51,7 +54,8 @@ void Config::init(const std::string& filename)
     int i = 0; // used to display conf number
     while (!_tmpSrvConf.empty())
     {
-        addSrvConf(_tmpSrvConf.front(), ++i);
+        if (!addSrvConf(_tmpSrvConf.front(), ++i))
+            return;
         _tmpSrvConf.pop();
     }
         
@@ -74,9 +78,40 @@ void Config::init(const std::string& filename)
     _valid=true;
 }
 
+std::string getFilename(std::string path)
+{
+    std::string filename = path.substr(path.find_last_of("/") + 1);
+    return filename;
+}
+
+bool checkBracesCnt(std::string fileContent)
+{
+
+    int         nOpen   = 0;
+    int         nClose  = 0;
+
+    std::size_t found   = fileContent.find("{");
+    while (found != std::string::npos)
+    {
+        nOpen++;
+        found = fileContent.find("{", found + 1);
+    }
+    
+    found   = fileContent.find("}");
+    while (found != std::string::npos)
+    {
+        nClose++;
+        found = fileContent.find("}", found + 1);
+    }
+    if (nOpen != nClose)
+        return(false);
+
+    return(true);
+}
+
 bool Config::checkConfFile(const std::string& filename)
 {
-    if (filename.size() < 6  || filename.find(".") == std::string::npos || filename.find(".conf") != filename.size() - 5)
+    if (filename.size() < 6  || getFilename(filename).size() < 6 || filename.find(".") == std::string::npos || filename.find(".conf") != filename.size() - 5)
     {
         std::cout << "Error: invalid filename: " << filename << std::endl;
         return(false);
@@ -103,13 +138,19 @@ bool Config::checkConfFile(const std::string& filename)
                 
             }
         }
+        ifs.close();
+
         if (_tmpConfData.empty())
         {
             std::cout << "Error: empty configuration file: " << filename << std::endl;
             return(false);
         }
 
-        //TODO if (_tmpConfData.findFirstOf(liste caractères interdits))
+        if (!checkBracesCnt(_tmpConfData))
+        {
+            std::cout << "Error: inconsistent braces: " << filename << std::endl;
+            return(false);
+        }
 
         //remove white spaces and end of line
         std::string::iterator it = _tmpConfData.begin();
@@ -122,7 +163,24 @@ bool Config::checkConfFile(const std::string& filename)
         }
         if (_tmpConfData.empty())
         {
-            std::cout << "Error: empty configuration file: " << filename << std::endl;
+            std::cout << "Error: empty configuration file: " << std::endl;
+            return(false);
+        }
+        
+        //check empty braces
+        found = _tmpConfData.find("{}");
+        if (found != std::string::npos)
+        {
+            std::cout << "Error: found empty braces: " << std::endl;
+            return(false);
+        }
+        
+        //check forbidden char
+        found = _tmpConfData.find_first_of("*+<>|"); //TODO tbc
+        if (found != std::string::npos)
+        {
+            std::cout << "Error: found forbidden characters (" << found << "): " << std::endl;
+            std::cout << _tmpConfData << std::endl;
             return(false);
         }
 
@@ -140,6 +198,7 @@ bool Config::parseConfData()
     std::string                         srvConf = "";
     bool                                srv = false; 
     std::size_t                         found;
+    
 
     while (!_tmpConfData.empty())
     {
@@ -156,7 +215,7 @@ bool Config::parseConfData()
             found = _tmpConfData.find(";");
             if (found == std::string::npos)
             {
-                std::cout << "Error: missing ';' token: " << _tmpConfData << std::endl;
+                std::cout << "Error: inconsistent configuration" << std::endl;
                 return(false);
             }
             _tmpVarConf.push(_tmpConfData.substr(0, found + 1));
@@ -189,14 +248,14 @@ bool Config::parseConfData()
     return(true);
 }
 
-void Config::addVarConf(std::string& line)
+bool Config::addVarConf(std::string& line)
 {
     std::size_t sep = line.find('=');
     std::size_t end = line.find(';');
     if (sep == std::string::npos || end == std::string::npos || sep == 0 || sep + 1 == end)
     {
         std::cout << "Error: invalid input: " << line << std::endl;
-        return;
+        return(false);
     }
     std::string key = line.substr(0, sep);
     std::string valueStr = line.substr(sep + 1, line.length() - sep - 2);
@@ -209,18 +268,19 @@ void Config::addVarConf(std::string& line)
         || tmpValue > _clientMaxBodySize_max || tmpValue < _clientMaxBodySize_min)
         {
             std::cout << "Error: invalid input: " << line << std::endl;
-            return;
+            return(false);
         }
         _clientMaxBodySize = static_cast<unsigned int>(tmpValue);
         std::cout << "  adding key = " << key;
         std::cout << ", value = " << _clientMaxBodySize << std::endl;
-        return;
+        return(false);
     }
 
     std::cout << "  Warning: unknown key: " << line << std::endl;
+    return(true);
 }
 
-void Config::addSrvConf(std::string& line, int i)
+bool Config::addSrvConf(std::string& line, int i)
 {
     std::cout << "  Parsing config #" << i << std::endl;
     
@@ -238,7 +298,7 @@ void Config::addSrvConf(std::string& line, int i)
             if (sep == std::string::npos)
             {
                 std::cout << "  Error: missing closing brace for location configuration" << tmpLine << std::endl;
-                return;
+                return(false);
             }
             tmpLocations.push(line.substr(0, sep));
             line.erase(0, sep + 1);
@@ -246,6 +306,11 @@ void Config::addSrvConf(std::string& line, int i)
         }
 
         sep = line.find(';');
+        if (sep == std::string::npos)
+        {
+            std::cout << "  Error: invalid server configuration (missing ';')" << std::endl;
+            return(false);
+        }
         tmpVars.push(line.substr(0, sep));
         line.erase(0, sep + 1);
     }
@@ -275,7 +340,7 @@ void Config::addSrvConf(std::string& line, int i)
             if  (endPtr == valueStr || endPtr != &(valueStr[valueStr.size()]))
             {
                 std::cout << "Error: invalid input: " << tmpVars.front() << std::endl;
-                return;
+                return(false);
             }
             portStr = valueStr;
             port = static_cast<unsigned int>(tmpValue);
@@ -357,7 +422,7 @@ void Config::addSrvConf(std::string& line, int i)
             if  (endPtr == valueStr || endPtr != &(valueStr[valueStr.size()]))
             {
                 std::cout << "Error: invalid input: " << tmpVars.front() << std::endl;
-                return;
+                return(false);
             }
             maxBodySizeStr = valueStr;
             maxBodySize = static_cast<unsigned int>(tmpValue);
@@ -372,8 +437,61 @@ void Config::addSrvConf(std::string& line, int i)
     if (portStr.empty())
     {
         std::cout << "      Error: missing port number" << std::endl;
-        return;
+        return(false);
     }
+
+    //check location names
+    if (!tmpLocations.empty())
+    {
+        strQueue        checkLocations = tmpLocations;
+        while (!checkLocations.empty())
+        {
+            sep = checkLocations.front().find("{");
+            if (sep == std::string::npos)
+            {
+                std::cout << "Error: invalid location configuration: " << checkLocations.front() << std::endl;
+                return(false);
+            }
+/*             std::string     name = checkLocations.front().substr(0, sep);
+            if (name.find_first_of("/")) // TODO tbc
+            {
+                std::cout << "Error: invalid location name: " << name << std::endl;
+                return(false);
+            } */
+            checkLocations.pop();
+        }
+    }
+
+/*
+
+    _tmpLocationsConf = conf;
+    
+    while (!_tmpLocationsConf.empty())
+    {
+        std::size_t     sep = _tmpLocationsConf.front().find("{");
+
+        if (sep == std::string::npos)
+        {
+            std::cout << "Error: invalid location configuration: " << _tmpLocationsConf.front() << std::endl;
+            _tmpLocationsConf.pop();
+            continue;
+        }
+
+        std::string     name = _tmpLocationsConf.front().substr(0, sep);
+        std::string     conf = _tmpLocationsConf.front().substr(sep + 1);
+        if (name.empty() || conf.empty())
+        {
+            std::cout << "Error: invalid location configuration: " << _tmpLocationsConf.front() << std::endl;
+            _tmpLocationsConf.pop();
+            continue;
+        }
+
+        _locations.push_back(new Location(name, _root, _index, _allowGet, _allowPost, _allowDel, _clientMaxBodySize, _errorPages, conf));
+        _tmpLocationsConf.pop();
+    }
+}
+
+*/
 
     VirtualServer* tmp = new VirtualServer(port, root, isGetAllowed, isPostAllowed, isDelAllowed);
     if (!tmpLocations.empty())
@@ -391,6 +509,7 @@ void Config::addSrvConf(std::string& line, int i)
         _serverNames[alias] = tmp;
     }
     _virtualServers.push_back(tmp);
+    return(true);
 }
     
 void Config::clear(void)
@@ -405,6 +524,7 @@ void Config::clear(void)
             delete *it;
             it++;
         }
+        _virtualServers.clear();
     }
 }
 
