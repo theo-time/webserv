@@ -43,7 +43,9 @@ void Config::init(const std::string& filename)
     }
 
     while (!_tmpVarConf.empty())
-    {
+    {/* 
+        if (!addVarConf(_tmpVarConf.front()))
+            return; */
         addVarConf(_tmpVarConf.front());
         _tmpVarConf.pop();
     }
@@ -52,7 +54,8 @@ void Config::init(const std::string& filename)
     int i = 0; // used to display conf number
     while (!_tmpSrvConf.empty())
     {
-        addSrvConf(_tmpSrvConf.front(), ++i);
+        if (!addSrvConf(_tmpSrvConf.front(), ++i))
+            return;
         _tmpSrvConf.pop();
     }
         
@@ -245,14 +248,14 @@ bool Config::parseConfData()
     return(true);
 }
 
-void Config::addVarConf(std::string& line)
+bool Config::addVarConf(std::string& line)
 {
     std::size_t sep = line.find('=');
     std::size_t end = line.find(';');
     if (sep == std::string::npos || end == std::string::npos || sep == 0 || sep + 1 == end)
     {
         std::cout << "Error: invalid input: " << line << std::endl;
-        return;
+        return(false);
     }
     std::string key = line.substr(0, sep);
     std::string valueStr = line.substr(sep + 1, line.length() - sep - 2);
@@ -265,18 +268,19 @@ void Config::addVarConf(std::string& line)
         || tmpValue > _clientMaxBodySize_max || tmpValue < _clientMaxBodySize_min)
         {
             std::cout << "Error: invalid input: " << line << std::endl;
-            return;
+            return(false);
         }
         _clientMaxBodySize = static_cast<unsigned int>(tmpValue);
         std::cout << "  adding key = " << key;
         std::cout << ", value = " << _clientMaxBodySize << std::endl;
-        return;
+        return(false);
     }
 
     std::cout << "  Warning: unknown key: " << line << std::endl;
+    return(true);
 }
 
-void Config::addSrvConf(std::string& line, int i)
+bool Config::addSrvConf(std::string& line, int i)
 {
     std::cout << "  Parsing config #" << i << std::endl;
     
@@ -294,7 +298,7 @@ void Config::addSrvConf(std::string& line, int i)
             if (sep == std::string::npos)
             {
                 std::cout << "  Error: missing closing brace for location configuration" << tmpLine << std::endl;
-                return;
+                return(false);
             }
             tmpLocations.push(line.substr(0, sep));
             line.erase(0, sep + 1);
@@ -302,6 +306,11 @@ void Config::addSrvConf(std::string& line, int i)
         }
 
         sep = line.find(';');
+        if (sep == std::string::npos)
+        {
+            std::cout << "  Error: invalid server configuration (missing ';')" << std::endl;
+            return(false);
+        }
         tmpVars.push(line.substr(0, sep));
         line.erase(0, sep + 1);
     }
@@ -331,7 +340,7 @@ void Config::addSrvConf(std::string& line, int i)
             if  (endPtr == valueStr || endPtr != &(valueStr[valueStr.size()]))
             {
                 std::cout << "Error: invalid input: " << tmpVars.front() << std::endl;
-                return;
+                return(false);
             }
             portStr = valueStr;
             port = static_cast<unsigned int>(tmpValue);
@@ -413,7 +422,7 @@ void Config::addSrvConf(std::string& line, int i)
             if  (endPtr == valueStr || endPtr != &(valueStr[valueStr.size()]))
             {
                 std::cout << "Error: invalid input: " << tmpVars.front() << std::endl;
-                return;
+                return(false);
             }
             maxBodySizeStr = valueStr;
             maxBodySize = static_cast<unsigned int>(tmpValue);
@@ -428,7 +437,7 @@ void Config::addSrvConf(std::string& line, int i)
     if (portStr.empty())
     {
         std::cout << "      Error: missing port number" << std::endl;
-        return;
+        return(false);
     }
 
     VirtualServer* tmp = new VirtualServer(port, root, isGetAllowed, isPostAllowed, isDelAllowed);
@@ -447,6 +456,7 @@ void Config::addSrvConf(std::string& line, int i)
         _serverNames[alias] = tmp;
     }
     _virtualServers.push_back(tmp);
+    return(true);
 }
     
 void Config::clear(void)

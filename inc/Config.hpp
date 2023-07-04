@@ -60,8 +60,8 @@ class Config
         
         static bool                                     checkConfFile(const std::string& filename);
         static bool                                     parseConfData();
-        static void                                     addVarConf(std::string& line);
-        static void                                     addSrvConf(std::string& line, int i);
+        static bool                                     addVarConf(std::string& line);
+        static bool                                     addSrvConf(std::string& line, int i);
 };
 
 #endif
