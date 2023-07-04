@@ -370,23 +370,8 @@ bool WebServ::isListedRessource(const std::string& path)
 
 void WebServ::addCGIResponseToQueue(Request *request)
 {
-
     add(request->getClientSocket(), _master_set_write);
 
-    // add(request->getClientSocket(), _master_set_write);
-    /*
-    cliStrMap::iterator     it = _reqRessources.begin();
-    while (it != _reqRessources.end())
-    {
-        if (it->second == _fdRessources[fd])
-        {
-            it->first->setFileContent(fileContent);
-            it->first->buildResponse();
-            add(it->first->getClientSocket(), _master_set_write);
-        }
-        it++;
-    }
-    */
 }
 
 void WebServ::add(const int& fd, fd_set& set)
@@ -430,19 +415,24 @@ void WebServ::closeCnx(const int& fd)
 void WebServ::stop(void)
 {
 
-    //TODO close sockets
-
     Config::clear();
 
     intCliMap::iterator      cliIt  = _requests.begin();
-    intCliMap::iterator      cliEnd  = _requests.end();
-    while(cliIt != cliEnd)
+    while(cliIt != _requests.end())
     {
         Request* tmp = cliIt->second;
         delete tmp;
         cliIt++;
     }
     _requests.clear();
+
+    for (int i = 3; i <= _max_fd; ++i)
+    {
+        if (FD_ISSET(i, &_master_set_recv)) 
+            close(i);
+        else if (FD_ISSET(i, &_master_set_write))
+            close(i);
+    }
 }
 
 bool WebServ::isServerSocket(const int& fd)
