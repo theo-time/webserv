@@ -195,6 +195,7 @@ bool Config::parseConfData()
     std::string                         srvConf = "";
     bool                                srv = false; 
     std::size_t                         found;
+    
 
     while (!_tmpConfData.empty())
     {
@@ -211,7 +212,7 @@ bool Config::parseConfData()
             found = _tmpConfData.find(";");
             if (found == std::string::npos)
             {
-                std::cout << "Error: missing ';' token: " << _tmpConfData << std::endl;
+                std::cout << "Error: inconsistent configuration" << std::endl;
                 return(false);
             }
             _tmpVarConf.push(_tmpConfData.substr(0, found + 1));
