@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "Config.hpp"
+#include "VirtualServer.hpp"
 
 const unsigned int                              Config::_clientMaxBodySize_min = 1024 * 1024;
 const unsigned int                              Config::_clientMaxBodySize_max = 5 * 1024 * 1024;
@@ -74,9 +75,40 @@ void Config::init(const std::string& filename)
     _valid=true;
 }
 
+std::string getFilename(std::string path)
+{
+    std::string filename = path.substr(path.find_last_of("/") + 1);
+    return filename;
+}
+
+bool checkBraces(std::string fileContent)
+{
+
+    int         nOpen   = 0;
+    int         nClose  = 0;
+
+    std::size_t found   = fileContent.find("{");
+    while (found != std::string::npos)
+    {
+        nOpen++;
+        found = fileContent.find("{", found + 1);
+    }
+    
+    found   = fileContent.find("}");
+    while (found != std::string::npos)
+    {
+        nClose++;
+        found = fileContent.find("}", found + 1);
+    }
+    if (nOpen != nClose)
+        return(false);
+
+    return(true);
+}
+
 bool Config::checkConfFile(const std::string& filename)
 {
-    if (filename.size() < 6  || filename.find(".") == std::string::npos || filename.find(".conf") != filename.size() - 5)
+    if (filename.size() < 6  || getFilename(filename).size() < 6 || filename.find(".") == std::string::npos || filename.find(".conf") != filename.size() - 5)
     {
         std::cout << "Error: invalid filename: " << filename << std::endl;
         return(false);
@@ -103,9 +135,17 @@ bool Config::checkConfFile(const std::string& filename)
                 
             }
         }
+        ifs.close();
+
         if (_tmpConfData.empty())
         {
             std::cout << "Error: empty configuration file: " << filename << std::endl;
+            return(false);
+        }
+
+        if (!checkBraces(_tmpConfData))
+        {
+            std::cout << "Error: inconsistent braces: " << filename << std::endl;
             return(false);
         }
 
