@@ -81,7 +81,7 @@ std::string getFilename(std::string path)
     return filename;
 }
 
-bool checkBraces(std::string fileContent)
+bool checkBracesCnt(std::string fileContent)
 {
 
     int         nOpen   = 0;
@@ -143,13 +143,11 @@ bool Config::checkConfFile(const std::string& filename)
             return(false);
         }
 
-        if (!checkBraces(_tmpConfData))
+        if (!checkBracesCnt(_tmpConfData))
         {
             std::cout << "Error: inconsistent braces: " << filename << std::endl;
             return(false);
         }
-
-        //TODO if (_tmpConfData.findFirstOf(liste caractères interdits))
 
         //remove white spaces and end of line
         std::string::iterator it = _tmpConfData.begin();
@@ -162,7 +160,24 @@ bool Config::checkConfFile(const std::string& filename)
         }
         if (_tmpConfData.empty())
         {
-            std::cout << "Error: empty configuration file: " << filename << std::endl;
+            std::cout << "Error: empty configuration file: " << std::endl;
+            return(false);
+        }
+        
+        //check empty braces
+        found = _tmpConfData.find("{}");
+        if (found != std::string::npos)
+        {
+            std::cout << "Error: found empty braces: " << std::endl;
+            return(false);
+        }
+        
+        //check forbidden char
+        found = _tmpConfData.find_first_of("*+<>|"); //TODO tbc
+        if (found != std::string::npos)
+        {
+            std::cout << "Error: found forbidden characters (" << found << "): " << std::endl;
+            std::cout << _tmpConfData << std::endl;
             return(false);
         }
 
