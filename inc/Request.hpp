@@ -79,6 +79,7 @@ class Request {
         bool fileExists();
         void retrieveHeaderAndBody(const std::string& input);
         std::string getRedirectionHTML(std::string url);
+        void listDirectoryResponse();
 };
 
 #endif
