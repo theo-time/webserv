@@ -283,13 +283,13 @@ std::string Request::getHeader(std::string key) {
     return headers[key];
 }
 
-VirtualServer* Request::getConfig() {
+Location* Request::getConfig() {
     return _config;
 }
 
 // SETTERS 
 
-void Request::setConfig(VirtualServer* config) {
+void Request::setConfig(Location* config) {
     _config = config;
 }
 
