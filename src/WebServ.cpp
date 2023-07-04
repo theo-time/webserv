@@ -116,6 +116,7 @@ bool WebServ::init(void)
         }
         srvIt++;
     }
+    add(0, _master_set_recv);
     return(true);
 }
 
@@ -160,7 +161,15 @@ bool WebServ::process(void)
         }
         for (int i = 0; i <= _max_fd; ++i)
         {
-            if (FD_ISSET(i, &working_set_recv) && isServerSocket(i)) 
+            if (FD_ISSET(i, &working_set_recv) && i == 0) 
+            {
+                std::string buffer;
+                std::getline(std::cin, buffer);
+
+                if (buffer == "EXIT")
+                    return(false);
+            }
+            else if (FD_ISSET(i, &working_set_recv) && isServerSocket(i)) 
                 acceptNewCnx(i);
             else if (FD_ISSET(i, &working_set_recv) && _fdRessources.count(i))
                 readRessource(i);
