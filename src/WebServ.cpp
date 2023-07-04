@@ -116,6 +116,7 @@ bool WebServ::init(void)
         }
         srvIt++;
     }
+    add(0, _master_set_recv);
     return(true);
 }
 
@@ -160,7 +161,15 @@ bool WebServ::process(void)
         }
         for (int i = 0; i <= _max_fd; ++i)
         {
-            if (FD_ISSET(i, &working_set_recv) && isServerSocket(i)) 
+            if (FD_ISSET(i, &working_set_recv) && i == 0) 
+            {
+                std::string buffer;
+                std::getline(std::cin, buffer);
+
+                if (buffer == "EXIT")
+                    return(false);
+            }
+            else if (FD_ISSET(i, &working_set_recv) && isServerSocket(i)) 
                 acceptNewCnx(i);
             else if (FD_ISSET(i, &working_set_recv) && _fdRessources.count(i))
                 readRessource(i);
@@ -361,23 +370,8 @@ bool WebServ::isListedRessource(const std::string& path)
 
 void WebServ::addCGIResponseToQueue(Request *request)
 {
-
     add(request->getClientSocket(), _master_set_write);
 
-    // add(request->getClientSocket(), _master_set_write);
-    /*
-    cliStrMap::iterator     it = _reqRessources.begin();
-    while (it != _reqRessources.end())
-    {
-        if (it->second == _fdRessources[fd])
-        {
-            it->first->setFileContent(fileContent);
-            it->first->buildResponse();
-            add(it->first->getClientSocket(), _master_set_write);
-        }
-        it++;
-    }
-    */
 }
 
 void WebServ::add(const int& fd, fd_set& set)
@@ -421,19 +415,24 @@ void WebServ::closeCnx(const int& fd)
 void WebServ::stop(void)
 {
 
-    //TODO close sockets
-
     Config::clear();
 
     intCliMap::iterator      cliIt  = _requests.begin();
-    intCliMap::iterator      cliEnd  = _requests.end();
-    while(cliIt != cliEnd)
+    while(cliIt != _requests.end())
     {
         Request* tmp = cliIt->second;
         delete tmp;
         cliIt++;
     }
     _requests.clear();
+
+    for (int i = 3; i <= _max_fd; ++i)
+    {
+        if (FD_ISSET(i, &_master_set_recv)) 
+            close(i);
+        else if (FD_ISSET(i, &_master_set_write))
+            close(i);
+    }
 }
 
 bool WebServ::isServerSocket(const int& fd)
