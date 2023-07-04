@@ -75,14 +75,14 @@ void Request::parseRequest(){
     }
 
 
-    // path = root + path;
+
     // std::cout << " - PARSING COMPLETED - " << std::endl;
     // std::cout << "Method: " << method << std::endl;
     // std::cout << "Path: " << path << std::endl;
     // std::cout << "Protocol: " << protocol << std::endl;
     // std::cout << "Headers: " << std::endl;
-    // for (std::map<std::string, std::string>::iterator it=headers.begin(); it!=headers.end(); ++it)
-    //     std::cout << it->first << " => " << it->second << '\n';
+    for (std::map<std::string, std::string>::iterator it=headers.begin(); it!=headers.end(); ++it)
+        std::cout << it->first << " => " << it->second << '\n';
 }
 
 void Request::retrieveHeaderAndBody(const std::string& input) {
@@ -249,12 +249,19 @@ void Request::handleRequest()
     std::string root = _config->getRoot(); 
     std::string index = _config->getIndex();
 
-    // add root to path 
-    path = "." + root + path;
+
+    if(_config->getName() != "_internal")
+        path.replace(path.find(_config->getName()), _config->getName().length(), _config->getRoot());
+    else 
+        path = root + path;
+
+    // add dot to start of path 
+    path = "." + path;
 
     // If path is a directory, add default index name to path
-    if (path[path.length() - 1] == '/') {
-        path = path + index;
+    if (opendir(path.c_str()))
+    {
+        path = path + "/" + index;
     }
 
     std::cout << "Effective path: " << path << std::endl;

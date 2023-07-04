@@ -6,7 +6,7 @@
 /*   By: teliet <teliet@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/13 14:37:03 by adcarnec          #+#    #+#             */
-/*   Updated: 2023/07/04 11:54:42 by teliet           ###   ########.fr       */
+/*   Updated: 2023/07/04 13:00:51 by teliet           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -501,14 +501,14 @@ void     WebServ::getRequestConfig(Request& request)
     std::string                         location_path;
     locIt = locations.begin();
     locEnd = locations.end();
-    std::cout << "locations size " << server->getLocations().size() << std::endl;
+    // std::cout << "locations size " << server->getLocations().size() << std::endl;
     request.setConfig(server->getLocations()[0]); // first by default
     while(locIt != locEnd)
     {
         // std::cout <<  (**locIt) << std::endl;
         location_path = (**locIt).getName();
-        std::cout << "location path " << location_path << std::endl;
-        std::cout << "request path " << path << std::endl;
+        // std::cout << "location path " << location_path << std::endl;
+        // std::cout << "request path " << path << std::endl;
         if (path.find(location_path) == 0)
             request.setConfig(*locIt);
         locIt++;

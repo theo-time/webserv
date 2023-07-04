@@ -10,6 +10,9 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <sys/types.h>
+#include <dirent.h>
+
 
 # include "WebServ.hpp"
 # include "Location.hpp"
