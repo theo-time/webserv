@@ -12,6 +12,7 @@
 
 #include "WebServ.hpp"
 #include "Request.hpp"
+#include "VirtualServer.hpp"
 
 typedef std::vector<VirtualServer*>         srvVect;
 typedef std::map<int, Request*>           intCliMap;

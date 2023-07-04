@@ -452,12 +452,12 @@ bool Config::addSrvConf(std::string& line, int i)
                 std::cout << "Error: invalid location configuration: " << checkLocations.front() << std::endl;
                 return(false);
             }
-            std::string     name = checkLocations.front().substr(1, sep);
+/*             std::string     name = checkLocations.front().substr(0, sep);
             if (name.find_first_of("/")) // TODO tbc
             {
                 std::cout << "Error: invalid location name: " << name << std::endl;
                 return(false);
-            }
+            } */
             checkLocations.pop();
         }
     }
