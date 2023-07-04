@@ -440,6 +440,59 @@ bool Config::addSrvConf(std::string& line, int i)
         return(false);
     }
 
+    //check location names
+    if (!tmpLocations.empty())
+    {
+        strQueue        checkLocations = tmpLocations;
+        while (!checkLocations.empty())
+        {
+            sep = checkLocations.front().find("{");
+            if (sep == std::string::npos)
+            {
+                std::cout << "Error: invalid location configuration: " << checkLocations.front() << std::endl;
+                return(false);
+            }
+            std::string     name = checkLocations.front().substr(1, sep);
+            if (name.find_first_of("/")) // TODO tbc
+            {
+                std::cout << "Error: invalid location name: " << name << std::endl;
+                return(false);
+            }
+            checkLocations.pop();
+        }
+    }
+
+/*
+
+    _tmpLocationsConf = conf;
+    
+    while (!_tmpLocationsConf.empty())
+    {
+        std::size_t     sep = _tmpLocationsConf.front().find("{");
+
+        if (sep == std::string::npos)
+        {
+            std::cout << "Error: invalid location configuration: " << _tmpLocationsConf.front() << std::endl;
+            _tmpLocationsConf.pop();
+            continue;
+        }
+
+        std::string     name = _tmpLocationsConf.front().substr(0, sep);
+        std::string     conf = _tmpLocationsConf.front().substr(sep + 1);
+        if (name.empty() || conf.empty())
+        {
+            std::cout << "Error: invalid location configuration: " << _tmpLocationsConf.front() << std::endl;
+            _tmpLocationsConf.pop();
+            continue;
+        }
+
+        _locations.push_back(new Location(name, _root, _index, _allowGet, _allowPost, _allowDel, _clientMaxBodySize, _errorPages, conf));
+        _tmpLocationsConf.pop();
+    }
+}
+
+*/
+
     VirtualServer* tmp = new VirtualServer(port, root, isGetAllowed, isPostAllowed, isDelAllowed);
     if (!tmpLocations.empty())
         tmp->setLocationsConf(tmpLocations);

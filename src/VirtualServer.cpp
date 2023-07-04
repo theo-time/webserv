@@ -15,8 +15,6 @@
 typedef std::map<int, std::string>      intStrMap;
 typedef std::vector<Location*>          vectLocation;
 
-//TODO mettre les config par defaut dans une location
-
 VirtualServer::VirtualServer(const unsigned int& port, const std::string& root, bool get, bool post, bool del) : 
     _port(port), _root(root), _allowGet(get), _allowPost(post), _allowDel(del)
 {
