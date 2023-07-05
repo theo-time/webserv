@@ -143,8 +143,8 @@ void Request::buildResponse()
     std::string contentDisposition = "inline";
 
     // Build response
-    _response.setStatusCode("200");
-    _response.setStatusText("OK"); 
+    // _response.setStatusCode("200");
+    // _response.setStatusText("OK"); 
     _response.setProtocol("HTTP/1.1");
     _response.setFilename(filename);
     _response.setExtension(extension);
@@ -205,11 +205,11 @@ void Request::post()
 {
     std::cout << "POST" << std::endl;
 
-    _response.setStatusCode("403");// TODO a enlever car juste pour tester
-    _response.setStatusText("Forbidden");
+    _response.setStatusCode("405");// TODO a enlever car juste pour tester
+    _response.setStatusText("Method Not Allowed");
     _response.setContentType("text/html");
     _response.setProtocol("HTTP/1.1");
-    WebServ::getRessource("./data/default/403.html", *this);
+    WebServ::getRessource("./data/default/405.html", *this);
 }
 
 void Request::mdelete() 
