@@ -462,15 +462,16 @@ bool Config::addSrvConf(std::string& line, int i)
         }
     }
 
-    VirtualServer* tmp = new VirtualServer(port, root, isGetAllowed, isPostAllowed, isDelAllowed);
+    if (maxBodySizeStr.empty())
+        maxBodySize = Config::getClientMaxBodySize();
+
+    VirtualServer* tmp = new VirtualServer(port, root, isGetAllowed, isPostAllowed, isDelAllowed, maxBodySize);
     if (!tmpLocations.empty())
         tmp->setLocationsConf(tmpLocations);
     if (!host.empty())
         tmp->setHost(host);
     if (!tmpErrorPages.empty())
         tmp->setErrorPages(tmpErrorPages);
-    if (!maxBodySizeStr.empty())
-        tmp->setClientMaxBodySize(maxBodySize);
     if (!serverName.empty())
     {
         tmp->setName(serverName);
