@@ -45,9 +45,8 @@ class WebServ
         static bool                                 runListeners(void);
         static void                                 getRessource(const std::string& path, Request& c);
         static void                                 stop(void);
-        static void                                 add(const int& fd, fd_set& set);
-        static fd_set                               & getMasterSetWrite();
-        static void                                 addCGIResponseToQueue(Request *request);
+        static void                                 addResponseToQueue(Request *request);
+        // static fd_set                               & getMasterSetWrite();
 
     private:
 
@@ -67,6 +66,7 @@ class WebServ
         static bool                                 sendResponse(const int& fd, Request& c);
         static bool                                 isServerSocket(const int& fd);
         static bool                                 isListedRessource(const std::string& path);
+        static void                                 add(const int& fd, fd_set& set);
         static void                                 del(const int& fd, fd_set& set);
         static void                                 closeCnx(const int& fd);
         static void                                 getRequestConfig(Request& c);

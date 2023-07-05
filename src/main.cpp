@@ -35,8 +35,6 @@ int main(int ac, char** av)
         return(-1);
     }
 
-    // printDir(); // TODO delete
-
     if (!Config::isValid())
         return(-1);
 

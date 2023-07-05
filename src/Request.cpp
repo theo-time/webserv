@@ -304,7 +304,7 @@ void Request::handleRequest()
         cgi.executeCGI();
         std::cout << "STILL ALIVE" << std::endl;
         _response = cgi.getResponseCGI();
-        WebServ::addCGIResponseToQueue(this);
+        WebServ::addResponseToQueue(this);
         return;
     }
 
@@ -321,7 +321,7 @@ void Request::handleRequest()
         _response.buildHeader();
         _response.buildResponse();
         // std::cout << _response.getResponse() << std::endl;
-        WebServ::addCGIResponseToQueue(this);
+        WebServ::addResponseToQueue(this);
         return;
     }
 

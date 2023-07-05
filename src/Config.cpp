@@ -273,11 +273,11 @@ bool Config::addVarConf(std::string& line)
         _clientMaxBodySize = static_cast<unsigned int>(tmpValue);
         std::cout << "  adding key = " << key;
         std::cout << ", value = " << _clientMaxBodySize << std::endl;
-        return(false);
+        return(true);
     }
 
     std::cout << "  Warning: unknown key: " << line << std::endl;
-    return(true);
+    return(false);
 }
 
 bool Config::addSrvConf(std::string& line, int i)
@@ -461,37 +461,6 @@ bool Config::addSrvConf(std::string& line, int i)
             checkLocations.pop();
         }
     }
-
-/*
-
-    _tmpLocationsConf = conf;
-    
-    while (!_tmpLocationsConf.empty())
-    {
-        std::size_t     sep = _tmpLocationsConf.front().find("{");
-
-        if (sep == std::string::npos)
-        {
-            std::cout << "Error: invalid location configuration: " << _tmpLocationsConf.front() << std::endl;
-            _tmpLocationsConf.pop();
-            continue;
-        }
-
-        std::string     name = _tmpLocationsConf.front().substr(0, sep);
-        std::string     conf = _tmpLocationsConf.front().substr(sep + 1);
-        if (name.empty() || conf.empty())
-        {
-            std::cout << "Error: invalid location configuration: " << _tmpLocationsConf.front() << std::endl;
-            _tmpLocationsConf.pop();
-            continue;
-        }
-
-        _locations.push_back(new Location(name, _root, _index, _allowGet, _allowPost, _allowDel, _clientMaxBodySize, _errorPages, conf));
-        _tmpLocationsConf.pop();
-    }
-}
-
-*/
 
     VirtualServer* tmp = new VirtualServer(port, root, isGetAllowed, isPostAllowed, isDelAllowed);
     if (!tmpLocations.empty())

@@ -192,13 +192,13 @@ bool WebServ::acceptNewCnx(const int& fd)
     {
         clientSocket = accept(fd, (struct sockaddr *)&clientAddress, (socklen_t*)&clientAddressSize);
         if (clientSocket < 0)
-        {
+        {/* 
             if (errno != EWOULDBLOCK) // TODO ne pas utiliser errno
             {
                 std::cerr << "  accept() failed" << std::endl;
                 stop();
                 return(false);
-            }
+            } */
             break;
         }
 
@@ -240,13 +240,13 @@ bool WebServ::readRequest(const int &fd, Request &request)
     {
         rc = recv(fd, buffer, sizeof(buffer), 0);
         if (rc < 0)
-        {
+        {/* 
             if (errno != EWOULDBLOCK) // TODO ne pas utilier errno
             {
                 std::cerr << "  recv() failed" << std::endl;
                 closeCnx(fd);
                 // return(false) ???
-            }
+            } */
             break;
         }
         if (rc == 0)
@@ -264,7 +264,12 @@ bool WebServ::readRequest(const int &fd, Request &request)
     request.parseRequest();
     WebServ::getRequestConfig(request);
     request.handleRequest();
-    memset(buffer, 0, sizeof(buffer)); // TODO ft_memset
+	int i = 0;
+	while (i < BUFFER_SIZE)
+	{
+		buffer[i] = 0;
+		i++;
+	}
     del(fd, _master_set_recv);
 
     return(true);
@@ -369,9 +374,9 @@ bool WebServ::isListedRessource(const std::string& path)
     return(false);
 }
 
-void WebServ::addCGIResponseToQueue(Request *request)
+void WebServ::addResponseToQueue(Request *request)
 {
-    // std::cout << "****** addCGIResponseToQueue" << request->getClientSocket() << std::endl;
+    // std::cout << "****** addResponseToQueue" << request->getClientSocket() << std::endl;
     // std::cout << request->getResponseString() << std::endl;
     add(request->getClientSocket(), _master_set_write);
 
@@ -521,6 +526,6 @@ void     WebServ::getRequestConfig(Request& request)
     // TODO : throw error
 }
 
-fd_set &    WebServ::getMasterSetWrite() {
+/* fd_set &    WebServ::getMasterSetWrite() {
     return(_master_set_write);
-}
+} */
