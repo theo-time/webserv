@@ -273,6 +273,7 @@ bool WebServ::readRequest(const int &fd, Request &request)
 bool WebServ::sendResponse(const int &fd, Request &c)
 {
     std::cout << "  Sending response - fd " << fd << std::endl;
+    std::cout << c.getResponseString() << std::endl;
     int rc  = send(fd, c.getResponseString().c_str(), c.getResponseString().length(), 0);
     if (rc < 0)
     {
@@ -370,8 +371,8 @@ bool WebServ::isListedRessource(const std::string& path)
 
 void WebServ::addCGIResponseToQueue(Request *request)
 {
-    std::cout << "****** addCGIResponseToQueue" << request->getClientSocket() << std::endl;
-    std::cout << request->getResponseString() << std::endl;
+    // std::cout << "****** addCGIResponseToQueue" << request->getClientSocket() << std::endl;
+    // std::cout << request->getResponseString() << std::endl;
     add(request->getClientSocket(), _master_set_write);
 
 }
@@ -379,7 +380,7 @@ void WebServ::addCGIResponseToQueue(Request *request)
 void WebServ::add(const int& fd, fd_set& set)
 {
     FD_SET(fd, &set);
-    std::cout << "fd:" << fd << std::endl;
+    // std::cout << "fd:" << fd << std::endl;
 
     if (fd > _max_fd)
         _max_fd = fd;

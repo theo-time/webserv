@@ -2,7 +2,7 @@
 #include "Config.hpp"
 #include "WebServ.hpp"
 
-
+/* 
 
 #include <dirent.h>
 #include <errno.h>
@@ -22,7 +22,7 @@ void printDir() {
         closedir(dir);
     }
 }
-
+ */
 
 int main(int ac, char** av)
 {
@@ -35,7 +35,7 @@ int main(int ac, char** av)
         return(-1);
     }
 
-    printDir(); // TODO delete
+    // printDir(); // TODO delete
 
     if (!Config::isValid())
         return(-1);
