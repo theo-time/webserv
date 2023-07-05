@@ -204,6 +204,12 @@ void Request::get()
 void Request::post() 
 {
     std::cout << "POST" << std::endl;
+
+    _response.setStatusCode("403");// TODO a enlever car juste pour tester
+    _response.setStatusText("Forbidden");
+    _response.setContentType("text/html");
+    _response.setProtocol("HTTP/1.1");
+    WebServ::getRessource("./data/default/403.html", *this);
 }
 
 void Request::mdelete() 
@@ -397,7 +403,7 @@ void Request::setConfig(Location* config) {
 void Request::setFileContent(std::string &fc)
 {
     std::cout << "Setting file content" << std::endl;
-    std::cout << fc << std::endl;
+    // std::cout << fc << std::endl;
     fileContent = fc;
     _response.setBody(fileContent);
 }
