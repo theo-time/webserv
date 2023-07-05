@@ -13,7 +13,7 @@
 #include "Config.hpp"
 #include "VirtualServer.hpp"
 
-const unsigned int                              Config::_clientMaxBodySize_min = 1024 * 1024;
+const unsigned int                              Config::_clientMaxBodySize_min = 0;
 const unsigned int                              Config::_clientMaxBodySize_max = 5 * 1024 * 1024;
 unsigned int                                    Config::_clientMaxBodySize = 1024 * 1024;
 bool                                            Config::_valid = false;
