@@ -300,7 +300,7 @@ bool WebServ::sendResponse(const int &fd, Request &c)
 bool WebServ::readRessource(const int& fd)
 {
     std::cout << "Reading ressource from fd - " << fd << std::endl;
-
+/* 
     std::string     fileContent = "";
     char            buf[BUFFER_SIZE + 1];
     int             ret = BUFFER_SIZE;
@@ -312,13 +312,24 @@ bool WebServ::readRessource(const int& fd)
         buf[ret] = 0;
         fileContent = fileContent + buf;
     }
-    close(fd);
-    del(fd, _master_set_recv);
-    
     if (ret == -1)
     {
         // TODO fileContent = msg erreur
     }
+    close(fd); */
+
+    // binary file
+    std::ifstream       file(_fdRessources[fd].c_str());     
+
+    // TODO check file status
+    std::string         fileContent;
+    std::stringstream   buffer;
+    buffer << file.rdbuf();
+    fileContent = buffer.str();
+
+    close(fd);
+    del(fd, _master_set_recv);
+    
 
     cliStrMap::iterator     it = _reqRessources.begin();
     while (it != _reqRessources.end())
