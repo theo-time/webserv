@@ -239,6 +239,7 @@ bool WebServ::readRequest(const int &fd, Request &request)
     while (true)
     {
         rc = recv(fd, buffer, sizeof(buffer), 0);
+        // std::cout << "  " << rc << " bytes received" << std::endl;
         if (rc < 0)
         {/* 
             if (errno != EWOULDBLOCK) // TODO ne pas utilier errno
@@ -259,7 +260,8 @@ bool WebServ::readRequest(const int &fd, Request &request)
         requestRawString.append(buffer);
     }
 
-    std::cout << "  " << requestRawString.size() << " bytes received\n***************\n" << std::endl;
+    std::cout << requestRawString << std::endl;
+    std::cout << "  " << requestRawString.size() << " bytes received\n  ***************\n" << std::endl;
     request.setRequestString(requestRawString);
     request.parseRequest();
     WebServ::getRequestConfig(request);
