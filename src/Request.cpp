@@ -40,7 +40,7 @@ void Request::parseRequest(){
         methodCode = 1;
     } else if (method == "POST") {
         methodCode = 2;
-        retrieveHeaderAndBody(requestString2);
+        //retrieveHeaderAndBody(requestString2);
     } else if (method == "DELETE") {
         methodCode = 3;
     } else {
@@ -143,8 +143,8 @@ void Request::buildResponse()
     std::string contentDisposition = "inline";
 
     // Build response
-    _response.setStatusCode("200");
-    _response.setStatusText("OK"); 
+    // _response.setStatusCode("200");
+    // _response.setStatusText("OK"); 
     _response.setProtocol("HTTP/1.1");
     _response.setFilename(filename);
     _response.setExtension(extension);
@@ -204,6 +204,12 @@ void Request::get()
 void Request::post() 
 {
     std::cout << "POST" << std::endl;
+
+    _response.setStatusCode("405");// TODO a enlever car juste pour tester
+    _response.setStatusText("Method Not Allowed");
+    _response.setContentType("text/html");
+    _response.setProtocol("HTTP/1.1");
+    WebServ::getRessource("./data/default/405.html", *this);
 }
 
 void Request::mdelete() 
@@ -348,18 +354,19 @@ void Request::handleRequest()
 
     if((getFileExtension(path) == "py") && (methodCode == GET || methodCode == POST))
     {
-        if (methodCode == POST){
-            retrieveHeaderAndBody(requestString2);
-        }
+        //if (methodCode == POST){
+        //    retrieveHeaderAndBody(requestString2);
+        //}
 
-        CGI cgi(path);
+        CGI cgi(*this);
         std::cout << "PATH :" << path << std::endl;
 
-        std::cout << "BODY :" << body << std::endl;
+        //std::cout << "BODY :" << body << std::endl;
 
         cgi.executeCGI();
+        std::cout << "STILL ALIVE" << std::endl;
         _response = cgi.getResponseCGI();
-        WebServ::addCGIResponseToQueue(this);
+        WebServ::addResponseToQueue(this);
         return;
     }
 
@@ -376,7 +383,7 @@ void Request::handleRequest()
         _response.buildHeader();
         _response.buildResponse();
         // std::cout << _response.getResponse() << std::endl;
-        WebServ::addCGIResponseToQueue(this);
+        WebServ::addResponseToQueue(this);
         return;
     }
 
@@ -407,8 +414,16 @@ std::string Request::getProtocol() {
     return protocol;
 }
 
+std::string Request::getBody() {
+    return body;
+}
+
 std::string Request::getMethod() {
     return method;
+}
+
+int Request::getMethodCode() {
+    return methodCode;
 }
 
 std::string Request::getRequestString() {
@@ -444,7 +459,7 @@ void Request::setConfig(Location* config) {
 void Request::setFileContent(std::string &fc)
 {
     std::cout << "Setting file content" << std::endl;
-    std::cout << fc << std::endl;
+    // std::cout << fc << std::endl;
     fileContent = fc;
     _response.setBody(fileContent);
 }

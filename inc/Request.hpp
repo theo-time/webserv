@@ -31,8 +31,6 @@ class Request {
         std::string path;
         std::string protocol;
         std::string requestString;
-        std::string requestString2;
-        std::string header;
         std::string body;
         std::string responseString;
         std::string fileContent;
@@ -47,6 +45,9 @@ class Request {
         int serverSocket;
 
     public:
+
+        std::string header;
+        std::string requestString2;
         /* Constructors & Destructors */
         Request();
         Request(int clientSocket, int serverSocket);
@@ -57,6 +58,8 @@ class Request {
         std::string getPath();
         std::string getProtocol();
         std::string getMethod();
+        std::string getBody();
+        int getMethodCode();
         std::string getRequestString();
         int         getClientSocket();
         int         getServerSocket();

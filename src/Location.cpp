@@ -49,7 +49,7 @@ _clientMaxBodySize(clientMaxBodySize), _errorPages(errorPages)
         return;
     }
 
-    if (tmpVars.front().substr(0, 4) == "cgi_")
+    if (name.find("cgi") != std::string::npos)
     {
         _type = "cgi";
         while (!tmpVars.empty())

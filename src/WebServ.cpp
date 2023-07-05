@@ -192,13 +192,13 @@ bool WebServ::acceptNewCnx(const int& fd)
     {
         clientSocket = accept(fd, (struct sockaddr *)&clientAddress, (socklen_t*)&clientAddressSize);
         if (clientSocket < 0)
-        {
+        {/* 
             if (errno != EWOULDBLOCK) // TODO ne pas utiliser errno
             {
                 std::cerr << "  accept() failed" << std::endl;
                 stop();
                 return(false);
-            }
+            } */
             break;
         }
 
@@ -239,14 +239,15 @@ bool WebServ::readRequest(const int &fd, Request &request)
     while (true)
     {
         rc = recv(fd, buffer, sizeof(buffer), 0);
+        // std::cout << "  " << rc << " bytes received" << std::endl;
         if (rc < 0)
-        {
+        {/* 
             if (errno != EWOULDBLOCK) // TODO ne pas utilier errno
             {
                 std::cerr << "  recv() failed" << std::endl;
                 closeCnx(fd);
                 // return(false) ???
-            }
+            } */
             break;
         }
         if (rc == 0)
@@ -259,12 +260,18 @@ bool WebServ::readRequest(const int &fd, Request &request)
         requestRawString.append(buffer);
     }
 
-    std::cout << "  " << requestRawString.size() << " bytes received\n***************\n" << std::endl;
+    std::cout << requestRawString << std::endl;
+    std::cout << "  " << requestRawString.size() << " bytes received\n  ***************\n" << std::endl;
     request.setRequestString(requestRawString);
     request.parseRequest();
     WebServ::getRequestConfig(request);
     request.handleRequest();
-    memset(buffer, 0, sizeof(buffer)); // TODO ft_memset
+	int i = 0;
+	while (i < BUFFER_SIZE)
+	{
+		buffer[i] = 0;
+		i++;
+	}
     del(fd, _master_set_recv);
 
     return(true);
@@ -273,6 +280,7 @@ bool WebServ::readRequest(const int &fd, Request &request)
 bool WebServ::sendResponse(const int &fd, Request &c)
 {
     std::cout << "  Sending response - fd " << fd << std::endl;
+    std::cout << c.getResponseString() << std::endl;
     int rc  = send(fd, c.getResponseString().c_str(), c.getResponseString().length(), 0);
     if (rc < 0)
     {
@@ -292,7 +300,7 @@ bool WebServ::sendResponse(const int &fd, Request &c)
 bool WebServ::readRessource(const int& fd)
 {
     std::cout << "Reading ressource from fd - " << fd << std::endl;
-
+/* 
     std::string     fileContent = "";
     char            buf[BUFFER_SIZE + 1];
     int             ret = BUFFER_SIZE;
@@ -304,13 +312,24 @@ bool WebServ::readRessource(const int& fd)
         buf[ret] = 0;
         fileContent = fileContent + buf;
     }
-    close(fd);
-    del(fd, _master_set_recv);
-    
     if (ret == -1)
     {
         // TODO fileContent = msg erreur
     }
+    close(fd); */
+
+    // binary file
+    std::ifstream       file(_fdRessources[fd].c_str());     
+
+    // TODO check file status
+    std::string         fileContent;
+    std::stringstream   buffer;
+    buffer << file.rdbuf();
+    fileContent = buffer.str();
+
+    close(fd);
+    del(fd, _master_set_recv);
+    
 
     cliStrMap::iterator     it = _reqRessources.begin();
     while (it != _reqRessources.end())
@@ -368,10 +387,10 @@ bool WebServ::isListedRessource(const std::string& path)
     return(false);
 }
 
-void WebServ::addCGIResponseToQueue(Request *request)
+void WebServ::addResponseToQueue(Request *request)
 {
-    std::cout << "****** addCGIResponseToQueue" << request->getClientSocket() << std::endl;
-    std::cout << request->getResponseString() << std::endl;
+    // std::cout << "****** addResponseToQueue" << request->getClientSocket() << std::endl;
+    // std::cout << request->getResponseString() << std::endl;
     add(request->getClientSocket(), _master_set_write);
 
 }
@@ -379,7 +398,7 @@ void WebServ::addCGIResponseToQueue(Request *request)
 void WebServ::add(const int& fd, fd_set& set)
 {
     FD_SET(fd, &set);
-    std::cout << "fd:" << fd << std::endl;
+    // std::cout << "fd:" << fd << std::endl;
 
     if (fd > _max_fd)
         _max_fd = fd;
@@ -520,6 +539,6 @@ void     WebServ::getRequestConfig(Request& request)
     // TODO : throw error
 }
 
-fd_set &    WebServ::getMasterSetWrite() {
+/* fd_set &    WebServ::getMasterSetWrite() {
     return(_master_set_write);
-}
+} */

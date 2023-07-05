@@ -36,7 +36,7 @@ class VirtualServer
         typedef std::map<int, std::string>      intStrMap;
 
         VirtualServer(void);
-        VirtualServer(const unsigned int& port, const std::string& root, bool get, bool post, bool del);
+        VirtualServer(const unsigned int& port, const std::string& root, bool get, bool post, bool del, const int clientMaxBodySize);
         VirtualServer(const VirtualServer& src);
         ~VirtualServer(void);
         

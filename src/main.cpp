@@ -2,7 +2,7 @@
 #include "Config.hpp"
 #include "WebServ.hpp"
 
-
+/* 
 
 #include <dirent.h>
 #include <errno.h>
@@ -22,7 +22,7 @@ void printDir() {
         closedir(dir);
     }
 }
-
+ */
 
 int main(int ac, char** av)
 {
@@ -34,8 +34,6 @@ int main(int ac, char** av)
         std::cout << "Error: too many arguments" << std::endl;
         return(-1);
     }
-
-    printDir(); // TODO delete
 
     if (!Config::isValid())
         return(-1);
