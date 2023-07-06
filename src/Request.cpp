@@ -333,6 +333,23 @@ void Request::handleRequest()
     // add dot to start of path 
     path = "." + path;
 
+    // Check redirection
+    if(_config->getType() == "http")
+    {
+        std::cout << "-------- Redirection -------" << std::endl;
+        fileContent = getRedirectionHTML(_config->getPath());
+        _response.setStatusCode("303");
+        _response.setStatusText("Other");
+        _response.setContentType("text/html");
+        _response.setProtocol("HTTP/1.1");
+        _response.setBody(fileContent);
+        _response.buildHeader();
+        _response.buildResponse();
+        // std::cout << _response.getResponse() << std::endl;
+        WebServ::addResponseToQueue(this);
+        return;
+    }
+
     // If path is a directory, and index file exists, add default index name to path
     if (opendir(path.c_str()))
     {
@@ -366,23 +383,6 @@ void Request::handleRequest()
         cgi.executeCGI();
         std::cout << "STILL ALIVE" << std::endl;
         _response = cgi.getResponseCGI();
-        WebServ::addResponseToQueue(this);
-        return;
-    }
-
-    // Check redirection
-    if(_config->getType() == "http")
-    {
-        std::cout << "-------- Redirection -------" << std::endl;
-        fileContent = getRedirectionHTML(_config->getPath());
-        _response.setStatusCode("303");
-        _response.setStatusText("Other");
-        _response.setContentType("text/html");
-        _response.setProtocol("HTTP/1.1");
-        _response.setBody(fileContent);
-        _response.buildHeader();
-        _response.buildResponse();
-        // std::cout << _response.getResponse() << std::endl;
         WebServ::addResponseToQueue(this);
         return;
     }
