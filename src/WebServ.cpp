@@ -277,8 +277,8 @@ bool WebServ::readRequest(const int &fd, Request &request)
 
 bool WebServ::sendResponse(const int &fd, Request &c)
 {
-    std::cout << "  Sending response - fd " << fd << std::endl;
-    std::cout << c.getResponseString() << std::endl;
+    //std::cout << "  Sending response - fd " << fd << std::endl;
+    //std::cout << c.getResponseString() << std::endl;
     int rc  = send(fd, c.getResponseString().c_str(), c.getResponseString().length(), 0);
     if (rc < 0)
     {

@@ -52,7 +52,7 @@ CGI::CGI(Request & req)
 {	
 	std::string tmpBuf;
 	
-    //std::cout << "GET CONTENT" << getContentType(req) << std::endl;
+    std::cout << "PATHCGI: " << req.getPath() << std::endl;
 
 	//_realUri = std::string(pwd) + str;
     _realUri = req.getPath();
@@ -78,7 +78,7 @@ CGI::CGI(Request & req)
 
 	if (_req_meth == GET){
 
-
+        _envvar[i++] = strdup("REQUEST_METHOD=GET");
 
 	}
     else if (_req_meth == POST){
@@ -111,7 +111,7 @@ CGI::CGI(Request & req)
 		throw std::runtime_error("Error on a cgi malloc\n");
 
 	_args[0] = strdup(_exec.c_str());
-	_args[1] = strdup("data/testCGI/upload.py");
+	_args[1] = strdup(req.getPath().c_str());
 	_args[2] = NULL;
 }
 

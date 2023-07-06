@@ -288,7 +288,7 @@ void Request::handleRequest()
     std::cout << "Handle request" << std::endl;
     std::string fileContent;
 
-    //std::cout << getFileExtension(path) << std::endl;
+    std::cout << getFileExtension(path) << std::endl;
 
     if((getFileExtension(path) == "py") && (methodCode == GET || methodCode == POST))
     {
