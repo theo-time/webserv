@@ -17,6 +17,7 @@
 # include "WebServ.hpp"
 # include "Location.hpp"
 # include "Response.hpp"
+# include "Utils.hpp"
 
 // TYPES 
 #define GET 1

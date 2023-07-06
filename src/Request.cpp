@@ -6,6 +6,7 @@
 
 Request::Request(int clientSocket, int serverSocket) : clientSocket(clientSocket), serverSocket(serverSocket) {
     std::cout << "Request created" << std::endl;
+    _response.setRequest(this);
 }
 
 
@@ -183,16 +184,11 @@ void Request::get()
 {
     std::cout << "GET" << std::endl;
     std::cout << "Path: " << path << std::endl;
-    std::ifstream my_file(path.c_str());
-    if (!my_file.good())
-    {
-        std::cout << "File not found" << std::endl;
-        _response.setStatusCode("404");
-        _response.setStatusText("Not Found");
-        _response.setContentType("text/html");
-        WebServ::getRessource("./data/default/404.html", *this);
-    }
-    else 
+    if(!::fileExists(path))
+        _response.sendError(404, "Not Found");
+    else if(!::fileIsReadable(path))
+        _response.sendError(403, "Forbidden");
+    else
     {
         _response.setStatusCode("200");
         _response.setStatusText("OK");
@@ -250,6 +246,7 @@ void Request::mdelete()
 std::string Request::getRedirectionHTML(std::string url)
 {
     std::stringstream ss;
+    std::string str;
 
     ss << "<!DOCTYPE html>" << std::endl;
     ss << "<html>" << std::endl;
@@ -262,7 +259,8 @@ std::string Request::getRedirectionHTML(std::string url)
     ss << "</body>" << std::endl;
     ss << "</html>" << std::endl;
 
-    return ss.str();
+    str = ss.str();
+    return str;
 }
 
 std::vector<std::string> getFileList(std::string path) {
@@ -313,7 +311,7 @@ void Request::listDirectoryResponse()
     _response.setContentType("text/html");
     _response.buildHeader();
     _response.buildResponse();
-    WebServ::addCGIResponseToQueue(this);
+    WebServ::addResponseToQueue(this);
 }
 
 void Request::handleRequest() 
@@ -332,15 +330,14 @@ void Request::handleRequest()
 
     // add dot to start of path 
     path = "." + path;
-
     // If path is a directory, and index file exists, add default index name to path
     if (opendir(path.c_str()))
     {
         path = path + "/" + index;
+        std::cout << "Effective path: " << path << std::endl;
         if(path.find("//") != std::string::npos)
             path.replace(path.find("//"), 2, "/");
-        std::ifstream file(path.c_str());
-        if(!file.good())
+        if(!::fileExists(path))
             return(listDirectoryResponse());
     }
 
