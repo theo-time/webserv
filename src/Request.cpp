@@ -28,6 +28,7 @@ void Request::parseRequest(){
             method = token;
         } else if (i == 1) {
             path = token;
+            originalPath = token;
         } else if (i == 2) {
             protocol = firstLine;
             break;
@@ -297,20 +298,22 @@ void Request::listDirectoryResponse()
     ss << "<ul>" << std::endl;
     while (!fileList.empty())
     {
-        ss << "<li><a href=\"" << fileList.back() << "\">" << fileList.back() << "</a></li>" << std::endl;
+        ss << "<li><a href=\"" << originalPath << "/" << fileList.back() << "\">" << fileList.back() << "</a></li>" << std::endl;
         fileList.pop_back();
     }
     ss << "</ul>" << std::endl;
     ss << "</body>" << std::endl;
     ss << "</html>" << std::endl;
 
-    std::cout << ss.str() << std::endl;
+    // std::cout << ss.str() << std::endl;
     _response.setBody(ss.str());
     _response.setStatusCode("200");
+    _response.setProtocol("HTTP/1.1");
     _response.setStatusText("OK");
     _response.setContentType("text/html");
     _response.buildHeader();
     _response.buildResponse();
+    std::cout << "After listDirectoryResponse()" << std::endl << _response.getResponse() << std::endl;
     WebServ::addResponseToQueue(this);
 }
 

@@ -30,6 +30,7 @@ class Request {
         /* Header */
         std::string method;
         std::string path;
+        std::string originalPath;
         std::string protocol;
         std::string requestString;
         std::string body;
