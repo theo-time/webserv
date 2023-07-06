@@ -14,6 +14,15 @@ Response::~Response()
 /* Getters & Setters */
 
 std::string Response::getResponse(){return response;}
+std::string Response::getHeader(){return header;}
+std::string Response::getBody(){return body;}
+std::string Response::getProtocol(){return protocol;}
+std::string Response::getStatusCode(){return statusCode;}
+std::string Response::getStatusText(){return statusText;}
+std::string Response::getContentType(){return contentType;}
+std::string Response::getFilename(){return filename;}
+std::string Response::getExtension(){return extension;}
+std::string Response::getContentDisposition(){return contentDisposition;}
 
 void Response::setProtocol(std::string protocol){this->protocol = protocol;}
 void Response::setStatusCode(std::string statusCode){this->statusCode = statusCode;}
@@ -56,6 +65,7 @@ void Response::sendError(int statusCode, std::string statusText)
             setFilename("404.html");
             setExtension("html");
             setContentDisposition("inline");
+            buildHeader();
             WebServ::getRessource("./data/default/404.html", *request);
             break;
         case 403:
@@ -65,6 +75,8 @@ void Response::sendError(int statusCode, std::string statusText)
             setFilename("403.html");
             setExtension("html");
             setContentDisposition("inline");
+            buildHeader();
+            buildResponse();
             WebServ::getRessource("./data/default/403.html", *request);
             break;
         case 400:
@@ -74,6 +86,7 @@ void Response::sendError(int statusCode, std::string statusText)
             setFilename("400.html");
             setExtension("html");
             setContentDisposition("inline");
+            buildHeader();
             WebServ::getRessource("./data/default/400.html", *request);
             break;
         case 405:
@@ -83,6 +96,7 @@ void Response::sendError(int statusCode, std::string statusText)
             setFilename("405.html");
             setExtension("html");
             setContentDisposition("inline");
+            buildHeader();
             WebServ::getRessource("./data/default/405.html", *request);
             break;
         case 500:
@@ -92,6 +106,7 @@ void Response::sendError(int statusCode, std::string statusText)
             setFilename("500.html");
             setExtension("html");
             setContentDisposition("inline");
+            buildHeader();
             WebServ::getRessource("./data/default/500.html", *request);
             break;
         default:

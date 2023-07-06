@@ -45,6 +45,15 @@ class Response {
         void setBody(std::string content);
         void setRequest(Request *request);
         std::string getResponse();
+        std::string getHeader();
+        std::string getBody();
+        std::string getProtocol();
+        std::string getStatusCode();
+        std::string getStatusText();
+        std::string getContentType();
+        std::string getFilename();
+        std::string getExtension();
+        std::string getContentDisposition();
 
         void buildHeader();
         void buildResponse();

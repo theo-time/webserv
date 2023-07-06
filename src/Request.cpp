@@ -138,8 +138,9 @@ std::string getFileExtension(std::string filename)
 
 void Request::buildResponse()
 {
-
-    std::string extension = getFileExtension(path);
+    std::string extension = _response.getExtension();
+    if(extension == "")
+        extension = getFileExtension(path);
     std::string filename = path.substr(path.find_last_of("/") + 1);
     std::string contentType = "text/plain";
     std::string contentDisposition = "inline";
@@ -284,7 +285,7 @@ void Request::listDirectoryResponse()
 {
     std::cout << "LIST DIRECTORY" << std::endl;
 
-    std::vector<std::string> fileList = getFileList("./data/default");
+    std::vector<std::string> fileList = getFileList(path);
 
     std::stringstream ss;
 
@@ -332,8 +333,6 @@ void Request::handleRequest()
 
     // add dot to start of path 
     path = "." + path;
-<<<<<<< HEAD
-=======
 
     // Check redirection
     if(_config->getType() == "http")
@@ -352,16 +351,21 @@ void Request::handleRequest()
         return;
     }
 
->>>>>>> db792913632d07003a2dd40f44a7d87245b69494
     // If path is a directory, and index file exists, add default index name to path
     if (opendir(path.c_str()))
     {
-        path = path + "/" + index;
-        std::cout << "Effective path: " << path << std::endl;
+        std::string indexFile = path + "/" + index;
+        std::cout << "Effective path: " << indexFile << std::endl;
         if(path.find("//") != std::string::npos)
             path.replace(path.find("//"), 2, "/");
-        if(!::fileExists(path))
+        if(!::fileExists(indexFile))
+        {
+            if(!_config->isAutoIndex())
+                return(_response.sendError(403, "Forbidden"));
             return(listDirectoryResponse());
+        }
+        else
+            path = indexFile;
     }
 
     std::cout << "Effective path: " << path << std::endl;
