@@ -313,7 +313,7 @@ void Request::listDirectoryResponse()
     _response.setContentType("text/html");
     _response.buildHeader();
     _response.buildResponse();
-    WebServ::addCGIResponseToQueue(this);
+    WebServ::addResponseToQueue(this);
 }
 
 void Request::handleRequest() 
