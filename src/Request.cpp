@@ -6,6 +6,7 @@
 
 Request::Request(int clientSocket, int serverSocket) : clientSocket(clientSocket), serverSocket(serverSocket) {
     std::cout << "Request created" << std::endl;
+    _response.setRequest(this);
 }
 
 
@@ -27,6 +28,7 @@ void Request::parseRequest(){
             method = token;
         } else if (i == 1) {
             path = token;
+            originalPath = token;
         } else if (i == 2) {
             protocol = firstLine;
             break;
@@ -136,8 +138,9 @@ std::string getFileExtension(std::string filename)
 
 void Request::buildResponse()
 {
-
-    std::string extension = getFileExtension(path);
+    std::string extension = _response.getExtension();
+    if(extension == "")
+        extension = getFileExtension(path);
     std::string filename = path.substr(path.find_last_of("/") + 1);
     std::string contentType = "text/plain";
     std::string contentDisposition = "inline";
@@ -183,16 +186,11 @@ void Request::get()
 {
     std::cout << "GET" << std::endl;
     std::cout << "Path: " << path << std::endl;
-    std::ifstream my_file(path.c_str());
-    if (!my_file.good())
-    {
-        std::cout << "File not found" << std::endl;
-        _response.setStatusCode("404");
-        _response.setStatusText("Not Found");
-        _response.setContentType("text/html");
-        WebServ::getRessource("./data/default/404.html", *this);
-    }
-    else 
+    if(!::fileExists(path))
+        _response.sendError(404, "Not Found");
+    else if(!::fileIsReadable(path))
+        _response.sendError(403, "Forbidden");
+    else
     {
         _response.setStatusCode("200");
         _response.setStatusText("OK");
@@ -250,6 +248,7 @@ void Request::mdelete()
 std::string Request::getRedirectionHTML(std::string url)
 {
     std::stringstream ss;
+    std::string str;
 
     ss << "<!DOCTYPE html>" << std::endl;
     ss << "<html>" << std::endl;
@@ -262,7 +261,8 @@ std::string Request::getRedirectionHTML(std::string url)
     ss << "</body>" << std::endl;
     ss << "</html>" << std::endl;
 
-    return ss.str();
+    str = ss.str();
+    return str;
 }
 
 std::vector<std::string> getFileList(std::string path) {
@@ -285,7 +285,7 @@ void Request::listDirectoryResponse()
 {
     std::cout << "LIST DIRECTORY" << std::endl;
 
-    std::vector<std::string> fileList = getFileList("./data/default");
+    std::vector<std::string> fileList = getFileList(path);
 
     std::stringstream ss;
 
@@ -299,16 +299,17 @@ void Request::listDirectoryResponse()
     ss << "<ul>" << std::endl;
     while (!fileList.empty())
     {
-        ss << "<li><a href=\"" << fileList.back() << "\">" << fileList.back() << "</a></li>" << std::endl;
+        ss << "<li><a href=\"" << originalPath << "/" << fileList.back() << "\">" << fileList.back() << "</a></li>" << std::endl;
         fileList.pop_back();
     }
     ss << "</ul>" << std::endl;
     ss << "</body>" << std::endl;
     ss << "</html>" << std::endl;
 
-    std::cout << ss.str() << std::endl;
+    // std::cout << ss.str() << std::endl;
     _response.setBody(ss.str());
     _response.setStatusCode("200");
+    _response.setProtocol("HTTP/1.1");
     _response.setStatusText("OK");
     _response.setContentType("text/html");
     _response.buildHeader();
@@ -353,12 +354,18 @@ void Request::handleRequest()
     // If path is a directory, and index file exists, add default index name to path
     if (opendir(path.c_str()))
     {
-        path = path + "/" + index;
+        std::string indexFile = path + "/" + index;
+        std::cout << "Effective path: " << indexFile << std::endl;
         if(path.find("//") != std::string::npos)
             path.replace(path.find("//"), 2, "/");
-        std::ifstream file(path.c_str());
-        if(!file.good())
+        if(!::fileExists(indexFile))
+        {
+            if(!_config->isAutoIndex())
+                return(_response.sendError(403, "Forbidden"));
             return(listDirectoryResponse());
+        }
+        else
+            path = indexFile;
     }
 
     std::cout << "Effective path: " << path << std::endl;

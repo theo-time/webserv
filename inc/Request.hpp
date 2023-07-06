@@ -17,6 +17,7 @@
 # include "WebServ.hpp"
 # include "Location.hpp"
 # include "Response.hpp"
+# include "Utils.hpp"
 
 // TYPES 
 #define GET 1
@@ -29,6 +30,7 @@ class Request {
         /* Header */
         std::string method;
         std::string path;
+        std::string originalPath;
         std::string protocol;
         std::string requestString;
         std::string body;

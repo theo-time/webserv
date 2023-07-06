@@ -10,6 +10,8 @@
 #include <fstream>
 #include <sstream>
 
+#include "WebServ.hpp"
+
 class Response {
     private:
         std::string protocol;
@@ -25,6 +27,8 @@ class Response {
         std::string body;
         std::string response;
 
+        Request *request;
+
     public:
         Response();
         ~Response();
@@ -39,10 +43,21 @@ class Response {
         void setContentDisposition(std::string contentDisposition);
         void setContentLength(std::string contentLength);
         void setBody(std::string content);
+        void setRequest(Request *request);
         std::string getResponse();
+        std::string getHeader();
+        std::string getBody();
+        std::string getProtocol();
+        std::string getStatusCode();
+        std::string getStatusText();
+        std::string getContentType();
+        std::string getFilename();
+        std::string getExtension();
+        std::string getContentDisposition();
 
         void buildHeader();
         void buildResponse();
+        void sendError(int statusCode, std::string statusText);
 
 };
 
