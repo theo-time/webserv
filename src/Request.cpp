@@ -371,18 +371,10 @@ void Request::handleRequest()
 
     if((getFileExtension(path) == "py") && (methodCode == GET || methodCode == POST))
     {
-        //if (methodCode == POST){
-        //    retrieveHeaderAndBody(requestString2);
-        //}
-
         CGI cgi(*this);
-        std::cout << "PATH :" << path << std::endl;
-
-        //std::cout << "BODY :" << body << std::endl;
 
         cgi.executeCGI();
-        std::cout << "STILL ALIVE" << std::endl;
-        _response = cgi.getResponseCGI();
+        _response = cgi.getResponseCGI(*this);
         WebServ::addResponseToQueue(this);
         return;
     }
