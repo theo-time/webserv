@@ -3,6 +3,12 @@
 - Pouvoir envoyer des reponses sans body/lecture de fichier
 - Verifier la syntaxe generale de la requete ?
 
+Theo: 
+- check le header de la request
+- check if directory listing is enabled
+- Error 405 when method is not in allowed methods list
+- installer siege pour stress tester le serveur
+
 
 
 The listen directive can be set to:

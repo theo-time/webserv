@@ -13,7 +13,7 @@
 #include "Config.hpp"
 #include "VirtualServer.hpp"
 
-const unsigned int                              Config::_clientMaxBodySize_min = 1024 * 1024;
+const unsigned int                              Config::_clientMaxBodySize_min = 0;
 const unsigned int                              Config::_clientMaxBodySize_max = 5 * 1024 * 1024;
 unsigned int                                    Config::_clientMaxBodySize = 1024 * 1024;
 bool                                            Config::_valid = false;
@@ -462,15 +462,16 @@ bool Config::addSrvConf(std::string& line, int i)
         }
     }
 
-    VirtualServer* tmp = new VirtualServer(port, root, isGetAllowed, isPostAllowed, isDelAllowed);
+    if (maxBodySizeStr.empty())
+        maxBodySize = Config::getClientMaxBodySize();
+
+    VirtualServer* tmp = new VirtualServer(port, root, isGetAllowed, isPostAllowed, isDelAllowed, maxBodySize);
     if (!tmpLocations.empty())
         tmp->setLocationsConf(tmpLocations);
     if (!host.empty())
         tmp->setHost(host);
     if (!tmpErrorPages.empty())
         tmp->setErrorPages(tmpErrorPages);
-    if (!maxBodySizeStr.empty())
-        tmp->setClientMaxBodySize(maxBodySize);
     if (!serverName.empty())
     {
         tmp->setName(serverName);

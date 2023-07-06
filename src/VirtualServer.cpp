@@ -15,8 +15,8 @@
 typedef std::map<int, std::string>      intStrMap;
 typedef std::vector<Location*>          vectLocation;
 
-VirtualServer::VirtualServer(const unsigned int& port, const std::string& root, bool get, bool post, bool del) : 
-    _port(port), _root(root), _allowGet(get), _allowPost(post), _allowDel(del)
+VirtualServer::VirtualServer(const unsigned int& port, const std::string& root, bool get, bool post, bool del, const int clientMaxBodySize) : 
+    _port(port), _root(root), _allowGet(get), _allowPost(post), _allowDel(del), _clientMaxBodySize(clientMaxBodySize)
 {
     init();
 }
@@ -29,7 +29,6 @@ void VirtualServer::init(void)
     _index              = "index.html";
     _errorPages[404]    = "./default/404.html";
     _errorPages[500]    = "./default/500.html";
-    _clientMaxBodySize  = Config::getClientMaxBodySize();
 
     _locations.push_back(new Location("_internal", _root, _index, _allowGet, _allowPost, _allowDel, _clientMaxBodySize, _errorPages));
 }

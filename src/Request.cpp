@@ -143,8 +143,8 @@ void Request::buildResponse()
     std::string contentDisposition = "inline";
 
     // Build response
-    _response.setStatusCode("200");
-    _response.setStatusText("OK"); 
+    // _response.setStatusCode("200");
+    // _response.setStatusText("OK"); 
     _response.setProtocol("HTTP/1.1");
     _response.setFilename(filename);
     _response.setExtension(extension);
@@ -204,6 +204,12 @@ void Request::get()
 void Request::post() 
 {
     std::cout << "POST" << std::endl;
+
+    _response.setStatusCode("405");// TODO a enlever car juste pour tester
+    _response.setStatusText("Method Not Allowed");
+    _response.setContentType("text/html");
+    _response.setProtocol("HTTP/1.1");
+    WebServ::getRessource("./data/default/405.html", *this);
 }
 
 void Request::mdelete() 
@@ -259,6 +265,57 @@ std::string Request::getRedirectionHTML(std::string url)
     return ss.str();
 }
 
+std::vector<std::string> getFileList(std::string path) {
+    DIR             *dir;
+    struct dirent   *entry;
+    std::vector<std::string> fileList;
+
+    if ((dir = opendir(path.c_str())) == NULL)
+        perror("opendir() error");
+    else {
+        while ((entry = readdir(dir)) != NULL)
+            fileList.push_back(entry->d_name);
+        closedir(dir);
+    }
+    return fileList;
+}
+
+
+void Request::listDirectoryResponse()
+{
+    std::cout << "LIST DIRECTORY" << std::endl;
+
+    std::vector<std::string> fileList = getFileList("./data/default");
+
+    std::stringstream ss;
+
+    ss << "<!DOCTYPE html>" << std::endl;
+    ss << "<html>" << std::endl;
+    ss << "<head>" << std::endl;
+    ss << "<title>Directory listing</title>" << std::endl;
+    ss << "</head>" << std::endl;
+    ss << "<body>" << std::endl;
+    ss << "<h1>Directory listing</h1>" << std::endl;
+    ss << "<ul>" << std::endl;
+    while (!fileList.empty())
+    {
+        ss << "<li><a href=\"" << fileList.back() << "\">" << fileList.back() << "</a></li>" << std::endl;
+        fileList.pop_back();
+    }
+    ss << "</ul>" << std::endl;
+    ss << "</body>" << std::endl;
+    ss << "</html>" << std::endl;
+
+    std::cout << ss.str() << std::endl;
+    _response.setBody(ss.str());
+    _response.setStatusCode("200");
+    _response.setStatusText("OK");
+    _response.setContentType("text/html");
+    _response.buildHeader();
+    _response.buildResponse();
+    WebServ::addResponseToQueue(this);
+}
+
 void Request::handleRequest() 
 {
     // --------- PATH PARSING ---------
@@ -276,10 +333,32 @@ void Request::handleRequest()
     // add dot to start of path 
     path = "." + path;
 
-    // If path is a directory, add default index name to path
+    // Check redirection
+    if(_config->getType() == "http")
+    {
+        std::cout << "-------- Redirection -------" << std::endl;
+        fileContent = getRedirectionHTML(_config->getPath());
+        _response.setStatusCode("303");
+        _response.setStatusText("Other");
+        _response.setContentType("text/html");
+        _response.setProtocol("HTTP/1.1");
+        _response.setBody(fileContent);
+        _response.buildHeader();
+        _response.buildResponse();
+        // std::cout << _response.getResponse() << std::endl;
+        WebServ::addResponseToQueue(this);
+        return;
+    }
+
+    // If path is a directory, and index file exists, add default index name to path
     if (opendir(path.c_str()))
     {
         path = path + "/" + index;
+        if(path.find("//") != std::string::npos)
+            path.replace(path.find("//"), 2, "/");
+        std::ifstream file(path.c_str());
+        if(!file.good())
+            return(listDirectoryResponse());
     }
 
     std::cout << "Effective path: " << path << std::endl;
@@ -304,23 +383,6 @@ void Request::handleRequest()
         cgi.executeCGI();
         std::cout << "STILL ALIVE" << std::endl;
         _response = cgi.getResponseCGI();
-        WebServ::addResponseToQueue(this);
-        return;
-    }
-
-    // Check redirection
-    if(_config->getType() == "http")
-    {
-        std::cout << "-------- Redirection -------" << std::endl;
-        fileContent = getRedirectionHTML(_config->getPath());
-        _response.setStatusCode("303");
-        _response.setStatusText("Other");
-        _response.setContentType("text/html");
-        _response.setProtocol("HTTP/1.1");
-        _response.setBody(fileContent);
-        _response.buildHeader();
-        _response.buildResponse();
-        // std::cout << _response.getResponse() << std::endl;
         WebServ::addResponseToQueue(this);
         return;
     }
@@ -397,7 +459,7 @@ void Request::setConfig(Location* config) {
 void Request::setFileContent(std::string &fc)
 {
     std::cout << "Setting file content" << std::endl;
-    std::cout << fc << std::endl;
+    // std::cout << fc << std::endl;
     fileContent = fc;
     _response.setBody(fileContent);
 }
