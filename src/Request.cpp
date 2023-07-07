@@ -203,11 +203,14 @@ void Request::post()
 {
     std::cout << "POST" << std::endl;
 
-    _response.setStatusCode("405");// TODO a enlever car juste pour tester
+    /*_response.setStatusCode("405");// TODO a enlever car juste pour tester
     _response.setStatusText("Method Not Allowed");
     _response.setContentType("text/html");
-    _response.setProtocol("HTTP/1.1");
-    WebServ::getRessource("./data/default/405.html", *this);
+    _response.setProtocol("HTTP/1.1");*/
+
+    _response.setStatusCode("200");
+    _response.setStatusText("OK");
+    WebServ::getRessource(path, *this);
 }
 
 void Request::mdelete() 

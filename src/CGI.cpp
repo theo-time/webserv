@@ -89,6 +89,10 @@ void CGI::executeCGI()
         //std::cout << "OUTPUTCGI: "<< outputCGI << std::endl;
         close(pipefd[0]); // Close the read end of the pipe
         waitpid(pid, &status, 0); // Wait for the child process to finish
+        if (WIFEXITED(status))
+			std::cout << "CGI execution was successful." << std::endl;
+		else
+			std::cout << "CGI execution failed." << std::endl;
     }
 }
 
