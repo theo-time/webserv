@@ -14,6 +14,7 @@ CGI::CGI(Request & req) // Initialize all environment variable for CGI
     _envvar[i++] = strdup(("PATH_INFO=" + path).c_str());
     _envvar[i++] = strdup(("SCRIPT_FILENAME=" + path).c_str());
     _envvar[i++] = strdup(("SERVER_PROTOCOL=" + req.getProtocol()).c_str());
+    _envvar[i++] = strdup("QUERY_STRING=first_name=AA&last_name=AAA");
 
 	if (req.getMethodCode() == GET){
 
@@ -25,8 +26,8 @@ CGI::CGI(Request & req) // Initialize all environment variable for CGI
         _envvar[i++] = strdup("REQUEST_METHOD=POST");
 		_envvar[i++] = strdup(("CONTENT_TYPE=" + getContentInfo(req, "Content-Type: ")).c_str());
         _envvar[i++] = strdup(("CONTENT_LENGTH=" + getContentInfo(req, "Content-Length: ")).c_str());
-        /*std::cout << "CONTENT TYPE: " << _envvar[i - 1] << std::endl;
-        std::cout << "CONTENT LENGTH: " << _envvar[i - 1] << std::endl;*/
+        std::cout << "CONTENT TYPE: " << _envvar[i - 2] << std::endl;
+        std::cout << "CONTENT LENGTH: " << _envvar[i - 1] << std::endl;
     }
 	_envvar[i++] = NULL;
 
@@ -34,7 +35,7 @@ CGI::CGI(Request & req) // Initialize all environment variable for CGI
     if ((_args = new char*[3]) == NULL)
 		throw std::runtime_error("Error on a cgi malloc\n");
 
-    std::cout << "PATH: " << req.getPath().substr(2).c_str() << std::endl;
+    std::cout << "PATH: " << req.getPath().c_str() << std::endl;
     std::cout << "PROTOCOL: " << req.getProtocol().c_str() << std::endl;
 
 	_args[0] = strdup("/usr/bin/python3");

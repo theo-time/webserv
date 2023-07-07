@@ -322,6 +322,10 @@ void Request::handleRequest()
     std::string index = _config->getIndex();
 
 
+    std::cout << "ROOT" << root << std::endl;
+    std::cout << "INDEX" << index << std::endl;
+    std::cout << "PATH" << path << std::endl;
+
     if(_config->getName() != "_internal")
         path.replace(path.find(_config->getName()), _config->getName().length(), _config->getRoot());
     else 
@@ -329,6 +333,8 @@ void Request::handleRequest()
 
     // add dot to start of path 
     path = "." + path;
+
+    std::cout << "PATH" << path << std::endl;
 
     // Check redirection
     if(_config->getType() == "http")
@@ -372,8 +378,9 @@ void Request::handleRequest()
 
     std::cout << getFileExtension(path) << std::endl;
 
-    if((getFileExtension(path) == "py") && (methodCode == GET || methodCode == POST))
+    if((getFileExtension(path) == "py" ) && (methodCode == GET || methodCode == POST))
     {
+        path = "cgi-bin/" + path.substr(2);
         CGI cgi(*this);
 
         cgi.executeCGI();
