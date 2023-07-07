@@ -71,6 +71,7 @@ class Request {
         void setFileContent(std::string &fileContent);
         void setResponseString(std::string &response);
         void setRequestString(std::string &request);
+        void appendRequestString(std::string request);
         void setConfig(Location* config);
 
         /* Methods */
@@ -85,6 +86,7 @@ class Request {
         void retrieveHeaderAndBody(const std::string& input);
         std::string getRedirectionHTML(std::string url);
         void listDirectoryResponse();
+        void clear();
 };
 
 #endif

@@ -58,6 +58,7 @@ class Response {
         void buildHeader();
         void buildResponse();
         void sendError(int statusCode, std::string statusText);
+        void clear();
 
 };
 

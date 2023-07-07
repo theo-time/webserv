@@ -203,11 +203,7 @@ void Request::post()
 {
     std::cout << "POST" << std::endl;
 
-    _response.setStatusCode("405");// TODO a enlever car juste pour tester
-    _response.setStatusText("Method Not Allowed");
-    _response.setContentType("text/html");
-    _response.setProtocol("HTTP/1.1");
-    WebServ::getRessource("./data/default/405.html", *this);
+    _response.sendError(405, "Method Not Allowed"); // TODO a enlever car juste pour tester
 }
 
 void Request::mdelete() 
@@ -395,6 +391,20 @@ void Request::handleRequest()
         this->mdelete();
     if(methodCode == UNKNOWN)
     {
+        if (requestString2.find("HEAD") == 0)
+        {
+            std::cout << "HEAD" << std::endl;
+            std::cout << requestString2 << std::endl;
+            _response.sendError(405, "Method Not Allowed");
+
+            /* _response.setStatusCode("405");// TODO a enlever car juste pour tester
+            _response.setStatusText("Method Not Allowed");
+            _response.setContentType("text/html");
+            _response.setProtocol("HTTP/1.1");
+            WebServ::getRessource("./data/default/empty.html", *this); */
+            return;
+        }
+
         std::cout << "Unknown method" << std::endl;
         _response.setStatusCode("501");
         _response.setStatusText("Not Implemented");
@@ -471,4 +481,26 @@ void Request::setResponseString(std::string &rs)
 void Request::setRequestString(std::string &rs)
 {
     requestString = rs;
+}
+
+void Request::appendRequestString(std::string rs)
+{
+    requestString = requestString + rs;
+}
+
+void Request::clear(void)
+{
+    method.clear();
+    path.clear();
+    originalPath.clear();
+    protocol.clear();
+    requestString.clear();
+    body.clear();
+    responseString.clear();
+    fileContent.clear();
+    headers.clear();
+    methodCode = 0;
+    cgi_mode = false;
+    _config = NULL;
+    _response.clear();
 }
