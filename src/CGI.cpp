@@ -14,7 +14,7 @@ CGI::CGI(Request & req) // Initialize all environment variable for CGI
     _envvar[i++] = strdup(("PATH_INFO=" + path).c_str());
     _envvar[i++] = strdup(("SCRIPT_FILENAME=" + path).c_str());
     _envvar[i++] = strdup(("SERVER_PROTOCOL=" + req.getProtocol()).c_str());
-    _envvar[i++] = strdup("QUERY_STRING=first_name=AA&last_name=AAA");
+    //_envvar[i++] = strdup("QUERY_STRING=first_name=AA&last_name=AAA");
 
 	if (req.getMethodCode() == GET){
 
@@ -26,8 +26,8 @@ CGI::CGI(Request & req) // Initialize all environment variable for CGI
         _envvar[i++] = strdup("REQUEST_METHOD=POST");
 		_envvar[i++] = strdup(("CONTENT_TYPE=" + getContentInfo(req, "Content-Type: ")).c_str());
         _envvar[i++] = strdup(("CONTENT_LENGTH=" + getContentInfo(req, "Content-Length: ")).c_str());
-        std::cout << "CONTENT TYPE: " << _envvar[i - 2] << std::endl;
-        std::cout << "CONTENT LENGTH: " << _envvar[i - 1] << std::endl;
+        /*std::cout << "CONTENT TYPE: " << _envvar[i - 1] << std::endl;
+        std::cout << "CONTENT LENGTH: " << _envvar[i - 1] << std::endl;*/
     }
 	_envvar[i++] = NULL;
 

@@ -15,7 +15,7 @@ CC			=	c++
 FLAGS		=	-Wall -Wextra -Werror -std=c++98 -g3
 SRC			=	./src/main.cpp ./src/Config.cpp ./src/WebServ.cpp \
 				./src/VirtualServer.cpp ./src/Request.cpp ./src/Location.cpp ./src/Response.cpp \
-				./src/CGI.cpp ./src/Utils.cpp 
+				./src/CGI.cpp ./src/Utils.cpp ./src/ParsingCGI.cpp
 OBJ			=	$(SRC:.cpp=.o)
 INC			=	./inc/*.hpp
 INC_PATH	=	./inc/

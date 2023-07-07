@@ -1,10 +1,13 @@
 #!/usr/bin/python3
 
 # Import modules for CGI handling 
-import cgi, cgitb 
+import cgi
+
+import cgitb
+cgitb.enable(display=0, logdir=None, context=1)
 
 # Create instance of FieldStorage 
-form = cgi.FieldStorage() 
+form = cgi.FieldStorage()
 
 # Get data from fields
 first_name = form.getvalue('first_name')

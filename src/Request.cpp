@@ -378,6 +378,12 @@ void Request::handleRequest()
 
     std::cout << getFileExtension(path) << std::endl;
 
+
+    ParsingCGI requestCGI;
+
+    requestCGI.parseRequest(requestString2);
+
+
     if((getFileExtension(path) == "py" ) && (methodCode == GET || methodCode == POST))
     {
         path = "cgi-bin/" + path.substr(2);

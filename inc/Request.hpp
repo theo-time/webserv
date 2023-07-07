@@ -18,6 +18,7 @@
 # include "Location.hpp"
 # include "Response.hpp"
 # include "Utils.hpp"
+# include "ParsingCGI.hpp"
 
 // TYPES 
 #define GET 1
