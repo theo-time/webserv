@@ -227,29 +227,39 @@ bool WebServ::acceptNewCnx(const int& fd)
     return(true);
 }
 
+bool checkEndRequest(const char* src, int size)
+{
+    int i = 0;
+    while (i < size - 3)
+    {
+        if (src[i] == '\r' && src[i + 1] == '\n' && src[i + 2] == '\r' && src[i + 3] == '\n')
+            return(true); // TODO tenir compte body
+        i++;
+    }
+    return(false);
+}
+
+
 bool WebServ::readRequest(const int &fd, Request &request)
 {
     std::cout << "  Reading request - fd " << fd << std::endl;
     char        buffer[BUFFER_SIZE];
     int         rc = 0;
     
-    buffer[0] = 0;
+    int i = 0;
+    while (i < BUFFER_SIZE)
+    {
+        buffer[i] = 0;
+        i++;
+    }
 
     std::string requestRawString("");
     while (true)
     {
         rc = recv(fd, buffer, sizeof(buffer), 0);
-        // std::cout << "  " << rc << " bytes received" << std::endl;
+        std::cout << "  " << rc << "chunk bytes received" << std::endl;
         if (rc < 0)
-        {/* 
-            if (errno != EWOULDBLOCK) // TODO ne pas utilier errno
-            {
-                std::cerr << "  recv() failed" << std::endl;
-                closeCnx(fd);
-                // return(false) ???
-            } */
             break;
-        }
         if (rc == 0)
         {
             std::cerr << "  Connection closed\n" << std::endl;
@@ -259,29 +269,47 @@ bool WebServ::readRequest(const int &fd, Request &request)
         buffer[rc] = 0;
         requestRawString.append(buffer);
     }
-
-    std::cout << requestRawString << std::endl;
-    std::cout << "  " << requestRawString.size() << " bytes received\n  ***************\n" << std::endl;
-    request.setRequestString(requestRawString);
-    request.parseRequest();
-    WebServ::getRequestConfig(request);
-    request.handleRequest();
-	int i = 0;
-	while (i < BUFFER_SIZE)
-	{
-		buffer[i] = 0;
-		i++;
-	}
-    del(fd, _master_set_recv);
-
+    if (!request.getRequestString().empty())
+    {
+        request.appendRequestString(requestRawString);
+        std::cout << "  ***requestRawString added to existing request:" << std::endl << requestRawString << "***" << std::endl << std::endl;
+    }
+    else if (   requestRawString.find("GET") == 0 
+            ||  requestRawString.find("POST") == 0 
+            ||  requestRawString.find("HEAD") == 0 
+            ||  requestRawString.find("PUT") == 0)
+    {
+        request.appendRequestString(requestRawString);
+        std::cout << "  ***new valid request:" << std::endl << requestRawString << "***" << std::endl << std::endl;
+    }
+    else
+        std::cout << "  ***ignored request:" << std::endl << requestRawString << "***" << std::endl << std::endl;
+    // std::cout << "  ***totalRequestString:" << request.getRequestString() << "***" << std::endl;
+    if (checkEndRequest(request.getRequestString().c_str(), request.getRequestString().size()))
+    {
+        std::cout << "  " << request.getRequestString().size() << " total bytes received\n  ***************\n" << std::endl;
+        if (request.getRequestString().find("GET") == 0 || request.getRequestString().find("POST") == 0 || request.getRequestString().find("HEAD") == 0) 
+        {
+            request.parseRequest();
+            WebServ::getRequestConfig(request);
+            request.handleRequest();
+            del(fd, _master_set_recv);
+        }
+        else
+            request.clear();
+    }
+    
     return(true);
 }
 
+
 bool WebServ::sendResponse(const int &fd, Request &c)
 {
-    //std::cout << "  Sending response - fd " << fd << std::endl;
-    //std::cout << c.getResponseString() << std::endl;
+    std::cout << "  Sending response - fd " << fd << std::endl;
+    std::cout << c.getResponseString() << std::endl;
     int rc  = send(fd, c.getResponseString().c_str(), c.getResponseString().length(), 0);
+    c.clear();
+    std::cout << "  *** check response string size:" << c.getResponseString().size() << std::endl;
     if (rc < 0)
     {
         std::cerr << "  send() failed" << std::endl;

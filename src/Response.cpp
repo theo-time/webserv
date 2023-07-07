@@ -114,3 +114,18 @@ void Response::sendError(int statusCode, std::string statusText)
             exit(1);
     }
 }
+
+void Response::clear(void)
+{
+    protocol.clear();
+    statusCode.clear();
+    statusText.clear();
+    contentType.clear();
+    contentLength.clear();
+    filename.clear();
+    extension.clear();
+    contentDisposition.clear();
+    header.clear();
+    body.clear();
+    response.clear();
+}
