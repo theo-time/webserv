@@ -395,6 +395,17 @@ void Request::handleRequest()
         return;
     }
 
+    if((getFileExtension(path) == "bla" || path == "./file_should_exist_after" ) && (methodCode == GET || methodCode == POST))
+    {
+        path = "cgi-bin/" + path.substr(2);
+        CGI cgi(*this);
+
+        cgi.executeCGI();
+        _response = cgi.getResponseCGI(*this);
+        WebServ::addResponseToQueue(this);
+        return;
+    }
+
     // Method routing
     if (methodCode == GET)
         this->get();

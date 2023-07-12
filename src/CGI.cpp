@@ -10,8 +10,9 @@ CGI::CGI(Request & req) // Initialize all environment variable for CGI
 		
 	int i = 0;
 	//_envvar[i++] = strdup("SERVER_PROTOCOL=HTTP/1.1");
+    _envvar[i++] = strdup("TRANSFER_ENCODED=chunked");
 	_envvar[i++] = strdup("REDIRECT_STATUS=200");
-    _envvar[i++] = strdup(("PATH_INFO=" + path).c_str());
+    _envvar[i++] = strdup(("PATH_INFO=directory/youpi.bla"));
     _envvar[i++] = strdup(("SCRIPT_FILENAME=" + path).c_str());
     _envvar[i++] = strdup(("SERVER_PROTOCOL=" + req.getProtocol()).c_str());
     //_envvar[i++] = strdup("QUERY_STRING=first_name=AA&last_name=AAA");
@@ -38,8 +39,10 @@ CGI::CGI(Request & req) // Initialize all environment variable for CGI
     std::cout << "PATH: " << req.getPath().c_str() << std::endl;
     std::cout << "PROTOCOL: " << req.getProtocol().c_str() << std::endl;
 
-	_args[0] = strdup("/usr/bin/python3");
-	_args[1] = strdup(req.getPath().c_str());
+	/*_args[0] = strdup("/usr/bin/python3");
+	_args[1] = strdup(req.getPath().c_str());*/
+    _args[0] = strdup("cgi_tester");
+	_args[1] = NULL;
 	_args[2] = NULL;
 }
 
@@ -59,19 +62,27 @@ CGI::~CGI()
 
 void CGI::executeCGI()
 {
-
-    int pipefd[2];
-    if (pipe(pipefd) == -1)
+    if (pipe(pipe_in) < 0){
         perror("pipe failed");
-
+        return;
+    }  
+    if (pipe(pipe_out) < 0) {
+        perror("pipe failed");
+        close (pipe_in[1]);
+        close (pipe_in[0]);
+    }
+    write(pipe_in[1], "7\r\nMozilla\r\n11\r\nDeveloper Network\r\n0\r\n\r\n", 40000);
     pid_t pid = fork();
     if (pid == -1)
         perror("fork failed");
     else if (pid == 0)  // Child process
     {
-        close(pipefd[0]); // Close the read end of the pipe
-        dup2(pipefd[1], STDOUT_FILENO); // Redirect stdout to the write end of the pipe
-        close(pipefd[1]);
+        dup2(pipe_in[0], STDIN_FILENO);
+		dup2(pipe_out[1], STDOUT_FILENO);
+        close(pipe_in[0]);
+        close(pipe_in[1]);
+        close(pipe_out[0]);
+        close(pipe_out[1]);
 
         //std::cout << "BEFORE EXECVE: " << std::endl;
         execve(_args[0], _args, _envvar);
@@ -83,13 +94,14 @@ void CGI::executeCGI()
         int status;
 
         //std::cout << "IN PARENT PROCESS " << std::endl;
-        close(pipefd[1]); // Close the write end of the pipe
-        while ((bytesRead = read(pipefd[0], buffer, sizeof(buffer))) > 0) // Read the output from the child process
+        close(pipe_out[1]); // Close the write end of the pipe
+        while ((bytesRead = read(pipe_out[0], buffer, sizeof(buffer))) > 0) // Read the output from the child process
             outputCGI.append(buffer, bytesRead);
 
         //std::cout << "OUTPUTCGI: "<< outputCGI << std::endl;
-        close(pipefd[0]); // Close the read end of the pipe
+        close(pipe_out[0]); // Close the read end of the pipe
         waitpid(pid, &status, 0); // Wait for the child process to finish
+        std::cout << "OUTPUTCGI: " << outputCGI << std::endl;
         if (WIFEXITED(status))
 			std::cout << "CGI execution was successful." << std::endl;
 		else

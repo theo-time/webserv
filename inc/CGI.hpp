@@ -44,6 +44,8 @@ class CGI {
     public:
         CGI(Request & req);
 		~CGI();
+        int pipe_in[2];
+        int pipe_out[2];
 	
 	
 	/* ===================================================================

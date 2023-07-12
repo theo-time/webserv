@@ -309,7 +309,7 @@ bool WebServ::sendResponse(const int &fd, Request &c)
     std::cout << c.getResponseString() << std::endl;
     int rc  = send(fd, c.getResponseString().c_str(), c.getResponseString().length(), 0);
     c.clear();
-    std::cout << "  *** check response string size:" << c.getResponseString().size() << std::endl;
+    std::cout << "  *** check RC" << rc << std::endl;
     if (rc < 0)
     {
         std::cerr << "  send() failed" << std::endl;
