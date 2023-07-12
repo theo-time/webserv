@@ -397,7 +397,7 @@ void Request::handleRequest()
         return;
     }
 
-    if((getFileExtension(path) == "bla" || path == "./file_should_exist_after" ) && (methodCode == GET || methodCode == POST))
+    if((getFileExtension(path) == "bla" || path == "./file_should_exist_after" ) && (methodCode == POST))
     {
         path = path.substr(2);
         CGI cgi(*this);

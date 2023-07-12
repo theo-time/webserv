@@ -8,8 +8,9 @@ CGI::CGI(Request & req) // Initialize all environment variable for CGI
 		throw std::runtime_error("Error on a cgi malloc\n");
 		
 	int i = 0;
-    //_envvar[i++] = strdup("TRANSFER_ENCODED=chunked");
-    _envvar[i++] = strdup(("SCRIPT_NAME=" + req.getPath()).c_str());
+    _envvar[i++] = strdup("SERVER_PROTOCOL=HTTP/1.1");
+    _envvar[i++] = strdup(("PATH_INFO=" + req.getPath()).c_str());
+    //_envvar[i++] = strdup(("SCRIPT_NAME=" + req.getPath()).c_str());
 
     std::cout << "SCRIPT_NAME: " << _envvar[i -1] << std::endl;
 
@@ -22,7 +23,7 @@ CGI::CGI(Request & req) // Initialize all environment variable for CGI
 
 	}
     else if (req.getMethodCode() == POST){
-    _req_body = req.getBody();
+    _req_body = "Hello worldaaa!";
 
         _envvar[i++] = strdup("REQUEST_METHOD=POST");
 		_envvar[i++] = strdup(("CONTENT_TYPE=" + getContentInfo(req, "Content-Type: ")).c_str());
@@ -38,10 +39,10 @@ CGI::CGI(Request & req) // Initialize all environment variable for CGI
 
     std::cout << "SCRIPT_NAME: " << req.getPath().c_str() << std::endl;
 
-	_args[0] = strdup("/usr/bin/python3");
-	_args[1] = strdup(req.getPath().c_str());
-   /*_args[0] = strdup("cgi_tester");
-	_args[1] = NULL;*/
+	//_args[0] = strdup("/usr/bin/python3");
+	//_args[1] = strdup(req.getPath().c_str());
+    _args[0] = strdup("cgi_tester");
+	_args[1] = NULL;
 	_args[2] = NULL;
 }
 
@@ -114,6 +115,7 @@ void CGI::executeCGI()
         while ((bytesRead = read(pipe_out[0], buffer, 4096)) > 0) // Read the output from the child process
             outputCGI.append(buffer, bytesRead);
         std::cout << "OUTPUTCGI: "<< outputCGI << std::endl;
+        std::cout << "END OUTPUTCGI: "<< std::endl;
         close(pipe_out[0]); // Close the read end of the pipe
     }
 }
