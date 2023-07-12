@@ -523,6 +523,8 @@ void Request::clear(void)
     responseString.clear();
     fileContent.clear();
     headers.clear();
+    requestBodyString.clear();
+    requestString2.clear();
     methodCode = 0;
     cgi_mode = false;
     _config = NULL;
