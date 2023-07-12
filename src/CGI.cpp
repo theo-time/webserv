@@ -2,27 +2,27 @@
 
 CGI::CGI(Request & req) // Initialize all environment variable for CGI
 {
-    /*std::cout << "PATHCGI: " << req.getPath() << std::endl;
-    std::string _req_body = req.getBody();*/
+    std::cout << "PATHCGI: " << req.getPath() << std::endl;
 
-	if ((_envvar = new char*[7]) == NULL)
+	if ((_envvar = new char*[8]) == NULL)
 		throw std::runtime_error("Error on a cgi malloc\n");
 		
 	int i = 0;
-	//_envvar[i++] = strdup("SERVER_PROTOCOL=HTTP/1.1");
-    _envvar[i++] = strdup("TRANSFER_ENCODED=chunked");
-	_envvar[i++] = strdup("REDIRECT_STATUS=200");
-    _envvar[i++] = strdup(("PATH_INFO=directory/youpi.bla"));
-    _envvar[i++] = strdup(("SCRIPT_FILENAME=" + path).c_str());
-    _envvar[i++] = strdup(("SERVER_PROTOCOL=" + req.getProtocol()).c_str());
-    //_envvar[i++] = strdup("QUERY_STRING=first_name=AA&last_name=AAA");
+    //_envvar[i++] = strdup("TRANSFER_ENCODED=chunked");
+    _envvar[i++] = strdup(("SCRIPT_NAME=" + req.getPath()).c_str());
+
+    std::cout << "SCRIPT_NAME: " << _envvar[i -1] << std::endl;
 
 	if (req.getMethodCode() == GET){
+    _req_body = "AAAAAA";
 
         _envvar[i++] = strdup("REQUEST_METHOD=GET");
+        //_envvar[i++] = strdup("QUERY_STRING=first_name=AA&last_name=AAA");
+        
 
 	}
     else if (req.getMethodCode() == POST){
+    _req_body = req.getBody();
 
         _envvar[i++] = strdup("REQUEST_METHOD=POST");
 		_envvar[i++] = strdup(("CONTENT_TYPE=" + getContentInfo(req, "Content-Type: ")).c_str());
@@ -36,13 +36,12 @@ CGI::CGI(Request & req) // Initialize all environment variable for CGI
     if ((_args = new char*[3]) == NULL)
 		throw std::runtime_error("Error on a cgi malloc\n");
 
-    std::cout << "PATH: " << req.getPath().c_str() << std::endl;
-    std::cout << "PROTOCOL: " << req.getProtocol().c_str() << std::endl;
+    std::cout << "SCRIPT_NAME: " << req.getPath().c_str() << std::endl;
 
-	/*_args[0] = strdup("/usr/bin/python3");
-	_args[1] = strdup(req.getPath().c_str());*/
-    _args[0] = strdup("cgi_tester");
-	_args[1] = NULL;
+	_args[0] = strdup("/usr/bin/python3");
+	_args[1] = strdup(req.getPath().c_str());
+   /*_args[0] = strdup("cgi_tester");
+	_args[1] = NULL;*/
 	_args[2] = NULL;
 }
 
@@ -71,7 +70,9 @@ void CGI::executeCGI()
         close (pipe_in[1]);
         close (pipe_in[0]);
     }
-    write(pipe_in[1], "7\r\nMozilla\r\n11\r\nDeveloper Network\r\n0\r\n\r\n", 40000);
+    std::cout << _req_body.c_str() << std::endl;
+    int tmp = write(pipe_in[1], _req_body.c_str(), _req_body.length());
+    std::cout << "WRITE BYTES : " << tmp << std::endl;
     pid_t pid = fork();
     if (pid == -1)
         perror("fork failed");
@@ -84,8 +85,8 @@ void CGI::executeCGI()
         close(pipe_out[0]);
         close(pipe_out[1]);
 
-        //std::cout << "BEFORE EXECVE: " << std::endl;
         execve(_args[0], _args, _envvar);
+        //exit(1);
         perror("execve failed");
     }
     else {  // Parent process
@@ -93,19 +94,27 @@ void CGI::executeCGI()
         ssize_t bytesRead;
         int status;
 
-        //std::cout << "IN PARENT PROCESS " << std::endl;
-        close(pipe_out[1]); // Close the write end of the pipe
-        while ((bytesRead = read(pipe_out[0], buffer, sizeof(buffer))) > 0) // Read the output from the child process
-            outputCGI.append(buffer, bytesRead);
+        close(pipe_in[1]);
+        close(pipe_in[0]);
 
-        //std::cout << "OUTPUTCGI: "<< outputCGI << std::endl;
-        close(pipe_out[0]); // Close the read end of the pipe
         waitpid(pid, &status, 0); // Wait for the child process to finish
-        std::cout << "OUTPUTCGI: " << outputCGI << std::endl;
         if (WIFEXITED(status))
 			std::cout << "CGI execution was successful." << std::endl;
 		else
 			std::cout << "CGI execution failed." << std::endl;
+
+        /*bytesRead = read(pipe_out[0], buffer, 4096);
+
+        bytesRead = read(pipe_out[0], buffer, 4096);
+
+        std::cout << bytesRead << std::endl;
+        std::cout << buffer << std::endl;*/
+
+        close(pipe_out[1]);
+        while ((bytesRead = read(pipe_out[0], buffer, 4096)) > 0) // Read the output from the child process
+            outputCGI.append(buffer, bytesRead);
+        std::cout << "OUTPUTCGI: "<< outputCGI << std::endl;
+        close(pipe_out[0]); // Close the read end of the pipe
     }
 }
 

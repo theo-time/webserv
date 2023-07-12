@@ -4,7 +4,6 @@
 import cgi
 
 import cgitb
-cgitb.enable(display=0, logdir=None, context=1)
 
 # Create instance of FieldStorage 
 form = cgi.FieldStorage()

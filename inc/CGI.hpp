@@ -46,6 +46,7 @@ class CGI {
 		~CGI();
         int pipe_in[2];
         int pipe_out[2];
+        std::string _req_body;
 	
 	
 	/* ===================================================================

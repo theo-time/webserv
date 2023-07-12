@@ -42,7 +42,7 @@ void Request::parseRequest(){
         methodCode = 1;
     } else if (method == "POST") {
         methodCode = 2;
-        //retrieveHeaderAndBody(requestString2);
+        retrieveHeaderAndBody(requestString2);
     } else if (method == "DELETE") {
         methodCode = 3;
     } else {
@@ -322,9 +322,11 @@ void Request::handleRequest()
     std::string index = _config->getIndex();
 
 
-    std::cout << "ROOT" << root << std::endl;
+    std::cout << "BODY" << getBody() << std::endl;
     std::cout << "INDEX" << index << std::endl;
     std::cout << "PATH" << path << std::endl;
+
+
 
     if(_config->getName() != "_internal")
         path.replace(path.find(_config->getName()), _config->getName().length(), _config->getRoot());
@@ -397,7 +399,7 @@ void Request::handleRequest()
 
     if((getFileExtension(path) == "bla" || path == "./file_should_exist_after" ) && (methodCode == GET || methodCode == POST))
     {
-        path = "cgi-bin/" + path.substr(2);
+        path = path.substr(2);
         CGI cgi(*this);
 
         cgi.executeCGI();
