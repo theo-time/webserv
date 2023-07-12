@@ -51,6 +51,7 @@ class Request {
 
         std::string header;
         std::string requestString2;
+        std::string requestHeaderString;
         std::string requestBodyString;
         /* Constructors & Destructors */
         Request();
