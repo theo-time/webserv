@@ -227,18 +227,38 @@ bool WebServ::acceptNewCnx(const int& fd)
     return(true);
 }
 
-bool checkEndRequest(const char* src, int size)
+bool checkEndRequestHeader(const char* src, int size, int* pos)
 {
     int i = 0;
     while (i < size - 3)
     {
         if (src[i] == '\r' && src[i + 1] == '\n' && src[i + 2] == '\r' && src[i + 3] == '\n')
-            return(true); // TODO tenir compte body
+            return(*pos = i + 4, true);
         i++;
     }
     return(false);
 }
 
+std::string clean(std::string src)
+{
+    size_t found = src.find("GET");
+    if (found != std::string::npos)
+        return(src.substr(found));
+
+    found = src.find("POST");
+    if (found != std::string::npos)
+        return(src.substr(found));
+
+    found = src.find("HEAD");
+    if (found != std::string::npos)
+        return(src.substr(found));
+
+    found = src.find("PUT");
+    if (found != std::string::npos)
+        return(src.substr(found));
+
+    return(src);
+}
 
 bool WebServ::readRequest(const int &fd, Request &request)
 {
@@ -269,29 +289,43 @@ bool WebServ::readRequest(const int &fd, Request &request)
         buffer[rc] = 0;
         requestRawString.append(buffer);
     }
-    if (!request.getRequestString().empty())
+
+    if (request.readingHeader)
     {
         request.appendRequestString(requestRawString);
         std::cout << "  ***requestRawString added to existing request:" << std::endl << requestRawString << "***" << std::endl << std::endl;
     }
-    else if (   requestRawString.find("GET") == 0 
-            ||  requestRawString.find("POST") == 0 
-            ||  requestRawString.find("HEAD") == 0 
-            ||  requestRawString.find("PUT") == 0)
+    else if (   requestRawString.find("GET") != std::string::npos 
+            ||  requestRawString.find("POST") != std::string::npos 
+            ||  requestRawString.find("HEAD") != std::string::npos 
+            ||  requestRawString.find("PUT") != std::string::npos)
     {
-        request.appendRequestString(requestRawString);
+        request.appendRequestString(clean(requestRawString));
         std::cout << "  ***new valid request:" << std::endl << requestRawString << "***" << std::endl << std::endl;
         request.requestBodyString = "";
-    }
+        request.readingHeader = true;
+    }    
     else
     {
-        std::cout << "  ***added to request body:" << std::endl << requestRawString << "***" << std::endl << std::endl;
+        // TODO unchunk
         request.requestBodyString = request.requestBodyString + requestRawString;
+        std::cout << "  ***added to request body:" << std::endl << requestRawString << "***" << std::endl << std::endl;
     }
-    if (checkEndRequest(request.getRequestString().c_str(), request.getRequestString().size()))
+    
+    int posBodyStart = -1;
+    if (request.readingHeader && checkEndRequestHeader(request.getRequestString().c_str(), request.getRequestString().size(), &posBodyStart))
     {
         std::cout << "  " << request.getRequestString().size() << " total bytes received\n  ***************\n" << std::endl;
-        if (request.getRequestString().find("GET") == 0 || request.getRequestString().find("POST") == 0 || request.getRequestString().find("HEAD") == 0) 
+        // std::cout << "  ***totalRequestString:" << request.getRequestString() << "***" << std::endl;
+
+        request.requestHeaderString = request.getRequestString().substr(0, posBodyStart);
+        request.requestBodyString = request.getRequestString().substr(posBodyStart);
+
+        std::cout << "  ***requestHeaderString:" << request.requestHeaderString << "***" << std::endl;
+        std::cout << "  ***requestBodyString:" << request.requestBodyString << "***" << std::endl;
+        
+        request.readingHeader = false;
+        if (request.getRequestString().find("GET") == 0 || request.getRequestString().find("POST") == 0 || request.getRequestString().find("HEAD") == 0 || request.getRequestString().find("PUT") == 0) 
         {
             request.parseRequest();
             WebServ::getRequestConfig(request);
@@ -299,12 +333,11 @@ bool WebServ::readRequest(const int &fd, Request &request)
             del(fd, _master_set_recv);
         }
         else
-            request.clear();
+           request.clear();
     }
-    
+        
     return(true);
 }
-
 
 bool WebServ::sendResponse(const int &fd, Request &c)
 {
