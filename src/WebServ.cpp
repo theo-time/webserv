@@ -281,10 +281,13 @@ bool WebServ::readRequest(const int &fd, Request &request)
     {
         request.appendRequestString(requestRawString);
         std::cout << "  ***new valid request:" << std::endl << requestRawString << "***" << std::endl << std::endl;
+        request.requestBodyString = "";
     }
     else
-        std::cout << "  ***ignored request:" << std::endl << requestRawString << "***" << std::endl << std::endl;
-    // std::cout << "  ***totalRequestString:" << request.getRequestString() << "***" << std::endl;
+    {
+        std::cout << "  ***added to request body:" << std::endl << requestRawString << "***" << std::endl << std::endl;
+        request.requestBodyString = request.requestBodyString + requestRawString;
+    }
     if (checkEndRequest(request.getRequestString().c_str(), request.getRequestString().size()))
     {
         std::cout << "  " << request.getRequestString().size() << " total bytes received\n  ***************\n" << std::endl;
