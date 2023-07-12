@@ -51,6 +51,7 @@ class Request {
 
         std::string header;
         std::string requestString2;
+        std::string requestBodyString;
         /* Constructors & Destructors */
         Request();
         Request(int clientSocket, int serverSocket);
