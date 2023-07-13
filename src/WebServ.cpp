@@ -10,6 +10,8 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+#include <list>
+
 #include "WebServ.hpp"
 #include "Request.hpp"
 #include "VirtualServer.hpp"
@@ -227,7 +229,7 @@ bool WebServ::acceptNewCnx(const int& fd)
     return(true);
 }
 
-bool checkEndRequestHeader(const char* src, int size, int* pos)
+static bool checkEndRequestHeader(const char* src, int size, int* pos)
 {
     int i = 0;
     while (i < size - 3)
@@ -239,7 +241,7 @@ bool checkEndRequestHeader(const char* src, int size, int* pos)
     return(false);
 }
 
-std::string clean(std::string src)
+static std::string clean(std::string src)
 {
     size_t found = src.find("GET");
     if (found != std::string::npos)
@@ -260,24 +262,58 @@ std::string clean(std::string src)
     return(src);
 }
 
+static void addChunkedBody(Request &request, std::string& requestRawString)
+{
+    if (!request.readingBody)
+        return;
+
+    char* pEnd;
+    if (request.curChunkSize == -1 || (int)request.requestBodyList.back().size() == request.curChunkSize)
+    {
+        request.curChunkSize = strtol(requestRawString.c_str(), &pEnd, 16);
+        std::cout << "CHUNK SIZE = " << request.curChunkSize << std::endl; 
+        // TODO check pEnd
+        requestRawString = pEnd + 2;
+        request.requestBodyList.push_back("");
+    }
+
+    if (request.curChunkSize == 0)
+    {
+        std::cout << "END OF CHUNKED BODY" << std::endl; 
+        request.readingBody = false;
+        return;
+    }
+
+    std::cout << "EXTRACTING BODY..." << std::endl;
+    while (!requestRawString.empty() && (int)request.requestBodyList.back().size() < request.curChunkSize)
+    {
+        request.requestBodyList.back().append(requestRawString.substr(0, 1));
+        requestRawString.erase(0, 1);
+    }
+    std::cout << "requestBodyList.back = " << request.requestBodyList.back() << std::endl;
+
+    if (requestRawString.empty())
+        return;
+
+    std::cout << "remaining requestRawString = " << requestRawString << std::endl;
+    addChunkedBody(request, requestRawString);
+}
+
 bool WebServ::readRequest(const int &fd, Request &request)
 {
     std::cout << "  Reading request - fd " << fd << std::endl;
     char        buffer[BUFFER_SIZE];
     int         rc = 0;
     
-    int i = 0;
-    while (i < BUFFER_SIZE)
-    {
+    int i = -1;
+    while (++i < BUFFER_SIZE)
         buffer[i] = 0;
-        i++;
-    }
 
     std::string requestRawString("");
     while (true)
     {
         rc = recv(fd, buffer, sizeof(buffer), 0);
-        std::cout << "  " << rc << "chunk bytes received" << std::endl;
+        std::cout << "  " << rc << " bytes received" << std::endl;
         if (rc < 0)
             break;
         if (rc == 0)
@@ -307,8 +343,11 @@ bool WebServ::readRequest(const int &fd, Request &request)
     }    
     else
     {
-        // TODO unchunk
-        request.requestBodyString = request.requestBodyString + requestRawString;
+        if (request.chunkedBody && request.readingBody)
+            addChunkedBody(request, requestRawString);
+        else
+            request.requestBodyString = request.requestBodyString + requestRawString;
+        
         std::cout << "  ***added to request body:" << std::endl << requestRawString << "***" << std::endl << std::endl;
     }
     
@@ -316,7 +355,6 @@ bool WebServ::readRequest(const int &fd, Request &request)
     if (request.readingHeader && checkEndRequestHeader(request.getRequestString().c_str(), request.getRequestString().size(), &posBodyStart))
     {
         std::cout << "  " << request.getRequestString().size() << " total bytes received\n  ***************\n" << std::endl;
-        // std::cout << "  ***totalRequestString:" << request.getRequestString() << "***" << std::endl;
 
         request.requestHeaderString = request.getRequestString().substr(0, posBodyStart);
         request.requestBodyString = request.getRequestString().substr(posBodyStart);
@@ -329,6 +367,17 @@ bool WebServ::readRequest(const int &fd, Request &request)
         {
             request.parseRequest();
             WebServ::getRequestConfig(request);
+            
+            if (request.getHeader("Transfer-Encoding") == "chunked")
+            {
+                std::cout << "CHUNKED = TRUE" << std::endl;
+                request.readingBody = true;
+                request.chunkedBody = true;
+
+                if (!request.requestBodyString.empty())
+                    addChunkedBody(request, request.requestBodyString);
+            }
+
             request.handleRequest();
             del(fd, _master_set_recv);
         }
