@@ -7,6 +7,10 @@
 Request::Request(int clientSocket, int serverSocket) : clientSocket(clientSocket), serverSocket(serverSocket) {
     std::cout << "Request created" << std::endl;
     _response.setRequest(this);
+    readingHeader = false;
+    readingBody = false;
+    chunkedBody = false;
+    curChunkSize = 0;
 }
 
 
@@ -531,4 +535,9 @@ void Request::clear(void)
     cgi_mode = false;
     _config = NULL;
     _response.clear();
+    readingHeader = false;
+    readingBody = false;
+    chunkedBody = false;
+    requestBodyList.clear();
+    curChunkSize = 0;
 }
