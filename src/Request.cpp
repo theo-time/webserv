@@ -10,7 +10,7 @@ Request::Request(int clientSocket, int serverSocket) : clientSocket(clientSocket
     readingHeader = false;
     readingBody = false;
     chunkedBody = false;
-    curChunkSize = 0;
+    curChunkSize = -1;
 }
 
 
@@ -482,7 +482,9 @@ std::string Request::getResponseString() {
 }
 
 std::string Request::getHeader(std::string key) {
-    return headers[key];
+    if (headers.count(key) == 1)
+        return headers[key];
+    return "";
 }
 
 Location* Request::getConfig() {
@@ -539,5 +541,5 @@ void Request::clear(void)
     readingBody = false;
     chunkedBody = false;
     requestBodyList.clear();
-    curChunkSize = 0;
+    curChunkSize = -1;
 }
