@@ -20,7 +20,8 @@ class ParsingCGI {
 
     public:
 
-        std::unordered_map<std::string, std::string> headers;
+        // std::unordered_map<std::string, std::string> headers;
+        std::map<std::string, std::string> headers;
 
         ParsingCGI();
         ~ParsingCGI();
