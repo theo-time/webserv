@@ -12,6 +12,7 @@
 #include <string>
 #include <sys/types.h>
 #include <dirent.h>
+#include <list>
 
 
 # include "WebServ.hpp"
@@ -52,9 +53,13 @@ class Request {
         std::string header;
         std::string requestString2;
 
-        std::string requestHeaderString;
-        std::string requestBodyString;
-        bool        readingHeader;
+        bool                    chunkedBody;
+        bool                    readingBody;
+        bool                    readingHeader;
+        std::string             requestBodyString;
+        std::string             requestHeaderString;
+        std::list<std::string>  requestBodyList;
+        int                     curChunkSize; 
 
         /* Constructors & Destructors */
         Request();
