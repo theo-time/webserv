@@ -206,9 +206,11 @@ void Request::get()
 
 void Request::post() 
 {
-    std::cout << "POST" << std::endl;
+    std::cout << "POST"<< URI_cgi << std::endl;
 
-    _response.sendError(405, "Method Not Allowed"); // TODO a enlever car juste pour tester
+    postToFile(URI_cgi.substr(1));
+
+    //_response.sendError(405, "Method Not Allowed"); // TODO a enlever car juste pour tester
 }
 
 void Request::mdelete() 
@@ -455,6 +457,19 @@ char asciiToLower(char c) {
   }
   return c;
 }
+
+void Request::postToFile(const std::string& uri)
+{
+	std::fstream postFile;
+
+	postFile.open(uri.c_str(), std::ios::app);
+
+	if (!postFile.is_open())
+		std::cout << "failed to open file in post method" << std::endl;
+	
+	postFile << requestBodyString;
+}
+
 
 void Request::parseURI(std::string URI_cgi)
 {

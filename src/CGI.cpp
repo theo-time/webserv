@@ -11,8 +11,11 @@ CGI::CGI(Request & req) // Initialize all environment variable for CGI
     _envvar[i++] = strdup("SERVER_PROTOCOL=HTTP/1.1");
     _envvar[i++] = strdup(("PATH_INFO=" + req.path_cgi).c_str());
     //_envvar[i++] = strdup(("SCRIPT_NAME=" + req.getPath()).c_str());
-    
-    _req_body = concatenateList(req.requestBodyList);
+
+    if (req.chunkedBody)
+        _req_body = concatenateList(req.requestBodyList);
+    else
+        _req_body = req.requestBodyString;
 
 
     std::cout << "REQUEST BODY: " << _req_body << std::endl;

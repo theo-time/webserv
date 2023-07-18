@@ -90,6 +90,7 @@ class Request {
         void appendRequestString(std::string request);
         void setConfig(Location* config);
         void parseURI(std::string token);
+        void postToFile(const std::string& uri);
 
         /* Methods */
 
