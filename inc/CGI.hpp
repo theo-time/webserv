@@ -55,6 +55,7 @@ class CGI {
 
         Response    getResponseCGI();
         std::string getContentInfo(Request & req, std::string str);
+        std::string concatenateList(const std::list<std::string>& list);
 };
 
 #endif

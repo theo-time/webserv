@@ -54,6 +54,9 @@ class Request {
         std::string requestString2;
         std::string executable_path;
         std::string script_path;
+        std::string URI_cgi;
+        std::string path_cgi;
+        std::string query_cgi;
 
         bool                    chunkedBody;
         bool                    readingBody;
@@ -86,6 +89,7 @@ class Request {
         void setRequestString(std::string &request);
         void appendRequestString(std::string request);
         void setConfig(Location* config);
+        void parseURI(std::string token);
 
         /* Methods */
 

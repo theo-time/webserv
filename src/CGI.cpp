@@ -1,34 +1,35 @@
 #include "CGI.hpp"
+#include <sstream>
+#include <list>
 
 CGI::CGI(Request & req) // Initialize all environment variable for CGI
 {
-    std::cout << "PATHCGI: " << req.getPath() << std::endl;
-
 	if ((_envvar = new char*[8]) == NULL)
 		throw std::runtime_error("Error on a cgi malloc\n");
 		
 	int i = 0;
     _envvar[i++] = strdup("SERVER_PROTOCOL=HTTP/1.1");
-    _envvar[i++] = strdup(("PATH_INFO=" + req.getPath()).c_str());
+    _envvar[i++] = strdup(("PATH_INFO=" + req.path_cgi).c_str());
     //_envvar[i++] = strdup(("SCRIPT_NAME=" + req.getPath()).c_str());
+    
+    _req_body = concatenateList(req.requestBodyList);
 
-    std::cout << "SCRIPT_NAME: " << _envvar[i -1] << std::endl;
+
+    std::cout << "REQUEST BODY: " << _req_body << std::endl;
 
 	if (req.getMethodCode() == GET){
-    //_req_body = "AAAAAA";
-
+        //_req_body = "AAAAAA";
         _envvar[i++] = strdup("REQUEST_METHOD=GET");
-        //_envvar[i++] = strdup("QUERY_STRING=first_name=AA&last_name=AAA");
-        
+        _envvar[i++] = strdup(("QUERY_STRING=" + req.query_cgi).c_str());
 
 	}
     else if (req.getMethodCode() == POST){
-    //_req_body = "Hello worldaaa!";
-
+        
+        //_req_body = "Hello worldaaa!";
         _envvar[i++] = strdup("REQUEST_METHOD=POST");
 		_envvar[i++] = strdup(("CONTENT_TYPE=" + getContentInfo(req, "Content-Type: ")).c_str());
         _envvar[i++] = strdup(("CONTENT_LENGTH=" + getContentInfo(req, "Content-Length: ")).c_str());
-        /*std::cout << "CONTENT TYPE: " << _envvar[i - 1] << std::endl;
+        /*std::cout << "CONTENT TYPE: " << _envvar[i - 2] << std::endl;
         std::cout << "CONTENT LENGTH: " << _envvar[i - 1] << std::endl;*/
     }
 	_envvar[i++] = NULL;
@@ -37,7 +38,7 @@ CGI::CGI(Request & req) // Initialize all environment variable for CGI
     if ((_args = new char*[3]) == NULL)
 		throw std::runtime_error("Error on a cgi malloc\n");
 
-    std::cout << "SCRIPT_NAME: " << req.getPath().c_str() << std::endl;
+    //std::cout << "SCRIPT_NAME: " << req.getPath().c_str() << std::endl;
 
     _args[0] = strdup(req.executable_path.c_str());
 	_args[1] = strdup(req.script_path.c_str());
@@ -57,7 +58,6 @@ CGI::~CGI()
 	delete[] _args;
 }
 
-
 void CGI::executeCGI()
 {
     if (pipe(pipe_in) < 0){
@@ -65,13 +65,14 @@ void CGI::executeCGI()
         close (pipe_in[1]);
         close (pipe_in[0]);
         return;
-    }  
+    }
     if (pipe(pipe_out) < 0) {
         perror("pipe failed");
         close (pipe_in[1]);
         close (pipe_in[0]);
     }
     std::cout << _req_body.c_str() << std::endl;
+    std::cout << _args[1] << std::endl;
     //int tmp = write(pipe_in[1], _req_body.c_str(), _req_body.length());
     //std::cout << "WRITE BYTES : " << tmp << std::endl;
     pid_t pid = fork();
@@ -138,4 +139,13 @@ Response CGI::getResponseCGI() {
         _response.buildHeader();
         _response.buildResponse();
         return _response;
+}
+
+
+std::string CGI::concatenateList(const std::list<std::string>& list) {
+    std::ostringstream oss;
+    for (std::list<std::string>::const_iterator it = list.begin(); it != list.end(); ++it) {
+        oss << *it;
+    }
+    return oss.str();
 }

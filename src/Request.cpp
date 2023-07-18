@@ -2,6 +2,7 @@
 #include "CGI.hpp"
 
 #include <fstream>
+#include <algorithm>
 
 
 Request::Request(int clientSocket, int serverSocket) : clientSocket(clientSocket), serverSocket(serverSocket) {
@@ -330,6 +331,8 @@ void Request::handleRequest()
     std::cout << "INDEX" << index << std::endl;
     std::cout << "PATH" << path << std::endl;
 
+    URI_cgi = path;
+
 
 
     if(_config->getName() != "_internal")
@@ -339,8 +342,6 @@ void Request::handleRequest()
 
     // add dot to start of path 
     path = "." + path;
-
-    std::cout << "PATH" << path << std::endl;
 
     // Check redirection
     if(_config->getType() == "http")
@@ -389,12 +390,12 @@ void Request::handleRequest()
 
     requestCGI.parseRequest(requestString2);
 
+    parseURI(URI_cgi);
 
-    if((getFileExtension(path) == "py" ) && (methodCode == GET || methodCode == POST))
+    if((getFileExtension(path_cgi) == "py" ) && (methodCode == GET || methodCode == POST))
     {
         executable_path = "/usr/bin/python3";
-        script_path = "cgi-bin/" + path.substr(2);
-        path = "cgi-bin/" + path.substr(2);
+        script_path = path_cgi.substr(1);
         CGI cgi(*this);
 
         cgi.executeCGI();
@@ -404,11 +405,11 @@ void Request::handleRequest()
         return;
     }
 
-    if((getFileExtension(path) == "bla" || path == "./file_should_exist_after" ) && (methodCode == POST))
+    if((getFileExtension(path_cgi) == "bla" || path == "./file_should_exist_after" ) && (methodCode == POST))
     {
-        executable_path = "cgi_tester";
+        /*CHANGE TO cgi_tester if tested on a MAC*/
+        executable_path = "ubuntu_cgi_tester";
         script_path = "";
-        path = path.substr(2);
         CGI cgi(*this);
 
         cgi.executeCGI();
@@ -446,6 +447,35 @@ void Request::handleRequest()
         _response.setContentType("text/html");
         WebServ::getRessource("./data/default/501.html", *this);
     }
+}
+
+char asciiToLower(char c) {
+  if (c >= 'A' && c <= 'Z') {
+    return c + ('a' - 'A');
+  }
+  return c;
+}
+
+void Request::parseURI(std::string URI_cgi)
+{
+	if (URI_cgi[0] != '/')
+		std::cout << "URI must begin with a /" << std::endl;
+	
+    query_cgi = "";
+    // URI is case insensitive, transforming it to lowercase
+    std::transform(URI_cgi.begin(), URI_cgi.end(), URI_cgi.begin(), asciiToLower);
+    
+	// Case there is a query in the URI*/
+	size_t querryChar = URI_cgi.find("?");
+	if (querryChar != std::string::npos)
+	{
+		path_cgi = URI_cgi.substr(0, querryChar);
+		query_cgi = URI_cgi.substr(querryChar + 1, URI_cgi.size());
+	}
+
+	// Case there is only path in the URI
+	else
+		path_cgi = URI_cgi;
 }
 
 // GETTERS
