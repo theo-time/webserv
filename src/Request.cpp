@@ -392,22 +392,27 @@ void Request::handleRequest()
 
     if((getFileExtension(path) == "py" ) && (methodCode == GET || methodCode == POST))
     {
+        executable_path = "/usr/bin/python3";
+        script_path = "cgi-bin/" + path.substr(2);
         path = "cgi-bin/" + path.substr(2);
         CGI cgi(*this);
 
         cgi.executeCGI();
-        _response = cgi.getResponseCGI(*this);
+        _response = cgi.getResponseCGI();
+        std::cout << _response.getResponse() << std::endl;
         WebServ::addResponseToQueue(this);
         return;
     }
 
     if((getFileExtension(path) == "bla" || path == "./file_should_exist_after" ) && (methodCode == POST))
     {
+        executable_path = "cgi_tester";
+        script_path = "";
         path = path.substr(2);
         CGI cgi(*this);
 
         cgi.executeCGI();
-        _response = cgi.getResponseCGI(*this);
+        _response = cgi.getResponseCGI();
         WebServ::addResponseToQueue(this);
         return;
     }

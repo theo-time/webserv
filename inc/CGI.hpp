@@ -53,7 +53,7 @@ class CGI {
 	 ======================= PUBLIC METHODS ============================*/
 		void executeCGI();
 
-        Response    getResponseCGI(Request & req);
+        Response    getResponseCGI();
         std::string getContentInfo(Request & req, std::string str);
 };
 

@@ -8,7 +8,7 @@ last_name  = "Braco"
 
 
 
-print ("\r\n")
+#print ("\r\n")
 print ("<html>")
 print ("<head>")
 print ("<title>Hello py cgi</title>")

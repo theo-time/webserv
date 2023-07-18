@@ -12,9 +12,9 @@ fileitem = "Makefile"
 #if fileitem.filename:
    # strip leading path from file name to avoid 
    # directory traversal attacks
-   open(os.getcwd() + '/cgi-bin/' + os.path.basename(fileitem), 'wb').write(fileitem.read())
+open(os.getcwd() + '/cgi-bin/' + os.path.basename(fileitem), 'wb').write(fileitem.read())
 
-   message = 'The file was uploaded successfully'
+message = 'The file was uploaded successfully'
    
 #else:
  #  message = 'No file was uploaded'

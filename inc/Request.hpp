@@ -52,6 +52,8 @@ class Request {
 
         std::string header;
         std::string requestString2;
+        std::string executable_path;
+        std::string script_path;
 
         bool                    chunkedBody;
         bool                    readingBody;

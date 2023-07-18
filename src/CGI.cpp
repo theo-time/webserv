@@ -15,7 +15,7 @@ CGI::CGI(Request & req) // Initialize all environment variable for CGI
     std::cout << "SCRIPT_NAME: " << _envvar[i -1] << std::endl;
 
 	if (req.getMethodCode() == GET){
-    _req_body = "AAAAAA";
+    //_req_body = "AAAAAA";
 
         _envvar[i++] = strdup("REQUEST_METHOD=GET");
         //_envvar[i++] = strdup("QUERY_STRING=first_name=AA&last_name=AAA");
@@ -23,7 +23,7 @@ CGI::CGI(Request & req) // Initialize all environment variable for CGI
 
 	}
     else if (req.getMethodCode() == POST){
-    _req_body = "Hello worldaaa!";
+    //_req_body = "Hello worldaaa!";
 
         _envvar[i++] = strdup("REQUEST_METHOD=POST");
 		_envvar[i++] = strdup(("CONTENT_TYPE=" + getContentInfo(req, "Content-Type: ")).c_str());
@@ -39,10 +39,8 @@ CGI::CGI(Request & req) // Initialize all environment variable for CGI
 
     std::cout << "SCRIPT_NAME: " << req.getPath().c_str() << std::endl;
 
-	//_args[0] = strdup("/usr/bin/python3");
-	//_args[1] = strdup(req.getPath().c_str());
-    _args[0] = strdup("cgi_tester");
-	_args[1] = NULL;
+    _args[0] = strdup(req.executable_path.c_str());
+	_args[1] = strdup(req.script_path.c_str());
 	_args[2] = NULL;
 }
 
@@ -53,7 +51,7 @@ CGI::~CGI()
 		free(_envvar[i]); _envvar[i] = NULL;}
 	delete[] _envvar;
 	
-	i = 0;
+	i = -1;
 	while (_args[i++]){
 		free(_args[i]); _args[i] = NULL;}
 	delete[] _args;
@@ -64,6 +62,8 @@ void CGI::executeCGI()
 {
     if (pipe(pipe_in) < 0){
         perror("pipe failed");
+        close (pipe_in[1]);
+        close (pipe_in[0]);
         return;
     }  
     if (pipe(pipe_out) < 0) {
@@ -72,8 +72,8 @@ void CGI::executeCGI()
         close (pipe_in[0]);
     }
     std::cout << _req_body.c_str() << std::endl;
-    int tmp = write(pipe_in[1], _req_body.c_str(), _req_body.length());
-    std::cout << "WRITE BYTES : " << tmp << std::endl;
+    //int tmp = write(pipe_in[1], _req_body.c_str(), _req_body.length());
+    //std::cout << "WRITE BYTES : " << tmp << std::endl;
     pid_t pid = fork();
     if (pid == -1)
         perror("fork failed");
@@ -104,13 +104,6 @@ void CGI::executeCGI()
 		else
 			std::cout << "CGI execution failed." << std::endl;
 
-        /*bytesRead = read(pipe_out[0], buffer, 4096);
-
-        bytesRead = read(pipe_out[0], buffer, 4096);
-
-        std::cout << bytesRead << std::endl;
-        std::cout << buffer << std::endl;*/
-
         close(pipe_out[1]);
         while ((bytesRead = read(pipe_out[0], buffer, 4096)) > 0) // Read the output from the child process
             outputCGI.append(buffer, bytesRead);
@@ -136,11 +129,11 @@ std::string CGI::getContentInfo(Request & req, std::string str) {
     return contentValue;
 }
 
-Response CGI::getResponseCGI(Request & req) {
+Response CGI::getResponseCGI() {
         _response.setStatusCode("200");
         _response.setStatusText("OK");
         _response.setContentType("text/html");
-        _response.setProtocol(req.getProtocol());
+        _response.setProtocol("HTTP/1.1");
         _response.setBody(outputCGI);
         _response.buildHeader();
         _response.buildResponse();
