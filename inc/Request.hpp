@@ -66,6 +66,8 @@ class Request {
         std::list<std::string>  requestBodyList;
         int                     curChunkSize; 
 
+        bool                    ready2send;
+
         /* Constructors & Destructors */
         Request();
         Request(int clientSocket, int serverSocket);

@@ -133,6 +133,18 @@ bool WebServ::process(void)
     // timeout.tv_usec = 0;
     while (true)
     {
+        if (!_requests.empty())
+        {            
+            for (int i = 0; i <= _max_fd; ++i)
+            {
+                if (_requests.count(i) && _requests[i]->ready2send)
+                {
+                    del(i, _master_set_recv);
+                    add(i, _master_set_write);
+                }
+            }
+        }
+
         working_set_recv = _master_set_recv;
         working_set_write = _master_set_write;
 
@@ -380,7 +392,7 @@ bool WebServ::readRequest(const int &fd, Request &request)
             }
 
             request.handleRequest();
-            del(fd, _master_set_recv);
+            // del(fd, _master_set_recv);
         }
         else
            request.clear();
@@ -505,8 +517,8 @@ void WebServ::addResponseToQueue(Request *request)
 {
     // std::cout << "****** addResponseToQueue" << request->getClientSocket() << std::endl;
     // std::cout << request->getResponseString() << std::endl;
-    add(request->getClientSocket(), _master_set_write);
-
+    // add(request->getClientSocket(), _master_set_write);
+    request->ready2send = true;
 }
 
 void WebServ::add(const int& fd, fd_set& set)
