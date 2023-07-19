@@ -220,6 +220,7 @@ bool WebServ::acceptNewCnx(const int& fd)
             close(clientSocket);
             break;
         }
+        // TODO set receive SO_RCVTIMEO and send timeout  SO_SNDTIMEO
         
         add(clientSocket, _master_set_recv);
         _requests[clientSocket] = new Request(clientSocket, fd);
