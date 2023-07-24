@@ -122,49 +122,6 @@ void Request::parseBody()
         body = requestBodyString;
 }
 
-/*void Request::retrieveHeaderAndBody(const std::string& input) {
-    std::string boundaryPrefix = "boundary=";
-    size_t startPos = input.find(boundaryPrefix);
-    if (startPos == std::string::npos) {
-        // "boundary" identifier not found
-        return;
-    }
-
-    startPos += boundaryPrefix.length();
-    size_t endPos = input.find_first_of("\r\n", startPos);
-
-    if (endPos == std::string::npos) {
-        // Line break not found
-        return;
-    }
-
-    std::string boundaryValue = input.substr(startPos, endPos - startPos);
-    boundaryValue = "--" + boundaryValue;
-
-    std::cout << "boundaryValue :" << boundaryValue << std::endl;
-
-    // Find the start and end positions of the body
-    std::string bodyStart = boundaryValue;
-    size_t bodyStartPos = input.find(bodyStart);
-    if (bodyStartPos == std::string::npos) {
-        std::cout << "BODY START NOT FOUND" << std::endl;
-        return;
-    }
-
-    bodyStartPos += bodyStart.length();
-    size_t bodyEndPos = input.find(boundaryValue + "--", bodyStartPos);
-    if (bodyEndPos == std::string::npos) {
-        std::cout << "BODY END NOT FOUND" << std::endl;
-        return;
-    }
-
-    // Extract the header and body
-    header = input.substr(0, bodyStartPos - bodyStart.length());
-    body = input.substr(bodyStartPos, bodyEndPos - bodyStartPos);
-}*/
-
-
-
 void Request::listDirectoryResponse()
 {
     std::cout << "LIST DIRECTORY" << std::endl;
@@ -294,16 +251,33 @@ void Request::routingGet()
 
 void Request::routingPost() 
 {
-	std::fstream postFile;
+    std::ifstream my_file(path.c_str());
 
+    if (!my_file.good())
+    {
+        std::cout << "File don't exist" << std::endl;
+        _response.setStatusCode("201");
+        _response.setStatusText("Created");
+        _response.setContentType("text/plain");
+    }
+    else {
+        std::cout << "File exist" << std::endl;
+        _response.setStatusCode("200");
+        _response.setStatusText("OK");
+        _response.setContentType("text/plain");
+        _response.setBody(getBody());
+    }
+
+	std::fstream postFile;
 	postFile.open(path.c_str(), std::ios::app);
 	if (!postFile.is_open())
 		std::cout << "failed to open file in post method" << std::endl;
 	postFile << getBody();
+    _response.setProtocol("HTTP/1.1");
+    _response.buildHeader();
+    _response.buildResponse();
+    WebServ::addResponseToQueue(this);
 
-    _response.setStatusCode("200");
-    _response.setStatusText("OK");
-    WebServ::getRessource(path, *this);
 
     //_response.sendError(405, "Method Not Allowed"); // TODO a enlever car juste pour tester
 }

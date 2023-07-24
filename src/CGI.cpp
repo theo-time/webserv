@@ -10,14 +10,11 @@ CGI::CGI(Request & req) // Initialize all environment variable for CGI
     _envvar[i++] = strdup(("PATH_INFO=" + req.getPath()).c_str());
     //_envvar[i++] = strdup(("SCRIPT_NAME=" + req.getPath()).c_str());
 
-
-
 	if (req.getMethod() == "GET"){
         //_req_body = "AAAAAA";
         _envvar[i++] = strdup("REQUEST_METHOD=GET");
         _envvar[i++] = strdup(("QUERY_STRING=" + req.getQuery()).c_str());
         std::cout << "Query : " << _envvar[i - 1] << std::endl;
-
 	}
     else if (req.getMethod() == "POST"){
         
