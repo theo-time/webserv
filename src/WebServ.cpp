@@ -6,7 +6,7 @@
 /*   By: jde-la-f <jde-la-f@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/13 14:37:03 by adcarnec          #+#    #+#             */
-/*   Updated: 2023/07/24 17:02:49 by jde-la-f         ###   ########.fr       */
+/*   Updated: 2023/07/24 18:33:38 by jde-la-f         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -133,6 +133,18 @@ bool WebServ::process(void)
     // timeout.tv_usec = 0;
     while (true)
     {
+        if (!_requests.empty())
+        {            
+            for (int i = 0; i <= _max_fd; ++i)
+            {
+                if (_requests.count(i) && _requests[i]->ready2send)
+                {
+                    del(i, _master_set_recv);
+                    add(i, _master_set_write);
+                }
+            }
+        }
+
         working_set_recv = _master_set_recv;
         working_set_write = _master_set_write;
 
@@ -220,6 +232,7 @@ bool WebServ::acceptNewCnx(const int& fd)
             close(clientSocket);
             break;
         }
+        // TODO set receive SO_RCVTIMEO and send timeout  SO_SNDTIMEO
         
         add(clientSocket, _master_set_recv);
         _requests[clientSocket] = new Request(clientSocket, fd);
@@ -379,7 +392,7 @@ bool WebServ::readRequest(const int &fd, Request &request)
             }
 
             request.handleRequest();
-            del(fd, _master_set_recv);
+            // del(fd, _master_set_recv);
         }
         else
            request.clear();
@@ -502,10 +515,10 @@ bool WebServ::isListedRessource(const std::string& path)
 
 void WebServ::addResponseToQueue(Request *request)
 {
-    std::cout << "****** addResponseToQueue" << request->getClientSocket() << std::endl;
-    std::cout << request->getResponseString() << std::endl;
-    add(request->getClientSocket(), _master_set_write);
-
+    // std::cout << "****** addResponseToQueue" << request->getClientSocket() << std::endl;
+    // std::cout << request->getResponseString() << std::endl;
+    // add(request->getClientSocket(), _master_set_write);
+    request->ready2send = true;
 }
 
 void WebServ::add(const int& fd, fd_set& set)

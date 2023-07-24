@@ -12,6 +12,7 @@ Request::Request(int clientSocket, int serverSocket) : clientSocket(clientSocket
     readingBody = false;
     chunkedBody = false;
     curChunkSize = -1;
+    ready2send = false;
 }
 
 
@@ -516,4 +517,5 @@ void Request::clear(void)
     chunkedBody = false;
     requestBodyList.clear();
     curChunkSize = -1;
+    ready2send = false;
 }
