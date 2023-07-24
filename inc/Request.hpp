@@ -12,6 +12,7 @@
 #include <string>
 #include <sys/types.h>
 #include <dirent.h>
+#include <cstdlib>
 #include <list>
 
 
@@ -19,13 +20,17 @@
 # include "Location.hpp"
 # include "Response.hpp"
 # include "Utils.hpp"
-# include "ParsingCGI.hpp"
 
 // TYPES 
 #define GET 1
 #define POST 2
 #define DELETE 3
 #define UNKNOWN 0
+
+#define MAX_URI_LEN 8000
+#define MAX_HEADER_LEN 8000
+
+#define CGI_BUFFER_SIZE 2046
 
 class Request {
     private:
@@ -36,6 +41,7 @@ class Request {
         std::string protocol;
         std::string requestString;
         std::string body;
+        std::string query;
         std::string responseString;
         std::string fileContent;
         std::map<std::string, std::string> headers;
@@ -51,12 +57,8 @@ class Request {
     public:
 
         std::string header;
-        std::string requestString2;
         std::string executable_path;
         std::string script_path;
-        std::string URI_cgi;
-        std::string path_cgi;
-        std::string query_cgi;
 
         bool                    chunkedBody;
         bool                    readingBody;
@@ -72,11 +74,11 @@ class Request {
         ~Request();
 
         /* Getters & Setters */
-        int getType();
         std::string getPath();
         std::string getProtocol();
         std::string getMethod();
         std::string getBody();
+        std::string getQuery();
         int getMethodCode();
         std::string getRequestString();
         int         getClientSocket();
@@ -90,19 +92,21 @@ class Request {
         void appendRequestString(std::string request);
         void setConfig(Location* config);
         void parseURI(std::string token);
-        void postToFile(const std::string& uri);
 
         /* Methods */
 
-        void get();
-        void post();
-        void mdelete();
+        void routingGet();
+        void routingPost();
+        void routingDelete();
+        void routingCGI();
         void parseRequest();
+        void parseMethodToken(const std::string& token);
+        void parseHTTPVersion(const std::string& token);
+        void parseHeaders();
+        void parseBody();
         void handleRequest();
         void buildResponse();
         bool fileExists();
-        void retrieveHeaderAndBody(const std::string& input);
-        std::string getRedirectionHTML(std::string url);
         void listDirectoryResponse();
         void clear();
 };

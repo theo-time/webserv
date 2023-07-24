@@ -1,33 +1,22 @@
 #ifndef CGI_HPP
 #define CGI_HPP 
 
-#include <iostream>
 #include <string>
 #include <sys/socket.h>
 #include <arpa/inet.h>
-#include <unistd.h>
-#include <fstream>
-#include "Request.hpp"
-#include <iostream>
-#include <unistd.h>
 #include <fstream>
 #include <cstring>
 #include <sstream>
 #include <sys/wait.h>
 #include <iostream>
-#include <unistd.h>
-#include <fstream>
-#include <cstring>
-#include <sstream>
-#include <sys/wait.h>
-#include <cstdlib>
-#include <string>
 #include <unistd.h>
 #include <stdexcept>
-#include <string>
 #include <cstdlib>
-#include <iostream>
-# include "Response.hpp"
+#include <list>
+
+#include "Request.hpp"
+#include "Response.hpp"
+#include "Utils.hpp"
 
 class CGI {
     private:
@@ -51,11 +40,10 @@ class CGI {
 	
 	/* ===================================================================
 	 ======================= PUBLIC METHODS ============================*/
-		void executeCGI();
+		void executeCGI(Request & req);
 
         Response    getResponseCGI();
         std::string getContentInfo(Request & req, std::string str);
-        std::string concatenateList(const std::list<std::string>& list);
 };
 
 #endif

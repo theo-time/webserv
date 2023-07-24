@@ -15,56 +15,85 @@ Request::Request(int clientSocket, int serverSocket) : clientSocket(clientSocket
 }
 
 
+Request::~Request() {
+    std::cout << "Request destroyed" << std::endl;
+}
+
+
 void Request::parseRequest(){
-    std::cout << "--------- REQUEST TO PARSE -------" << std::endl;
-    std::cout << requestString << std::endl;
-    requestString2 = requestString;
-    std::cout << "--------- ++++++++++++++++ -------" << std::endl;
-    // Parse first line
     std::string firstLine = requestString.substr(0, requestString.find("\r\n"));
-    requestString.erase(0, requestString.find("\r\n") + 2);
-    std::string delimiter = " ";
+    std::vector<std::string> tokens = splitWithSep(firstLine, ' ');
+    if (tokens.size() != 3)
+		std::cout << "400 : a field from request line is missing";
+
+	parseMethodToken(tokens[0]);
+    parseURI(tokens[1]);
+	parseHTTPVersion(tokens[2]);
+    parseHeaders();
+    parseBody();
+
+
+    std::cout << " - PARSING COMPLETED - " << std::endl;
+    std::cout << "Method: " << method << std::endl;
+    std::cout << "Path: " << path << std::endl;
+    std::cout << "Protocol: " << protocol << std::endl;
+    std::cout << "Query: " << query << std::endl;
+    std::cout << "Body: " << body << std::endl;
+}
+
+
+
+void Request::parseMethodToken(const std::string& token)
+{
+	std::string methods[4] = {"GET", "HEAD", "POST", "DELETE"};
+	
+	for (int i = 0; i < 4; ++i)
+	{
+		if (!token.compare(0, methods[i].size(), methods[i]) &&
+				token.size() == methods[i].size())
+		{
+			method = methods[i];
+			return ;
+		}
+	}
+
+	std::cout << "400 : unknown method";
+}
+
+void Request::parseURI(std::string token)
+{
+	if (token[0] != '/')
+		std::cout << "400 : URI must begin with a /" << std::endl;
+	
+    query = "";
+
+	size_t querryChar = token.find("?");
+	if (querryChar != std::string::npos)
+	{
+		path = token.substr(0, querryChar);
+		query = token.substr(querryChar + 1, token.size());
+	}
+	else
+		path = token;
+    path = "." + path;
+}
+
+void Request::parseHTTPVersion(const std::string& token)
+{
+	if (token.size() < 7 || token.compare(0, 5, "HTTP/") || token.compare(6, 1, ".") || 
+			!isdigit(static_cast<int>(token[5])) || !isdigit(static_cast<int>(token[7])))
+		std::cout << "400 : HTTP version not correct";
+
+	protocol = token;
+}
+
+void Request::parseHeaders()
+{
+    std::string delimiter = "\r\n";
     size_t pos = 0;
-    std::string token;
     int i = 0;
-    while ((pos = firstLine.find(delimiter))) {
-        token = firstLine.substr(0, pos);
-        if (i == 0) {
-            method = token;
-        } else if (i == 1) {
-            path = token;
-            originalPath = token;
-        } else if (i == 2) {
-            protocol = firstLine;
-            break;
-        }
-        firstLine.erase(0, pos + delimiter.length());
-        i++;
-    }
-
-    // verify method
-    if(method == "GET") {
-        methodCode = 1;
-    } else if (method == "POST") {
-        methodCode = 2;
-        retrieveHeaderAndBody(requestString2);
-    } else if (method == "DELETE") {
-        methodCode = 3;
-    } else {
-        methodCode = 0;
-    }
-
-    // verify path
-    if (path == "/") {
-        path = "/index.html";
-    }
-
-    // Parse headers 
-    delimiter = "\r\n";
-    pos = 0;
-    i = 0;
     while ((pos = requestString.find(delimiter)) != std::string::npos) {
-        token = requestString.substr(0, pos);
+        std::string token = requestString.substr(0, pos);
         requestString.erase(0, pos + delimiter.length());
         std::string delimiter2 = ": ";
         size_t pos2 = 0;
@@ -80,19 +109,19 @@ void Request::parseRequest(){
         }
         i++;
     }
-
-
-
-    // std::cout << " - PARSING COMPLETED - " << std::endl;
-    // std::cout << "Method: " << method << std::endl;
-    // std::cout << "Path: " << path << std::endl;
-    // std::cout << "Protocol: " << protocol << std::endl;
-    // std::cout << "Headers: " << std::endl;
-    for (std::map<std::string, std::string>::iterator it=headers.begin(); it!=headers.end(); ++it)
-        std::cout << it->first << " => " << it->second << '\n';
+    /*for (std::map<std::string, std::string>::iterator it=headers.begin(); it!=headers.end(); ++it)
+        std::cout << it->first << " => " << it->second << '\n';*/
 }
 
-void Request::retrieveHeaderAndBody(const std::string& input) {
+void Request::parseBody()
+{
+    if (chunkedBody)
+        body = concatenateList(requestBodyList);
+    else
+        body = requestBodyString;
+}
+
+/*void Request::retrieveHeaderAndBody(const std::string& input) {
     std::string boundaryPrefix = "boundary=";
     size_t startPos = input.find(boundaryPrefix);
     if (startPos == std::string::npos) {
@@ -131,15 +160,216 @@ void Request::retrieveHeaderAndBody(const std::string& input) {
     // Extract the header and body
     header = input.substr(0, bodyStartPos - bodyStart.length());
     body = input.substr(bodyStartPos, bodyEndPos - bodyStartPos);
-}
+}*/
 
 
-std::string getFileExtension(std::string filename)
+
+void Request::listDirectoryResponse()
 {
-    std::string extension = filename.substr(filename.find_last_of(".") + 1);
-    return extension;
+    std::cout << "LIST DIRECTORY" << std::endl;
+
+    std::vector<std::string> fileList = getFileList(path);
+
+    std::stringstream ss;
+
+    ss << "<!DOCTYPE html>" << std::endl;
+    ss << "<html>" << std::endl;
+    ss << "<head>" << std::endl;
+    ss << "<title>Directory listing</title>" << std::endl;
+    ss << "</head>" << std::endl;
+    ss << "<body>" << std::endl;
+    ss << "<h1>Directory listing</h1>" << std::endl;
+    ss << "<ul>" << std::endl;
+    while (!fileList.empty())
+    {
+        ss << "<li><a href=\"" << originalPath << "/" << fileList.back() << "\">" << fileList.back() << "</a></li>" << std::endl;
+        fileList.pop_back();
+    }
+    ss << "</ul>" << std::endl;
+    ss << "</body>" << std::endl;
+    ss << "</html>" << std::endl;
+
+    // std::cout << ss.str() << std::endl;
+    _response.setBody(ss.str());
+    _response.setStatusCode("200");
+    _response.setProtocol("HTTP/1.1");
+    _response.setStatusText("OK");
+    _response.setContentType("text/html");
+    _response.buildHeader();
+    _response.buildResponse();
+    WebServ::addResponseToQueue(this);
 }
 
+void Request::handleRequest() 
+{
+    // Conf file variables
+    std::string root = _config->getRoot(); 
+    std::string index = _config->getIndex();
+
+    if(_config->getName() != "_internal")
+        path.replace(path.find(_config->getName()), _config->getName().length(), _config->getRoot());
+    else 
+        path = root + path;
+
+    // Check redirection
+    if(_config->getType() == "http")
+    {
+        std::cout << "-------- Redirection -------" << std::endl;
+        fileContent = getRedirectionHTML(_config->getPath());
+        _response.setStatusCode("303");
+        _response.setStatusText("Other");
+        _response.setContentType("text/html");
+        _response.setProtocol("HTTP/1.1");
+        _response.setBody(fileContent);
+        _response.buildHeader();
+        _response.buildResponse();
+        // std::cout << _response.getResponse() << std::endl;
+        WebServ::addResponseToQueue(this);
+        return;
+    }
+
+    // If path is a directory, and index file exists, add default index name to path
+    if (opendir(path.c_str()))
+    {
+        std::string indexFile = path + "/" + index;
+        std::cout << "Effective path: " << indexFile << std::endl;
+        if(path.find("//") != std::string::npos)
+            path.replace(path.find("//"), 2, "/");
+        if(!::fileExists(indexFile))
+        {
+            if(!_config->isAutoIndex())
+                return(_response.sendError(403, "Forbidden"));
+            return(listDirectoryResponse());
+        }
+        else
+            path = indexFile;
+    }
+
+    // Method routing
+    if (getFileExtension(path) == "py" || getFileExtension(path) == "bla")
+        this->routingCGI();
+    else if (method == "GET")
+        this->routingGet();
+    else if(method == "POST")
+        this->routingPost();
+    else if(method == "DELETE")
+        this->routingDelete();
+    else if (method == "HEAD")
+    {
+        std::cout << "HEAD" << std::endl;
+        _response.sendError(405, "Method Not Allowed");
+
+        /* _response.setStatusCode("405");// TODO a enlever car juste pour tester
+        _response.setStatusText("Method Not Allowed");
+        _response.setContentType("text/html");
+        _response.setProtocol("HTTP/1.1");
+        WebServ::getRessource("./data/default/empty.html", *this); */
+        return;
+    }
+    else {
+        std::cout << "Unknown method" << std::endl;
+        _response.setStatusCode("501");
+        _response.setStatusText("Not Implemented");
+        _response.setContentType("text/html");
+        WebServ::getRessource("./data/default/501.html", *this);
+    }
+    
+}
+
+void Request::routingGet() 
+{
+    if(!::fileExists(path))
+        _response.sendError(404, "Not Found");
+    else if(!::fileIsReadable(path))
+        _response.sendError(403, "Forbidden");
+    else
+    {
+        _response.setStatusCode("200");
+        _response.setStatusText("OK");
+        std::cout << "Requesting ressource at path : " << path << std::endl;
+        WebServ::getRessource(path, *this);
+    }
+}
+
+void Request::routingPost() 
+{
+	std::fstream postFile;
+
+	postFile.open(path.c_str(), std::ios::app);
+	if (!postFile.is_open())
+		std::cout << "failed to open file in post method" << std::endl;
+	postFile << getBody();
+
+    _response.setStatusCode("200");
+    _response.setStatusText("OK");
+    WebServ::getRessource(path, *this);
+
+    //_response.sendError(405, "Method Not Allowed"); // TODO a enlever car juste pour tester
+}
+
+void Request::routingDelete() 
+{
+    std::cout << "DELETE" << std::endl;
+    std::ifstream my_file(path.c_str());
+
+    if (!my_file.good())
+    {
+        std::cout << "File not found" << std::endl;
+        _response.setStatusCode("404");
+        _response.setStatusText("Not Found");
+        _response.setContentType("text/html");
+        WebServ::getRessource("./data/default/404.html", *this);
+    }
+    else 
+    {
+        _response.setStatusCode("200");
+        _response.setStatusText("OK");
+        std::cout << "Requesting ressource at path : " << path << std::endl;
+        if(!remove(path.c_str()))
+        {
+            std::cout << "File deleted" << std::endl;
+            // TODO : send 200 response without body
+        }
+        else
+        {
+            std::cout << "Error deleting file" << std::endl;
+            _response.setStatusCode("500");
+            _response.setStatusText("Internal Server Error");
+            _response.setContentType("text/html");
+            WebServ::getRessource("./data/default/500.html", *this);
+        }
+
+    }
+}
+
+void Request::routingCGI()
+{
+    if((getFileExtension(path) == "py" ) && (method == "GET" || method == "POST"))
+    {
+        executable_path = "/usr/bin/python3";
+        script_path = path.substr(2);
+        CGI cgi(*this);
+
+        cgi.executeCGI(*this);
+        _response = cgi.getResponseCGI();
+        std::cout << _response.getResponse() << std::endl;
+        WebServ::addResponseToQueue(this);
+        return;
+    }
+
+    if((getFileExtension(path) == "bla" || path == "./file_should_exist_after" ) && (method == "POST"))
+    {
+        /*CHANGE TO cgi_tester if tested on a MAC*/
+        executable_path = "ubuntu_cgi_tester";
+        script_path = "";
+        CGI cgi(*this);
+
+        cgi.executeCGI(*this);
+        _response = cgi.getResponseCGI();
+        WebServ::addResponseToQueue(this);
+        return;
+    }
+}
 
 void Request::buildResponse()
 {
@@ -183,315 +413,6 @@ void Request::buildResponse()
 }
 
 
-Request::~Request() {
-    std::cout << "Request destroyed" << std::endl;
-}
-
-void Request::get() 
-{
-    std::cout << "GET" << std::endl;
-    std::cout << "Path: " << path << std::endl;
-    if(!::fileExists(path))
-        _response.sendError(404, "Not Found");
-    else if(!::fileIsReadable(path))
-        _response.sendError(403, "Forbidden");
-    else
-    {
-        _response.setStatusCode("200");
-        _response.setStatusText("OK");
-        std::cout << "Requesting ressource at path : " << path << std::endl;
-        WebServ::getRessource(path, *this);
-    }
-}
-
-void Request::post() 
-{
-    std::cout << "POST"<< URI_cgi << std::endl;
-
-    postToFile(URI_cgi.substr(1));
-
-    //_response.sendError(405, "Method Not Allowed"); // TODO a enlever car juste pour tester
-}
-
-void Request::mdelete() 
-{
-    std::cout << "DELETE" << std::endl;
-    std::ifstream my_file(path.c_str());
-
-    if (!my_file.good())
-    {
-        std::cout << "File not found" << std::endl;
-        _response.setStatusCode("404");
-        _response.setStatusText("Not Found");
-        _response.setContentType("text/html");
-        WebServ::getRessource("./data/default/404.html", *this);
-    }
-    else 
-    {
-        _response.setStatusCode("200");
-        _response.setStatusText("OK");
-        std::cout << "Requesting ressource at path : " << path << std::endl;
-        if(!remove(path.c_str()))
-        {
-            std::cout << "File deleted" << std::endl;
-            // TODO : send 200 response without body
-        }
-        else
-        {
-            std::cout << "Error deleting file" << std::endl;
-            _response.setStatusCode("500");
-            _response.setStatusText("Internal Server Error");
-            _response.setContentType("text/html");
-            WebServ::getRessource("./data/default/500.html", *this);
-        }
-
-    }
-}
-
-std::string Request::getRedirectionHTML(std::string url)
-{
-    std::stringstream ss;
-    std::string str;
-
-    ss << "<!DOCTYPE html>" << std::endl;
-    ss << "<html>" << std::endl;
-    ss << "<head>" << std::endl;
-    ss << "<title>Redirection</title>" << std::endl;
-    ss << "<meta http-equiv=\"refresh\" content=\"0; url=" << url << "\" />" << std::endl;
-    ss << "</head>" << std::endl;
-    ss << "<body>" << std::endl;
-    ss << "<p>Redirection vers <a href=\"" << url << "\">" << url << "</a></p>" << std::endl;
-    ss << "</body>" << std::endl;
-    ss << "</html>" << std::endl;
-
-    str = ss.str();
-    return str;
-}
-
-std::vector<std::string> getFileList(std::string path) {
-    DIR             *dir;
-    struct dirent   *entry;
-    std::vector<std::string> fileList;
-
-    if ((dir = opendir(path.c_str())) == NULL)
-        perror("opendir() error");
-    else {
-        while ((entry = readdir(dir)) != NULL)
-            fileList.push_back(entry->d_name);
-        closedir(dir);
-    }
-    return fileList;
-}
-
-
-void Request::listDirectoryResponse()
-{
-    std::cout << "LIST DIRECTORY" << std::endl;
-
-    std::vector<std::string> fileList = getFileList(path);
-
-    std::stringstream ss;
-
-    ss << "<!DOCTYPE html>" << std::endl;
-    ss << "<html>" << std::endl;
-    ss << "<head>" << std::endl;
-    ss << "<title>Directory listing</title>" << std::endl;
-    ss << "</head>" << std::endl;
-    ss << "<body>" << std::endl;
-    ss << "<h1>Directory listing</h1>" << std::endl;
-    ss << "<ul>" << std::endl;
-    while (!fileList.empty())
-    {
-        ss << "<li><a href=\"" << originalPath << "/" << fileList.back() << "\">" << fileList.back() << "</a></li>" << std::endl;
-        fileList.pop_back();
-    }
-    ss << "</ul>" << std::endl;
-    ss << "</body>" << std::endl;
-    ss << "</html>" << std::endl;
-
-    // std::cout << ss.str() << std::endl;
-    _response.setBody(ss.str());
-    _response.setStatusCode("200");
-    _response.setProtocol("HTTP/1.1");
-    _response.setStatusText("OK");
-    _response.setContentType("text/html");
-    _response.buildHeader();
-    _response.buildResponse();
-    WebServ::addResponseToQueue(this);
-}
-
-void Request::handleRequest() 
-{
-    // --------- PATH PARSING ---------
-
-    // Conf file variables
-    std::string root = _config->getRoot(); 
-    std::string index = _config->getIndex();
-
-
-    std::cout << "BODY" << getBody() << std::endl;
-    std::cout << "INDEX" << index << std::endl;
-    std::cout << "PATH" << path << std::endl;
-
-    URI_cgi = path;
-
-
-
-    if(_config->getName() != "_internal")
-        path.replace(path.find(_config->getName()), _config->getName().length(), _config->getRoot());
-    else 
-        path = root + path;
-
-    // add dot to start of path 
-    path = "." + path;
-
-    // Check redirection
-    if(_config->getType() == "http")
-    {
-        std::cout << "-------- Redirection -------" << std::endl;
-        fileContent = getRedirectionHTML(_config->getPath());
-        _response.setStatusCode("303");
-        _response.setStatusText("Other");
-        _response.setContentType("text/html");
-        _response.setProtocol("HTTP/1.1");
-        _response.setBody(fileContent);
-        _response.buildHeader();
-        _response.buildResponse();
-        // std::cout << _response.getResponse() << std::endl;
-        WebServ::addResponseToQueue(this);
-        return;
-    }
-
-    // If path is a directory, and index file exists, add default index name to path
-    if (opendir(path.c_str()))
-    {
-        std::string indexFile = path + "/" + index;
-        std::cout << "Effective path: " << indexFile << std::endl;
-        if(path.find("//") != std::string::npos)
-            path.replace(path.find("//"), 2, "/");
-        if(!::fileExists(indexFile))
-        {
-            if(!_config->isAutoIndex())
-                return(_response.sendError(403, "Forbidden"));
-            return(listDirectoryResponse());
-        }
-        else
-            path = indexFile;
-    }
-
-    std::cout << "Effective path: " << path << std::endl;
-    // --------- END OF PATH PARSING ---------
-
-    std::cout << "Handle request" << std::endl;
-    std::string fileContent;
-
-    std::cout << getFileExtension(path) << std::endl;
-
-
-    ParsingCGI requestCGI;
-
-    requestCGI.parseRequest(requestString2);
-
-    parseURI(URI_cgi);
-
-    if((getFileExtension(path_cgi) == "py" ) && (methodCode == GET || methodCode == POST))
-    {
-        executable_path = "/usr/bin/python3";
-        script_path = path_cgi.substr(1);
-        CGI cgi(*this);
-
-        cgi.executeCGI();
-        _response = cgi.getResponseCGI();
-        std::cout << _response.getResponse() << std::endl;
-        WebServ::addResponseToQueue(this);
-        return;
-    }
-
-    if((getFileExtension(path_cgi) == "bla" || path == "./file_should_exist_after" ) && (methodCode == POST))
-    {
-        /*CHANGE TO cgi_tester if tested on a MAC*/
-        executable_path = "ubuntu_cgi_tester";
-        script_path = "";
-        CGI cgi(*this);
-
-        cgi.executeCGI();
-        _response = cgi.getResponseCGI();
-        WebServ::addResponseToQueue(this);
-        return;
-    }
-
-    // Method routing
-    if (methodCode == GET)
-        this->get();
-    if(methodCode == POST)
-        this->post();
-    if(methodCode == DELETE)
-        this->mdelete();
-    if(methodCode == UNKNOWN)
-    {
-        if (requestString2.find("HEAD") == 0)
-        {
-            std::cout << "HEAD" << std::endl;
-            std::cout << requestString2 << std::endl;
-            _response.sendError(405, "Method Not Allowed");
-
-            /* _response.setStatusCode("405");// TODO a enlever car juste pour tester
-            _response.setStatusText("Method Not Allowed");
-            _response.setContentType("text/html");
-            _response.setProtocol("HTTP/1.1");
-            WebServ::getRessource("./data/default/empty.html", *this); */
-            return;
-        }
-
-        std::cout << "Unknown method" << std::endl;
-        _response.setStatusCode("501");
-        _response.setStatusText("Not Implemented");
-        _response.setContentType("text/html");
-        WebServ::getRessource("./data/default/501.html", *this);
-    }
-}
-
-char asciiToLower(char c) {
-  if (c >= 'A' && c <= 'Z') {
-    return c + ('a' - 'A');
-  }
-  return c;
-}
-
-void Request::postToFile(const std::string& uri)
-{
-	std::fstream postFile;
-
-	postFile.open(uri.c_str(), std::ios::app);
-
-	if (!postFile.is_open())
-		std::cout << "failed to open file in post method" << std::endl;
-	
-	postFile << requestBodyString;
-}
-
-
-void Request::parseURI(std::string URI_cgi)
-{
-	if (URI_cgi[0] != '/')
-		std::cout << "URI must begin with a /" << std::endl;
-	
-    query_cgi = "";
-    // URI is case insensitive, transforming it to lowercase
-    std::transform(URI_cgi.begin(), URI_cgi.end(), URI_cgi.begin(), asciiToLower);
-    
-	// Case there is a query in the URI*/
-	size_t querryChar = URI_cgi.find("?");
-	if (querryChar != std::string::npos)
-	{
-		path_cgi = URI_cgi.substr(0, querryChar);
-		query_cgi = URI_cgi.substr(querryChar + 1, URI_cgi.size());
-	}
-
-	// Case there is only path in the URI
-	else
-		path_cgi = URI_cgi;
-}
 
 // GETTERS
 
@@ -505,6 +426,10 @@ std::string Request::getProtocol() {
 
 std::string Request::getBody() {
     return body;
+}
+
+std::string Request::getQuery() {
+    return query;
 }
 
 std::string Request::getMethod() {
@@ -582,7 +507,6 @@ void Request::clear(void)
     fileContent.clear();
     headers.clear();
     requestBodyString.clear();
-    requestString2.clear();
     methodCode = 0;
     cgi_mode = false;
     _config = NULL;

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   WebServ.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: teliet <teliet@student.42.fr>              +#+  +:+       +#+        */
+/*   By: jde-la-f <jde-la-f@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/13 14:37:03 by adcarnec          #+#    #+#             */
-/*   Updated: 2023/07/04 15:03:50 by teliet           ###   ########.fr       */
+/*   Updated: 2023/07/24 17:02:49 by jde-la-f         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -502,8 +502,8 @@ bool WebServ::isListedRessource(const std::string& path)
 
 void WebServ::addResponseToQueue(Request *request)
 {
-    // std::cout << "****** addResponseToQueue" << request->getClientSocket() << std::endl;
-    // std::cout << request->getResponseString() << std::endl;
+    std::cout << "****** addResponseToQueue" << request->getClientSocket() << std::endl;
+    std::cout << request->getResponseString() << std::endl;
     add(request->getClientSocket(), _master_set_write);
 
 }

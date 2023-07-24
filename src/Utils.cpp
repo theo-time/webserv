@@ -16,3 +16,64 @@ bool fileIsWritable(std::string path) {
 bool fileIsExecutable(std::string path) {
     return (access(path.c_str(), X_OK) != -1);
 }
+
+std::vector<std::string> splitWithSep(std::string line, char sep)
+{
+	std::vector<std::string> res;
+	std::istringstream s(line);
+
+	while (std::getline(s, line, sep))
+		if (!line.empty())
+			res.push_back(line);
+	
+	return res;
+}
+
+std::string getFileExtension(std::string filename)
+{
+    std::string extension = filename.substr(filename.find_last_of(".") + 1);
+    return extension;
+}
+
+std::string concatenateList(const std::list<std::string>& list) {
+    std::ostringstream oss;
+    for (std::list<std::string>::const_iterator it = list.begin(); it != list.end(); ++it) {
+        oss << *it;
+    }
+    return oss.str();
+}
+
+std::vector<std::string> getFileList(std::string path) {
+    DIR             *dir;
+    struct dirent   *entry;
+    std::vector<std::string> fileList;
+
+    if ((dir = opendir(path.c_str())) == NULL)
+        perror("opendir() error");
+    else {
+        while ((entry = readdir(dir)) != NULL)
+            fileList.push_back(entry->d_name);
+        closedir(dir);
+    }
+    return fileList;
+}
+
+std::string getRedirectionHTML(std::string url)
+{
+    std::stringstream ss;
+    std::string str;
+
+    ss << "<!DOCTYPE html>" << std::endl;
+    ss << "<html>" << std::endl;
+    ss << "<head>" << std::endl;
+    ss << "<title>Redirection</title>" << std::endl;
+    ss << "<meta http-equiv=\"refresh\" content=\"0; url=" << url << "\" />" << std::endl;
+    ss << "</head>" << std::endl;
+    ss << "<body>" << std::endl;
+    ss << "<p>Redirection vers <a href=\"" << url << "\">" << url << "</a></p>" << std::endl;
+    ss << "</body>" << std::endl;
+    ss << "</html>" << std::endl;
+
+    str = ss.str();
+    return str;
+}
