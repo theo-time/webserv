@@ -93,15 +93,15 @@ void Request::parseHeaders()
     std::string delimiter = "\r\n";
     size_t pos = 0;
     int i = 0;
-    while ((pos = requestString.find(delimiter)) != std::string::npos) {
-        std::string token = requestString.substr(0, pos);
-        requestString.erase(0, pos + delimiter.length());
+    std::string tmpRequestString = requestString;
+    while ((pos = tmpRequestString.find(delimiter)) != std::string::npos) {
+        std::string token = tmpRequestString.substr(0, pos);
+        tmpRequestString.erase(0, pos + delimiter.length());
         std::string delimiter2 = ": ";
         size_t pos2 = 0;
-        std::string token2;
         int j = 0;
         while ((pos2 = token.find(delimiter2)) != std::string::npos) {
-            token2 = token.substr(0, pos2);
+            std::string token2 = token.substr(0, pos2);
             token.erase(0, pos2 + delimiter2.length());
             if (j == 0) {
                 headers[token2] = token;
@@ -164,10 +164,15 @@ void Request::handleRequest()
     std::string root = _config->getRoot(); 
     std::string index = _config->getIndex();
 
-    if(_config->getName() != "_internal")
+    /*if(_config->getName() != "_internal")
         path.replace(path.find(_config->getName()), _config->getName().length(), _config->getRoot());
     else 
-        path = root + path;
+        path = root + path;*/
+
+    if (path == "./")
+        path = path + root.substr(1) + "/" + index;
+    
+
 
     // Check redirection
     if(_config->getType() == "http")
@@ -189,7 +194,10 @@ void Request::handleRequest()
     // If path is a directory, and index file exists, add default index name to path
     if (opendir(path.c_str()))
     {
-        std::string indexFile = path + "/" + index;
+        path = "." + root + "/" + index;
+
+
+        /*std::string indexFile = path + "/" + index;
         std::cout << "Effective path: " << indexFile << std::endl;
         if(path.find("//") != std::string::npos)
             path.replace(path.find("//"), 2, "/");
@@ -200,8 +208,16 @@ void Request::handleRequest()
             return(listDirectoryResponse());
         }
         else
-            path = indexFile;
+            path = indexFile;*/
     }
+
+    // Modifying URI with root and index directive if any, checking for the allowed methods
+    //std::string realUri = reconstructFullURI(_req->getMethod(), loc, _req->getPath());
+
+    // Checking if the targeted file is a CGI based on his extension
+    //std::string *cgiName = getCgiExecutableName(realUri, loc.second);
+
+
 
     // Method routing
     if (getFileExtension(path) == "py" || getFileExtension(path) == "bla")
@@ -253,6 +269,16 @@ void Request::routingPost()
 {
     std::ifstream my_file(path.c_str());
 
+    if (body.size() == 0)
+    {
+        std::cout << "Method not allowed" << std::endl;
+        _response.setStatusCode("405");
+        _response.setStatusText("Method not allowed");
+        _response.setContentType("text/html");
+        WebServ::getRessource("./data/default/405.html", *this);
+        return;
+    }
+    
     if (!my_file.good())
     {
         std::cout << "File don't exist" << std::endl;
