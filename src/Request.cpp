@@ -27,6 +27,8 @@ void Request::parseRequest(){
     if (tokens.size() != 3)
 		std::cout << "400 : a field from request line is missing";
 
+    std::cout << "REQUEST STRING" << requestString << std::endl;
+
 	parseMethodToken(tokens[0]);
     parseURI(tokens[1]);
 	parseHTTPVersion(tokens[2]);
@@ -35,6 +37,26 @@ void Request::parseRequest(){
     getRequestConfig();
 
     path = "." + path;
+
+    std::string root = _config->getRoot(); 
+    std::string index = _config->getIndex();
+
+    std::cout << _config->getName() << std::endl;
+    std::cout << _config->getRoot() << std::endl;
+    std::cout << _config->getIndex() << std::endl;
+
+    if (path == "./")
+        path = path + root.substr(1) + "/" + index;
+
+    //if(_config->getName() == "*.bla")
+
+    if(path.find(_config->getName()) != std::string::npos && _config->getType() == "std") {
+        path.replace(path.find(_config->getName()), _config->getName().length(), _config->getRoot());
+        //size_t pos = path.find(_config->getRoot(), path.length() - _config->getRoot().length());
+        //std::cout << path.substr(path.length() - _config->getRoot().length()) << std::endl;
+        if (!::fileExists(path) && method == "GET")
+            path = path + "/" + index;
+    }
 
     std::cout << " - PARSING COMPLETED - " << std::endl;
     std::cout << "Method: " << method << std::endl;
@@ -240,7 +262,7 @@ void Request::handleRequest()
 
     parseBody();
 
-    std::cout << "Body: " << body << std::endl;
+    //std::cout << "Body: " << body << std::endl;
 
     std::cout << _config->getName() << std::endl;
     std::cout << _config->getRoot() << std::endl;
@@ -257,10 +279,7 @@ void Request::handleRequest()
         //std::cout << path.substr(path.length() - _config->getRoot().length()) << std::endl;
         if (!::fileExists(path) && method == "GET")
             path = path + "/" + index;
-
     }
-
-    
 
     // Check redirection
     if(_config->getType() == "http")
@@ -447,7 +466,7 @@ void Request::routingCGI()
         return;
     }
 
-    if((getFileExtension(path) == "bla" || path == "./file_should_exist_after" ) && (method == "POST"))
+    if((getFileExtension(path) == "bla") && (method == "POST"))
     {
         /*CHANGE TO cgi_tester if tested on a MAC*/
         executable_path = "ubuntu_cgi_tester";

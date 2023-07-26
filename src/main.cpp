@@ -6,7 +6,7 @@
 /*   By: jde-la-f <jde-la-f@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/07/26 10:42:20 by adcarnec          #+#    #+#             */
-/*   Updated: 2023/07/26 17:15:57 by jde-la-f         ###   ########.fr       */
+/*   Updated: 2023/07/26 17:16:48 by jde-la-f         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -69,7 +69,7 @@ int main(int ac, char** av)
         int epollFd = initEpoll();
         if (epollFd != -1)
             runListeners(epollFd);
-        //doExit(epollFd);
+        doExit(epollFd);
     }
     else
     {
@@ -88,10 +88,10 @@ void ignoreSig(int sig)
     signal(SIGINT,SIG_DFL);
 }
 
-/*static void doExit(int epollFd)
+static void doExit(int epollFd)
 {
     close(epollFd);
-}*/
+}
 
 static int initEpoll(void)
 { 

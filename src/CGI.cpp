@@ -66,7 +66,7 @@ void CGI::executeCGI(Request & req)
         close (pipe_in[1]);
         close (pipe_in[0]);
     }
-    std::cout << req.getBody().c_str() << std::endl;
+    std::cout << "BODY FED : " << req.getBody().c_str() << std::endl;
     std::cout << _args[1] << std::endl;
     write(pipe_in[1], req.getBody().c_str(), _req_body.length());
     //std::cout << "WRITE BYTES : " << tmp << std::endl;
