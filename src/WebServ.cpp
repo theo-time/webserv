@@ -280,6 +280,19 @@ static void addChunkedBody(Request &request, std::string& requestRawString)
     if (!request.readingBody)
         return;
 
+    char* pEnd;
+    if (request.curChunkSize == -1 || (int)request.requestBodyList.back().size() == request.curChunkSize)
+    {
+        request.curChunkSize = strtol(requestRawString.c_str(), &pEnd, 16);
+        std::cout << "CHUNK SIZE = " << request.curChunkSize << std::endl; 
+        // TODO check pEnd
+        if (request.curChunkSize != 0)
+        {
+            requestRawString = pEnd + 2;
+            request.requestBodyList.push_back("");
+        }
+    }
+
     if (request.curChunkSize == 0)
     {
         std::cout << "END OF CHUNKED BODY" << std::endl; 
@@ -288,23 +301,26 @@ static void addChunkedBody(Request &request, std::string& requestRawString)
         return;
     }
 
-    char* pEnd;
-    if (request.curChunkSize == -1 || (int)request.requestBodyList.back().size() == request.curChunkSize)
+    std::cout << "EXTRACTING BODY... request.curChunkSize=" << request.curChunkSize << " request.requestBodyList.back().size()=" << request.requestBodyList.back().size() << " requestRawString.size()=" << requestRawString.size() << std::endl;
+    int missingData = request.curChunkSize - (int)request.requestBodyList.back().size();
+    if ((int)requestRawString.size() <= missingData)
     {
-        request.curChunkSize = strtol(requestRawString.c_str(), &pEnd, 16);
-        std::cout << "CHUNK SIZE = " << request.curChunkSize << std::endl; 
-        // TODO check pEnd
-        requestRawString = pEnd + 2;
-        request.requestBodyList.push_back("");
+        request.requestBodyList.back().append(requestRawString);
+        requestRawString.clear();
+    }
+    else
+    {
+        request.requestBodyList.back().append(requestRawString.substr(0, missingData));
+        requestRawString.erase(0, missingData);
+        std::cout << "requestBodyList.back = " << request.requestBodyList.back() << std::endl; 
     }
 
-    std::cout << "EXTRACTING BODY..." << std::endl;
-    while (!requestRawString.empty() && (int)request.requestBodyList.back().size() < request.curChunkSize)
+
+/*     while (!requestRawString.empty() && (int)request.requestBodyList.back().size() < request.curChunkSize)
     {
         request.requestBodyList.back().append(requestRawString.substr(0, 1));
         requestRawString.erase(0, 1);
-    }
-    std::cout << "requestBodyList.back = " << request.requestBodyList.back() << std::endl;
+    }*/
 
     if (requestRawString.empty())
         return;
@@ -358,11 +374,17 @@ bool WebServ::readRequest(const int &fd, Request &request)
     else
     {
         if (request.chunkedBody && request.readingBody)
+        {
+
+            std::cout << "  ***added to requestBodyList:" << std::endl << requestRawString << "***" << std::endl << std::endl;
             addChunkedBody(request, requestRawString);
+        }
         else
+        {
             request.requestBodyString = request.requestBodyString + requestRawString;
+            std::cout << "  ***added to request.requestBodyString:" << std::endl << requestRawString << "***" << std::endl << std::endl;
+        }
         
-        std::cout << "  ***added to request body:" << std::endl << requestRawString << "***" << std::endl << std::endl;
     }
     
     int posBodyStart = -1;
