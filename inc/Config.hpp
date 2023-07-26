@@ -35,10 +35,12 @@ class Config
         typedef std::map<int, std::string>              intStrMap;
         typedef std::map<std::string, VirtualServer*>   srvMap;
         typedef std::vector<VirtualServer*>             srvVect;
+        typedef std::map<int, int>                      intMap;
 
         static void                                     init(const std::string& filename);
         static bool&                                    isValid(void);
         static srvVect&                                 getVirtualServers(void);
+        static intMap&                                  getListeners(void);
         static void                                     clear(void);
 
         static unsigned int&                             getClientMaxBodySize(void);
@@ -53,6 +55,7 @@ class Config
         static unsigned int                             _clientMaxBodySize;
         static srvVect                                  _virtualServers;
         static srvMap                                   _serverNames;
+        static intMap                                   _listeners;
         
         static std::string                              _tmpConfData;
         static strQueue                                 _tmpVarConf;

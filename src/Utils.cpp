@@ -84,3 +84,17 @@ std::string getRedirectionHTML(std::string url)
     str = ss.str();
     return str;
 }
+
+void	ft_bzero(void *s, size_t n)
+{
+	size_t		i;
+
+	if (s == NULL || n == 0)
+		return ;
+	i = 0;
+	while (i < n)
+	{
+		((char *)s)[i] = 0;
+		i++;
+	}
+}

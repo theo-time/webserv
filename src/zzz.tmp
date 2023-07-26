@@ -1,0 +1,275 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   main.cpp                                           :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: adcarnec <marvin@42.fr>                    +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2023/07/26 08:55:08 by adcarnec          #+#    #+#             */
+/*   Updated: 2023/07/26 08:55:15 by adcarnec         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
+
+#include <cerrno>
+#include <cstring>
+#include <iostream>
+#include <string>
+
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <sys/epoll.h>
+#include <unistd.h>
+
+static int      runListener(int port);
+static void     doEpoll(int epollFd, int listenFd);
+static void     handleEvents(int epollFd, struct epoll_event *events, int nReady, int listenFd);
+static void     acceptCnx(int epollFd, int listenFd);
+static void     readRequest(int epollFd, int cnxFd);
+static void     sendResponse(int epollFd, int cnxFd, const char* buf);
+static void     addEvent(int epollFd, int fd, int state);
+static void     updateEvent(int epollFd, int fd, int state);
+static void     deleteEvent(int epollFd, int fd, int state);
+
+// ft_bzero
+// ft_strlen
+
+/*
+External functs. Everything in C++ 98.
+execve, dup, dup2, pipe, strerror, gai_strerror,
+errno, dup, dup2, fork, htons, htonl, ntohs, ntohl,
+select, poll, epoll (epoll_create, epoll_ctl,
+epoll_wait), kqueue (kqueue, kevent), socket,
+accept, listen, send, recv, bind, connect,
+getaddrinfo, freeaddrinfo, setsockopt, getsockname,
+getprotobyname, fcntl, close, read, write, waitpid,
+kill, signal, access, stat, opendir, readdir and
+closedir.
+*/
+
+int             main()
+{
+    int fdSize = 1000;    
+    int epollFd = epoll_create(fdSize);
+    if (epollFd == -1)
+    {
+        strerror(errno);
+        return(-1);
+    }
+
+    int     port = 8080;
+    int listenFd = runListener(port);
+    if (listenFd == -1)
+    {
+        strerror(errno);
+        return(-1);
+    }
+    addEvent(epollFd, listenFd, EPOLLIN);
+
+    doEpoll(epollFd, listenFd);
+
+    return(0);
+}
+
+static int      runListener(int port)
+{
+    int     listenQ = 32;
+
+    int listenFd = socket(AF_INET, SOCK_STREAM, 0);
+    if (listenFd == -1)
+        return(strerror(errno), -1);
+
+    struct sockaddr_in  srvAddr;
+    bzero(&srvAddr, sizeof(srvAddr));
+    srvAddr.sin_family = AF_INET;
+    srvAddr.sin_addr.s_addr = INADDR_ANY;
+    srvAddr.sin_port = htons(port);
+    if (bind(listenFd, (struct sockaddr*)&srvAddr, sizeof(srvAddr)) == -1)
+        return(strerror(errno), -1);
+
+    // TODO Set socket to be reusable & nonblocking
+
+    if (listen(listenFd, listenQ) == -1)
+        return(strerror(errno), -1);
+
+    return(listenFd);
+}
+    
+static void     addEvent(int epollFd, int fd, int state)
+{
+    struct epoll_event  ev;
+    ev.events = state;
+    ev.data.fd = fd;
+    if (epoll_ctl(epollFd, EPOLL_CTL_ADD, fd, &ev) == -1)
+    {
+        strerror(errno);
+        return;
+    }
+}
+
+static void     doEpoll(int epollFd, int listenFd)
+{
+    int                 nReady;
+    int                 epollEvents = 100;
+    struct epoll_event  events[epollEvents];
+
+    while (true)
+    {
+        nReady = epoll_wait(epollFd, events, epollEvents, -1);
+        if (nReady == -1)
+        {
+            strerror(errno);
+            break;
+        }
+        handleEvents(epollFd, events, nReady, listenFd);
+    }
+    close(epollFd);
+}
+
+static void     handleEvents(int epollFd, struct epoll_event *events, int nReady, int listenFd)
+{
+    std::string response = "HTTP/1.1 200 OK\r\nContent-Length: 13\r\nConnection: close\r\n\r\nHello, world!";
+
+    std::cout << "handleEvents: " << nReady << std::endl;
+
+    for (int i = 0; i < nReady; i++)
+    {
+        int fd = events[i].data.fd;
+        if (fd == listenFd && (events[i].events & EPOLLIN))
+            acceptCnx(epollFd, fd);
+        else if (events[i].events & EPOLLIN)
+            readRequest(epollFd, fd);
+        else if (events[i].events & EPOLLOUT)
+            sendResponse(epollFd, fd, response.c_str());
+    }
+}
+
+static void     acceptCnx(int epollFd, int listenFd)
+{
+    int                 cnxFd;
+    struct sockaddr_in  cnxAddr;
+    socklen_t           cnxAddrLen;
+
+    cnxFd = accept(listenFd, (struct sockaddr*)&cnxAddr, &cnxAddrLen);
+    if (cnxFd == -1)
+        strerror(errno);
+    else
+        addEvent(epollFd, cnxFd, EPOLLIN);
+}
+
+static void     readRequest(int epollFd, int cnxFd)
+{
+    int     bufSize = 1024;
+    char    buf[bufSize];
+    bzero(buf, bufSize);
+
+    int     nRead = read(cnxFd, buf, bufSize);
+    if (nRead == -1)
+    {
+        strerror(errno);
+        deleteEvent(epollFd, cnxFd, EPOLLIN);
+        close(cnxFd);
+    }
+    else if (nRead == 0)
+    {
+        std::cout << "Client connection closed." << std::endl;
+        deleteEvent(epollFd, cnxFd, EPOLLIN);
+        close(cnxFd);
+    }
+    else
+    {
+        std::cout << buf << std::endl;
+        updateEvent(epollFd, cnxFd, EPOLLOUT);
+    }
+}
+
+static void     sendResponse(int epollFd, int cnxFd, const char* buf)
+{
+    std::cout << "sendResponse: " << buf << std::endl;
+    int     nWrite = write(cnxFd, buf, strlen(buf));
+    if (nWrite == -1)
+    {
+        strerror(errno);
+        deleteEvent(epollFd, cnxFd, EPOLLOUT);
+        close(cnxFd);
+    }
+    else
+        updateEvent(epollFd, cnxFd, EPOLLIN);
+    // bzero(buf, strlen(buf));
+}
+
+static void     updateEvent(int epollFd, int fd, int state)
+{
+    std::cout << "updateEvent: " << fd << std::endl;
+    struct epoll_event  ev;
+    ev.events = state;
+    ev.data.fd = fd;
+    if (epoll_ctl(epollFd, EPOLL_CTL_MOD, fd, &ev) == -1)
+    {
+        strerror(errno);
+        return;
+    }
+}
+
+static void     deleteEvent(int epollFd, int fd, int state)
+{
+    struct epoll_event  ev;
+    ev.events = state;
+    ev.data.fd = fd;
+    if (epoll_ctl(epollFd, EPOLL_CTL_DEL, fd, &ev) == -1)
+    {
+        strerror(errno);
+        return;
+    }
+}
+
+/*
+else
+        {            
+            // Create server socket to receive incoming connections on
+            int serverSocket = socket(AF_INET, SOCK_STREAM, 0);
+            if (serverSocket == -1) {
+                std::cerr << "Error : socket creation failed" << std::endl;
+                return(false);
+            }
+            // Allow socket descriptor to be reuseable 
+            int on = 1;
+            int rc = setsockopt(serverSocket, SOL_SOCKET,  SO_REUSEADDR, (char *)&on, sizeof(on));
+            if (rc < 0)
+            {
+                std::cerr << "Error : setting socket options failed" << std::endl;
+                close(serverSocket);
+                return(false);
+            }
+            // Set socket to be nonblocking.  
+            rc = fcntl(serverSocket, F_SETFL, O_NONBLOCK);
+            if (rc < 0)
+            {
+                std::cerr << "Error : setting nonblocking option failed" << std::endl;
+                close(serverSocket);
+                return(false);
+            }
+            // Bind the socket
+            struct sockaddr_in  serverAddress;
+            serverAddress.sin_family = AF_INET;
+            serverAddress.sin_addr.s_addr = INADDR_ANY;
+            serverAddress.sin_port = htons((*srvIt)->getPort()); 
+            rc = bind(serverSocket, (struct sockaddr*)&serverAddress, sizeof(serverAddress));
+            if (rc < 0)
+            {
+                std::cerr << "Error : socket binding failed" << std::endl;
+                close(serverSocket);
+                return(false);
+            }
+
+            // Set the listen back log
+            rc = listen(serverSocket, 32);
+            if (rc < 0)
+            {
+                std::cerr << "Error : socket listen failed" << std::endl;
+                close(serverSocket);
+                return(false);
+            }
+            std::cout << "... waiting for connexion: port " << (*srvIt)->getPort() << std::endl;
+            
+*/

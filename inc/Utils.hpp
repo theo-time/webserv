@@ -55,4 +55,6 @@ std::vector<std::string> getFileList(std::string path);
 
 std::string getRedirectionHTML(std::string url);
 
+void	ft_bzero(void *s, size_t n);
+
 #endif
