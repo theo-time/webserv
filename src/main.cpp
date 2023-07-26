@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   main.cpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: adcarnec <marvin@42.fr>                    +#+  +:+       +#+        */
+/*   By: jde-la-f <jde-la-f@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/07/26 10:42:20 by adcarnec          #+#    #+#             */
-/*   Updated: 2023/07/26 10:42:28 by adcarnec         ###   ########.fr       */
+/*   Updated: 2023/07/26 16:31:16 by jde-la-f         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,8 +25,8 @@
 #include "WebServ.hpp"
 #include "Utils.hpp"
 
-static void    ignoreSig(int sig);
-static void    doExit(int epollFd);
+/*static void    ignoreSig(int sig);
+static void    doExit(int epollFd);*/
 static int     initEpoll(void);
 static int     runListeners(int epollFd);
 static int     runListener(int port);
@@ -36,7 +36,7 @@ static int     doEpoll(int epollFd);
 int main(int ac, char** av)
 {
     // intercept Ctrl+C
-    signal(SIGINT, ignoreSig);
+    // signal(SIGINT, ignoreSig);
 
     // TODO del qd epoll ok
     std::string arg;
@@ -69,7 +69,7 @@ int main(int ac, char** av)
         int epollFd = initEpoll();
         if (epollFd != -1)
             runListeners(epollFd);
-        doExit(epollFd);
+        //doExit(epollFd);
     }
     else
     {
@@ -80,18 +80,18 @@ int main(int ac, char** av)
     return 0;
 }
 
-static void ignoreSig(int sig)
+/*static void ignoreSig(int sig)
 {
     (void)sig;
     char c;
     std::cin >> c;
     signal(SIGINT,SIG_DFL);
-}
+}*/
 
-static void doExit(int epollFd)
+/*static void doExit(int epollFd)
 {
     close(epollFd);
-}
+}*/
 
 static int initEpoll(void)
 { 
@@ -223,6 +223,6 @@ static int doEpoll(int epollFd)
                 sendResponse(epollFd, fd, response.c_str()); */
         }
     }
-    doExit(epollFd);
+    //doExit(epollFd);
     return(0);
 }

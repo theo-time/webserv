@@ -41,7 +41,6 @@ void Request::parseRequest(){
     std::cout << "Path: " << path << std::endl;
     std::cout << "Protocol: " << protocol << std::endl;
     std::cout << "Query: " << query << std::endl;
-    std::cout << "Body: " << body << std::endl;
 }
 
 
@@ -241,6 +240,8 @@ void Request::handleRequest()
 
     parseBody();
 
+    std::cout << "Body: " << body << std::endl;
+
     std::cout << _config->getName() << std::endl;
     std::cout << _config->getRoot() << std::endl;
     std::cout << _config->getIndex() << std::endl;
@@ -248,7 +249,9 @@ void Request::handleRequest()
     if (path == "./")
         path = path + root.substr(1) + "/" + index;
 
-    if(path.find(_config->getName()) != std::string::npos) {
+    //if(_config->getName() == "*.bla")
+
+    if(path.find(_config->getName()) != std::string::npos && _config->getType() == "std") {
         path.replace(path.find(_config->getName()), _config->getName().length(), _config->getRoot());
         //size_t pos = path.find(_config->getRoot(), path.length() - _config->getRoot().length());
         //std::cout << path.substr(path.length() - _config->getRoot().length()) << std::endl;

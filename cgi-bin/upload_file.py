@@ -5,14 +5,16 @@ import cgitb; cgitb.enable()
 
 form = cgi.FieldStorage()
 
-# Get filename here.
-fileitem = "Makefile"
+print (form)
+
+fileitem = form['filename']
 
 # Test if the file was uploaded
-#if fileitem.filename:
+if fileitem.filename:
    # strip leading path from file name to avoid 
    # directory traversal attacks
-open(os.getcwd() + '/cgi-bin/' + os.path.basename(fileitem), 'wb').write(fileitem.read())
+   fn = os.path.basename(fileitem.filename)
+   open('/tmp/' + fn, 'wb').write(fileitem.file.read())
 
 message = 'The file was uploaded successfully'
    

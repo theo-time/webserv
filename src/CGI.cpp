@@ -10,6 +10,9 @@ CGI::CGI(Request & req) // Initialize all environment variable for CGI
     _envvar[i++] = strdup(("PATH_INFO=" + req.getPath()).c_str());
     //_envvar[i++] = strdup(("SCRIPT_NAME=" + req.getPath()).c_str());
 
+
+    //if (getContentInfo(req, "Content-Type: ") == "")
+
 	if (req.getMethod() == "GET"){
         //_req_body = "AAAAAA";
         _envvar[i++] = strdup("REQUEST_METHOD=GET");
