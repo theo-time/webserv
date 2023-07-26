@@ -22,9 +22,11 @@ typedef std::queue<std::string>                 strQueue;
 typedef std::map<int, std::string>              intStrMap;
 typedef std::map<std::string, VirtualServer*>   srvMap;
 typedef std::vector<VirtualServer*>             srvVect;
+typedef std::map<int, int>                      intMap;
 
 srvVect                                         Config::_virtualServers;
 srvMap                                          Config::_serverNames;
+intMap                                          Config::_listeners;
 
 strQueue                                        Config::_tmpVarConf;
 strQueue                                        Config::_tmpSrvConf;
@@ -511,4 +513,9 @@ bool& Config::isValid(void)
 srvVect& Config::getVirtualServers(void)
 {
     return(_virtualServers);
+}
+
+intMap& Config::getListeners(void)
+{
+    return(_listeners);
 }
