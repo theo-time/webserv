@@ -6,7 +6,7 @@
 /*   By: jde-la-f <jde-la-f@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/13 14:37:03 by adcarnec          #+#    #+#             */
-/*   Updated: 2023/07/26 14:29:43 by jde-la-f         ###   ########.fr       */
+/*   Updated: 2023/07/26 15:26:33 by jde-la-f         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -354,7 +354,7 @@ bool WebServ::readRequest(const int &fd, Request &request)
         std::cout << "  ***new valid request:" << std::endl << requestRawString << "***" << std::endl << std::endl;
         request.requestBodyString = "";
         request.readingHeader = true;
-    }    
+    }
     else
     {
         if (request.chunkedBody && request.readingBody)
