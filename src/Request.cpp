@@ -155,7 +155,7 @@ void Request::listDirectoryResponse()
     _response.setContentType("text/html");
     _response.buildHeader();
     _response.buildResponse();
-    WebServ::addResponseToQueue(this);
+    ready2send = true;
 }
 
 void Request::handleRequest() 
@@ -187,7 +187,7 @@ void Request::handleRequest()
         _response.buildHeader();
         _response.buildResponse();
         // std::cout << _response.getResponse() << std::endl;
-        WebServ::addResponseToQueue(this);
+        ready2send = true;
         return;
     }
 
@@ -302,7 +302,7 @@ void Request::routingPost()
     _response.setProtocol("HTTP/1.1");
     _response.buildHeader();
     _response.buildResponse();
-    WebServ::addResponseToQueue(this);
+    ready2send = true;
 
 
     //_response.sendError(405, "Method Not Allowed"); // TODO a enlever car juste pour tester
@@ -353,8 +353,7 @@ void Request::routingCGI()
 
         cgi.executeCGI(*this);
         _response = cgi.getResponseCGI();
-        std::cout << _response.getResponse() << std::endl;
-        WebServ::addResponseToQueue(this);
+        ready2send = true;
         return;
     }
 
@@ -367,7 +366,7 @@ void Request::routingCGI()
 
         cgi.executeCGI(*this);
         _response = cgi.getResponseCGI();
-        WebServ::addResponseToQueue(this);
+        ready2send = true;
         return;
     }
 }
