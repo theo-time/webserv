@@ -6,7 +6,7 @@
 /*   By: jde-la-f <jde-la-f@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/13 14:37:03 by adcarnec          #+#    #+#             */
-/*   Updated: 2023/07/26 10:16:10 by jde-la-f         ###   ########.fr       */
+/*   Updated: 2023/07/26 14:29:43 by jde-la-f         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -280,6 +280,14 @@ static void addChunkedBody(Request &request, std::string& requestRawString)
     if (!request.readingBody)
         return;
 
+    if (request.curChunkSize == 0)
+    {
+        std::cout << "END OF CHUNKED BODY" << std::endl; 
+        request.readingBody = false;
+        request.handleRequest();
+        return;
+    }
+
     char* pEnd;
     if (request.curChunkSize == -1 || (int)request.requestBodyList.back().size() == request.curChunkSize)
     {
@@ -288,13 +296,6 @@ static void addChunkedBody(Request &request, std::string& requestRawString)
         // TODO check pEnd
         requestRawString = pEnd + 2;
         request.requestBodyList.push_back("");
-    }
-
-    if (request.curChunkSize == 0)
-    {
-        std::cout << "END OF CHUNKED BODY" << std::endl; 
-        request.readingBody = false;
-        return;
     }
 
     std::cout << "EXTRACTING BODY..." << std::endl;
@@ -379,7 +380,7 @@ bool WebServ::readRequest(const int &fd, Request &request)
         if (request.getRequestString().find("GET") == 0 || request.getRequestString().find("POST") == 0 || request.getRequestString().find("HEAD") == 0 || request.getRequestString().find("PUT") == 0) 
         {
             request.parseRequest();
-            WebServ::getRequestConfig(request);
+            //WebServ::getRequestConfig(request);
             
             if (request.getHeader("Transfer-Encoding") == "chunked")
             {
@@ -390,8 +391,8 @@ bool WebServ::readRequest(const int &fd, Request &request)
                 if (!request.requestBodyString.empty())
                     addChunkedBody(request, request.requestBodyString);
             }
-
-            request.handleRequest();
+            if (request.readingBody == false)
+                request.handleRequest();
             // del(fd, _master_set_recv);
         }
         else
@@ -597,14 +598,14 @@ bool WebServ::isServerSocket(const int& fd)
 }
 
 
-void     WebServ::getRequestConfig(Request& request)
+/* void     WebServ::getRequestConfig(Request& request)
 {
     std::cout << "------- Config Routing ----------" << std::endl;
 
     std::cout << "request socket fd :" << request.getServerSocket() << std::endl;
     
     std::vector <VirtualServer*>    matching_servers;
-   /* Search matching socket */
+    //Search matching socket
     std::vector <VirtualServer*>::iterator    it = Config::getVirtualServers().begin();
     std::vector <VirtualServer*>::iterator    end = Config::getVirtualServers().end();
     while (it != end)
@@ -623,7 +624,7 @@ void     WebServ::getRequestConfig(Request& request)
         return;
     }
     
-    /* Search matching server_name */
+    // Search matching server_name
     VirtualServer *server;
     it = matching_servers.begin();
     end = matching_servers.end();
@@ -639,7 +640,7 @@ void     WebServ::getRequestConfig(Request& request)
     }
     std::cout << "Matching servers by name : " << matching_servers.size() << std::endl;
     
-    /* Search matching location */
+    //Search matching location
     std::vector <Location*>  locations = server->getLocations();
     std::vector <Location*>::iterator    locIt;
     std::vector <Location*>::iterator    locEnd;
@@ -663,7 +664,7 @@ void     WebServ::getRequestConfig(Request& request)
 
     std::cout << "|-------- End of Config Routing ---------|" << std::endl;
     // TODO : throw error
-}
+} */
 
 /* fd_set &    WebServ::getMasterSetWrite() {
     return(_master_set_write);

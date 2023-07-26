@@ -17,6 +17,7 @@
 
 
 # include "WebServ.hpp"
+# include "VirtualServer.hpp"
 # include "Location.hpp"
 # include "Response.hpp"
 # include "Utils.hpp"
@@ -76,24 +77,25 @@ class Request {
         ~Request();
 
         /* Getters & Setters */
-        std::string getPath();
-        std::string getProtocol();
-        std::string getMethod();
-        std::string getBody();
-        std::string getQuery();
-        int getMethodCode();
-        std::string getRequestString();
-        int         getClientSocket();
-        int         getServerSocket();
-        std::string getResponseString();
-        std::string getHeader(std::string key);
-        Location* getConfig();
-        void setFileContent(std::string &fileContent);
-        void setResponseString(std::string &response);
-        void setRequestString(std::string &request);
-        void appendRequestString(std::string request);
-        void setConfig(Location* config);
-        void parseURI(std::string token);
+        std::string         getPath();
+        std::string         getProtocol();
+        std::string         getMethod();
+        std::string         getBody();
+        std::string         getQuery();
+        int                 getMethodCode();
+        std::string         getRequestString();
+        int                 getClientSocket();
+        int                 getServerSocket();
+        std::string         getResponseString();
+        std::string         getHeader(std::string key);
+        void                getRequestConfig();
+        Location*           getConfig();
+        void                setFileContent(std::string &fileContent);
+        void                setResponseString(std::string &response);
+        void                setRequestString(std::string &request);
+        void                appendRequestString(std::string request);
+        void                setConfig(Location* config);
+        void                parseURI(std::string token);
 
         /* Methods */
 

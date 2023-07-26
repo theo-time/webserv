@@ -1,8 +1,15 @@
 
 #include "Utils.hpp"
+#include <sys/stat.h>
 
 bool fileExists(std::string path) {
-    return (access(path.c_str(), F_OK) != -1);
+    struct stat fileInfo;
+    if (stat(path.c_str(), &fileInfo) != 0) {
+        // Failed to retrieve file information
+        return false;
+    }
+
+    return S_ISREG(fileInfo.st_mode);
 }
 
 bool fileIsReadable(std::string path) {

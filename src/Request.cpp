@@ -31,8 +31,10 @@ void Request::parseRequest(){
     parseURI(tokens[1]);
 	parseHTTPVersion(tokens[2]);
     parseHeaders();
-    parseBody();
 
+    getRequestConfig();
+
+    path = "." + path;
 
     std::cout << " - PARSING COMPLETED - " << std::endl;
     std::cout << "Method: " << method << std::endl;
@@ -46,9 +48,9 @@ void Request::parseRequest(){
 
 void Request::parseMethodToken(const std::string& token)
 {
-	std::string methods[4] = {"GET", "HEAD", "POST", "DELETE"};
+	std::string methods[5] = {"GET", "HEAD", "POST", "DELETE", "PUT"};
 	
-	for (int i = 0; i < 4; ++i)
+	for (int i = 0; i < 5; ++i)
 	{
 		if (!token.compare(0, methods[i].size(), methods[i]) &&
 				token.size() == methods[i].size())
@@ -76,7 +78,6 @@ void Request::parseURI(std::string token)
 	}
 	else
 		path = token;
-    path = "." + path;
 }
 
 void Request::parseHTTPVersion(const std::string& token)
@@ -121,6 +122,75 @@ void Request::parseBody()
     else
         body = requestBodyString;
 }
+
+void     Request::getRequestConfig()
+{
+    std::cout << "------- Config Routing ----------" << std::endl;
+
+    std::cout << "request socket fd :" << getServerSocket() << std::endl;
+    
+    std::vector <VirtualServer*>    matching_servers;
+   /* Search matching socket */
+    std::vector <VirtualServer*>::iterator    it = Config::getVirtualServers().begin();
+    std::vector <VirtualServer*>::iterator    end = Config::getVirtualServers().end();
+    while (it != end)
+    {
+        std::cout << "server socket fd :" << (*it)->getFd() << std::endl;
+        if ((*it)->getFd() == getServerSocket())
+            matching_servers.push_back(*it);
+        it++;
+    }
+    std::cout << "Matching servers by socket : " << matching_servers.size() << std::endl;
+    if(matching_servers.size() == 0)
+    {
+        std::cout << "No matching server found" << std::endl;
+        std::cout << "|-------- End of Config Routing ---------|" << std::endl;
+        setConfig(NULL);
+        return;
+    }
+    
+    /* Search matching server_name */
+    VirtualServer *server;
+    it = matching_servers.begin();
+    end = matching_servers.end();
+    server = *it; // First by default
+    while (it != end)
+    {
+        if ((*it)->getName() == getHeader("Host"))
+        {
+            server = *it;
+            return;
+        }
+        it++;
+    }
+    std::cout << "Matching servers by name : " << matching_servers.size() << std::endl;
+    
+    /* Search matching location */
+    std::vector <Location*>  locations = server->getLocations();
+    std::vector <Location*>::iterator    locIt;
+    std::vector <Location*>::iterator    locEnd;
+    std::string                         path = getPath();
+    std::string                         location_path;
+    locIt = locations.begin();
+    locEnd = locations.end();
+    std::cout << "locations size " << server->getLocations().size() << std::endl;
+    setConfig(server->getLocations()[0]); // first by default
+    while(locIt != locEnd)
+    {
+        std::cout <<  (**locIt) << std::endl;
+        location_path = (**locIt).getName();
+        std::cout << "location path " << location_path << std::endl;
+        std::cout << "request path " << path << std::endl;
+        if (path.find(location_path) == 0)
+            setConfig(*locIt);
+        locIt++;
+    }
+
+
+    std::cout << "|-------- End of Config Routing ---------|" << std::endl;
+    // TODO : throw error
+}
+
 
 void Request::listDirectoryResponse()
 {
@@ -169,10 +239,25 @@ void Request::handleRequest()
     else 
         path = root + path;*/
 
+    parseBody();
+
+    std::cout << _config->getName() << std::endl;
+    std::cout << _config->getRoot() << std::endl;
+    std::cout << _config->getIndex() << std::endl;
+
     if (path == "./")
         path = path + root.substr(1) + "/" + index;
-    
 
+    if(path.find(_config->getName()) != std::string::npos) {
+        path.replace(path.find(_config->getName()), _config->getName().length(), _config->getRoot());
+        //size_t pos = path.find(_config->getRoot(), path.length() - _config->getRoot().length());
+        //std::cout << path.substr(path.length() - _config->getRoot().length()) << std::endl;
+        if (!::fileExists(path) && method == "GET")
+            path = path + "/" + index;
+
+    }
+
+    
 
     // Check redirection
     if(_config->getType() == "http")
@@ -192,12 +277,12 @@ void Request::handleRequest()
     }
 
     // If path is a directory, and index file exists, add default index name to path
-    if (opendir(path.c_str()))
+    /*if (opendir(path.c_str()))
     {
-        path = "." + root + "/" + index;
+        //path = "." + root + "/" + index;
 
 
-        /*std::string indexFile = path + "/" + index;
+        std::string indexFile = path + "/" + index;
         std::cout << "Effective path: " << indexFile << std::endl;
         if(path.find("//") != std::string::npos)
             path.replace(path.find("//"), 2, "/");
@@ -208,8 +293,8 @@ void Request::handleRequest()
             return(listDirectoryResponse());
         }
         else
-            path = indexFile;*/
-    }
+            path = indexFile;
+    }*/
 
     // Modifying URI with root and index directive if any, checking for the allowed methods
     //std::string realUri = reconstructFullURI(_req->getMethod(), loc, _req->getPath());
@@ -217,14 +302,14 @@ void Request::handleRequest()
     // Checking if the targeted file is a CGI based on his extension
     //std::string *cgiName = getCgiExecutableName(realUri, loc.second);
 
-
+    std::cout << "Path before method routing :" << getPath() << std::endl;
 
     // Method routing
-    if (getFileExtension(path) == "py" || getFileExtension(path) == "bla")
+    if (getFileExtension(path) == "py" || (getFileExtension(path) == "bla" && method == "POST"))
         this->routingCGI();
     else if (method == "GET")
         this->routingGet();
-    else if(method == "POST")
+    else if(method == "POST" || method == "PUT")
         this->routingPost();
     else if(method == "DELETE")
         this->routingDelete();
@@ -247,7 +332,6 @@ void Request::handleRequest()
         _response.setContentType("text/html");
         WebServ::getRessource("./data/default/501.html", *this);
     }
-    
 }
 
 void Request::routingGet() 
@@ -269,8 +353,11 @@ void Request::routingPost()
 {
     std::ifstream my_file(path.c_str());
 
-    if (body.size() == 0)
+    //std::cout << body << std::endl;
+
+    if (body.size() == 0 && readingBody == false)
     {
+        std::cout << "Problem with BODY" << path << std::endl;
         std::cout << "Method not allowed" << std::endl;
         _response.setStatusCode("405");
         _response.setStatusText("Method not allowed");
