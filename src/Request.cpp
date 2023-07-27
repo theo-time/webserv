@@ -490,8 +490,6 @@ void Request::buildResponse()
     _response.buildResponse();
 }
 
-
-
 // GETTERS
 
 std::string Request::getPath() {
