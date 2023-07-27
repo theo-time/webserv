@@ -60,6 +60,7 @@ class Response {
         void sendError(int statusCode, std::string statusText);
         void send(const std::string& path);
         void send(void);
+        void sendNoBuild(void);
         void clear();
 
 };

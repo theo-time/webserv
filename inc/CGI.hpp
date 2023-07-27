@@ -41,7 +41,7 @@ class CGI {
 	/* ===================================================================
 	 ======================= PUBLIC METHODS ============================*/
 		void executeCGI(Request & req);
-        Response    getResponseCGI();
+        Response&    getResponseCGI();
 };
 
 #endif

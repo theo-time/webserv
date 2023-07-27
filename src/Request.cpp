@@ -431,7 +431,8 @@ void Request::routingCGI()
 
         cgi.executeCGI(*this);
         _response = cgi.getResponseCGI();
-        _response.send();
+        ready2send = true;
+        // _response.send();
         return;
     }
 
@@ -444,7 +445,8 @@ void Request::routingCGI()
 
         cgi.executeCGI(*this);
         _response = cgi.getResponseCGI();
-        _response.send();
+        ready2send = true;
+        // _response.send();
         return;
     }
 }
