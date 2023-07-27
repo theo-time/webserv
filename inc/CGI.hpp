@@ -41,9 +41,7 @@ class CGI {
 	/* ===================================================================
 	 ======================= PUBLIC METHODS ============================*/
 		void executeCGI(Request & req);
-
         Response    getResponseCGI();
-        std::string getContentInfo(Request & req, std::string str);
 };
 
 #endif

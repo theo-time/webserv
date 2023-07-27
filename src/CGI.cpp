@@ -8,20 +8,15 @@ CGI::CGI(Request & req) // Initialize all environment variable for CGI
 	int i = 0;
     _envvar[i++] = strdup("SERVER_PROTOCOL=HTTP/1.1");
     _envvar[i++] = strdup(("PATH_INFO=" + req.getPath()).c_str());
-    //_envvar[i++] = strdup(("SCRIPT_NAME=" + req.getPath()).c_str());
-
 
     //if (getContentInfo(req, "Content-Type: ") == "")
 
 	if (req.getMethod() == "GET"){
-        //_req_body = "AAAAAA";
         _envvar[i++] = strdup("REQUEST_METHOD=GET");
         _envvar[i++] = strdup(("QUERY_STRING=" + req.getQuery()).c_str());
         std::cout << "Query : " << _envvar[i - 1] << std::endl;
 	}
     else if (req.getMethod() == "POST"){
-        
-        //_req_body = "Hello worldaaa!";
         _envvar[i++] = strdup("REQUEST_METHOD=POST");
 		_envvar[i++] = strdup(("CONTENT_TYPE=" + getContentInfo(req, "Content-Type: ")).c_str());
         _envvar[i++] = strdup(("CONTENT_LENGTH=" + getContentInfo(req, "Content-Length: ")).c_str());
@@ -32,8 +27,6 @@ CGI::CGI(Request & req) // Initialize all environment variable for CGI
 
     if ((_args = new char*[3]) == NULL)
 		throw std::runtime_error("Error on a cgi malloc\n");
-
-    //std::cout << "SCRIPT_NAME: " << req.getPath().c_str() << std::endl;
 
     _args[0] = strdup(req.executable_path.c_str());
 	_args[1] = strdup(req.script_path.c_str());
@@ -107,22 +100,6 @@ void CGI::executeCGI(Request & req)
         std::cout << "END OUTPUTCGI: "<< std::endl;
         close(pipe_out[0]); // Close the read end of the pipe
     }
-}
-
-std::string CGI::getContentInfo(Request & req, std::string str) {
-
-    std::string contentPrefix = str;
-    size_t startPos = req.getRequestString().find(contentPrefix);
-    if (startPos == std::string::npos)
-        return "";
-
-    startPos += contentPrefix.length();
-    size_t endPos = req.getRequestString().find_first_of("\r\n", startPos);
-    if (endPos == std::string::npos)
-        return "";
-
-    std::string contentValue = req.getRequestString().substr(startPos, endPos - startPos);
-    return contentValue;
 }
 
 Response CGI::getResponseCGI() {

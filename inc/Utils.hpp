@@ -35,6 +35,7 @@
 # include "WebServ.hpp"
 # include "Location.hpp"
 # include "Response.hpp"
+# include "Request.hpp"
 
 
 bool fileExists(std::string path);
@@ -56,5 +57,7 @@ std::vector<std::string> getFileList(std::string path);
 std::string getRedirectionHTML(std::string url);
 
 void	ft_bzero(void *s, size_t n);
+
+std::string getContentInfo(Request & req, std::string str);
 
 #endif

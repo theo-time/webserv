@@ -98,3 +98,19 @@ void	ft_bzero(void *s, size_t n)
 		i++;
 	}
 }
+
+std::string getContentInfo(Request & req, std::string str) {
+
+    std::string contentPrefix = str;
+    size_t startPos = req.getRequestString().find(contentPrefix);
+    if (startPos == std::string::npos)
+        return "";
+
+    startPos += contentPrefix.length();
+    size_t endPos = req.getRequestString().find_first_of("\r\n", startPos);
+    if (endPos == std::string::npos)
+        return "";
+
+    std::string contentValue = req.getRequestString().substr(startPos, endPos - startPos);
+    return contentValue;
+}
