@@ -210,26 +210,58 @@ void     Request::getRequestConfig()
     std::cout << "Matching servers by name : " << matching_servers.size() << std::endl;
     
     /* Search matching location */
-    std::vector <Location*>  locations = server->getLocations();
-    std::vector <Location*>::iterator    locIt;
-    std::vector <Location*>::iterator    locEnd;
-    std::string                         path = getPath();
-    std::string                         location_path;
-    locIt = locations.begin();
-    locEnd = locations.end();
     std::cout << "locations size " << server->getLocations().size() << std::endl;
     setConfig(server->getLocations()[0]); // first by default
-    while(locIt != locEnd)
+
+    if (server->getLocations().size() > 1)
     {
-        std::cout <<  (**locIt) << std::endl;
-        location_path = (**locIt).getName();
-        std::cout << "location path " << location_path << std::endl;
-        std::cout << "request path " << path << std::endl;
-        if (path.find(location_path) == 0)
-            setConfig(*locIt);
-        locIt++;
+        std::vector <Location*>             locations   = server->getLocations();
+        std::vector <Location*>::iterator   locIt       = locations.begin();
+        std::vector <Location*>::iterator   locEnd      = locations.end();
+        std::string                         path        = getPath();
+        std::string                         extension   = getFileExtension(path);
+        std::string                         location_path;
+
+        // check if CGI
+        bool isCGI = false;
+        while(locIt != locEnd)
+        {
+            if ((*locIt)->getType() == "cgi")
+            {
+                // std::cout <<  (**locIt) << std::endl;
+                if ((*locIt)->getExtension() == extension)
+                {
+                    setConfig(*locIt);
+                    isCGI = true;
+                    break;
+                }
+
+            }
+            locIt++;
+        }
+        
+        // not CGI
+        if (!isCGI)
+        {
+            locIt = locations.begin();
+            while(locIt != locEnd)
+            {
+                // std::cout <<  (**locIt) << std::endl;
+                location_path = (**locIt).getName();
+                // std::cout << "location path " << location_path << std::endl;
+                // std::cout << "request path " << path << std::endl;
+                if (path.find(location_path) == 0)
+                {
+                    setConfig(*locIt);
+                    break;
+                }
+                locIt++;
+            }
+        }
     }
 
+    std::cout << "seleted location for path " << path << std::endl;
+    std::cout <<  *_config << std::endl;
 
     std::cout << "|-------- End of Config Routing ---------|" << std::endl;
     // TODO : throw error
