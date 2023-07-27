@@ -193,27 +193,24 @@ bool WebServ::acceptNewCnx(const int& fd)
     do
     {
         clientSocket = accept(fd, (struct sockaddr *)&clientAddress, (socklen_t*)&clientAddressSize);
-        if (clientSocket < 0)
-        {
+        if (clientSocket == -1)
             break;
-        }
 
         // Set socket to be reusable and nonblocking
         int on = 1;
-        int rc = setsockopt(clientSocket, SOL_SOCKET,  SO_REUSEADDR, (char *)&on, sizeof(on));
-        if (rc < 0)
+        if (setsockopt(clientSocket, SOL_SOCKET,  SO_REUSEADDR, (char *)&on, sizeof(on)) == -1)
         {
-            std::cerr << "Error : setting reusable option failed" << std::endl;
+            strerror(errno);
             close(clientSocket);
             break;
         }  
-        rc = fcntl(clientSocket, F_SETFL, O_NONBLOCK);
-        if (rc < 0)
+        if (fcntl(clientSocket, F_SETFL, O_NONBLOCK) == -1)
         {
-            std::cerr << "Error : setting nonblocking option failed" << std::endl;
+            strerror(errno);
             close(clientSocket);
             break;
         }
+
         // TODO set receive SO_RCVTIMEO and send timeout  SO_SNDTIMEO
         
         add(clientSocket, _master_set_recv);
@@ -251,6 +248,10 @@ static std::string clean(std::string src)
         return(src.substr(found));
 
     found = src.find("PUT");
+    if (found != std::string::npos)
+        return(src.substr(found));
+
+    found = src.find("DELETE");
     if (found != std::string::npos)
         return(src.substr(found));
 
@@ -339,7 +340,8 @@ bool WebServ::readRequest(const int &fd, Request &request)
     else if (   requestRawString.find("GET") != std::string::npos 
             ||  requestRawString.find("POST") != std::string::npos 
             ||  requestRawString.find("HEAD") != std::string::npos 
-            ||  requestRawString.find("PUT") != std::string::npos)
+            ||  requestRawString.find("PUT") != std::string::npos
+            ||  requestRawString.find("DELETE") != std::string::npos)
     {
         request.appendRequestString(clean(requestRawString));
         std::cout << "  ***new valid request:" << std::endl << requestRawString << "***" << std::endl << std::endl;
@@ -374,25 +376,25 @@ bool WebServ::readRequest(const int &fd, Request &request)
         std::cout << "  ***requestBodyString:" << request.requestBodyString << "***" << std::endl;
         
         request.readingHeader = false;
-        if (request.getRequestString().find("GET") == 0 || request.getRequestString().find("POST") == 0 || request.getRequestString().find("HEAD") == 0 || request.getRequestString().find("PUT") == 0) 
+ /*        if (request.getRequestString().find("GET") == 0 || request.getRequestString().find("POST") == 0 ||
+         request.getRequestString().find("HEAD") == 0 || request.getRequestString().find("PUT") == 0) 
+        { */
+        request.parseRequest();
+        
+        if (request.getHeader("Transfer-Encoding") == "chunked")
         {
-            request.parseRequest();
-            
-            if (request.getHeader("Transfer-Encoding") == "chunked")
-            {
-                std::cout << "CHUNKED = TRUE" << std::endl;
-                request.readingBody = true;
-                request.chunkedBody = true;
+            std::cout << "CHUNKED = TRUE" << std::endl;
+            request.readingBody = true;
+            request.chunkedBody = true;
 
-                if (!request.requestBodyString.empty())
-                    addChunkedBody(request, request.requestBodyString);
-            }
-            if (request.readingBody == false)
-                request.handleRequest();
-            // del(fd, _master_set_recv);
+            if (!request.requestBodyString.empty())
+                addChunkedBody(request, request.requestBodyString);
         }
+        if (request.readingBody == false)
+            request.handleRequest();
+/*         }
         else
-           request.clear();
+           request.clear(); */
     }
         
     return(true);
@@ -423,7 +425,6 @@ bool WebServ::sendResponse(const int &fd, Request &c)
 void WebServ::add(const int& fd, fd_set& set)
 {
     FD_SET(fd, &set);
-    // std::cout << "fd:" << fd << std::endl;
 
     if (fd > _max_fd)
         _max_fd = fd;
