@@ -110,48 +110,21 @@ bool WebServ::runListener(VirtualServer* srv)
 }
 
 bool WebServ::process(void)
-{
-    // struct timeval  timeout;    
+{  
     int             ret;
     fd_set          working_set_recv;
     fd_set          working_set_write;
 
-    // timeout.tv_sec = 10;
-    // timeout.tv_usec = 0;
     while (true)
     {
-        // TODO check request timeout
-        
-        //add responses to _master_set_write
-        if (!_requests.empty())
-        {            
-            for (int i = 0; i <= _max_fd; ++i)
-            {
-                if (_requests.count(i) && _requests[i]->ready2send)
-                {
-                    del(i, _master_set_recv);
-                    add(i, _master_set_write);
-                }
-            }
-        }
-
+        prepSelect();
         working_set_recv = _master_set_recv;
         working_set_write = _master_set_write;
 
-        // TODO cout à supprimer
-        std::cout << "Preparing select() " << std::endl;
-        for (int i = 0; i <= _max_fd; ++i)
-        {
-            if (FD_ISSET(i, &working_set_recv))
-                std::cout << "  fd - " << i << " : working_set_recv" << std::endl;
-            else if (FD_ISSET(i, &working_set_write))
-                std::cout << "  fd - " << i << " : working_set_write" << std::endl;
-            else
-                std::cout << "  fd - " << i << " : not working set" << std::endl;
-        }
-
+        // TODO check socket errors
         ret = select(_max_fd + 1, &working_set_recv, &working_set_write, NULL, 0);
-        if (ret < 0)
+
+        if (ret == - 1)
         {
             std::cerr << "  select() failed" << std::endl;
             stop();
@@ -167,10 +140,7 @@ bool WebServ::process(void)
         {
             if (FD_ISSET(i, &working_set_recv) && i == 0) 
             {
-                std::string buffer;
-                std::getline(std::cin, buffer);
-
-                if (buffer == "EXIT")
+                if (userExit())
                     return(false);
             }
             else if (FD_ISSET(i, &working_set_recv) && isServerSocket(i)) 
@@ -182,6 +152,36 @@ bool WebServ::process(void)
         }
     }
     return(true);
+}
+
+void WebServ::prepSelect(void)
+{
+    // TODO check request timeout
+    
+    //add responses to _master_set_write
+    if (!_requests.empty())
+    {            
+        for (int i = 0; i <= _max_fd; ++i)
+        {
+            if (_requests.count(i) && _requests[i]->ready2send)
+            {
+                del(i, _master_set_recv);
+                add(i, _master_set_write);
+            }
+        }
+    }
+
+    // TODO cout à supprimer
+    std::cout << "Preparing select() " << std::endl;
+    for (int i = 0; i <= _max_fd; ++i)
+    {
+        if (FD_ISSET(i, &_master_set_recv))
+            std::cout << "  fd - " << i << " : working_set_recv" << std::endl;
+        else if (FD_ISSET(i, &_master_set_write))
+            std::cout << "  fd - " << i << " : working_set_write" << std::endl;
+        else
+            std::cout << "  fd - " << i << " : not working set" << std::endl;
+    }
 }
 
 bool WebServ::acceptNewCnx(const int& fd)
@@ -492,5 +492,16 @@ bool WebServ::isServerSocket(const int& fd)
             return(true);
         lsIt++;
     }
+    return(false);
+}
+
+bool WebServ::userExit(void)
+{
+    std::string buffer;
+    std::getline(std::cin, buffer);
+
+    if (buffer == "EXIT")
+        return(true);
+
     return(false);
 }
