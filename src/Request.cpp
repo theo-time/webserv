@@ -238,15 +238,12 @@ void Request::listDirectoryResponse()
     ss << "</body>" << std::endl;
     ss << "</html>" << std::endl;
 
-    // std::cout << ss.str() << std::endl;
     _response.setBody(ss.str());
     _response.setStatusCode("200");
     _response.setProtocol("HTTP/1.1");
     _response.setStatusText("OK");
     _response.setContentType("text/html");
-    _response.buildHeader();
-    _response.buildResponse();
-    ready2send = true;
+    _response.send();
 }
 
 void Request::handleRequest() 
@@ -291,10 +288,7 @@ void Request::handleRequest()
         _response.setContentType("text/html");
         _response.setProtocol("HTTP/1.1");
         _response.setBody(fileContent);
-        _response.buildHeader();
-        _response.buildResponse();
-        // std::cout << _response.getResponse() << std::endl;
-        ready2send = true;
+        _response.send();
         return;
     }
 
@@ -397,10 +391,7 @@ void Request::routingPost()
 		std::cout << "failed to open file in post method" << std::endl;
 	postFile << getBody();
     _response.setProtocol("HTTP/1.1");
-    _response.buildHeader();
-    _response.buildResponse();
-    ready2send = true;
-
+    _response.send();
 }
 
 void Request::routingDelete() 
@@ -442,7 +433,7 @@ void Request::routingCGI()
 
         cgi.executeCGI(*this);
         _response = cgi.getResponseCGI();
-        ready2send = true;
+        _response.send();
         return;
     }
 
@@ -455,7 +446,7 @@ void Request::routingCGI()
 
         cgi.executeCGI(*this);
         _response = cgi.getResponseCGI();
-        ready2send = true;
+        _response.send();
         return;
     }
 }

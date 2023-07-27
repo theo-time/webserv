@@ -55,6 +55,13 @@ void Response::buildResponse()
     // std::cout << "----- Response : ----" << std::endl << response << std::endl;
 }
 
+void Response::send(void)
+{
+    buildHeader();
+    buildResponse();
+    request->ready2send = true;
+}
+
 void Response::send(const std::string& path)
 {
     std::ifstream       file(path.c_str());
@@ -66,14 +73,13 @@ void Response::send(const std::string& path)
     file.close();
     
     request->setFileContent(fileContent);
-    buildHeader();
-    buildResponse();
-    request->ready2send = true;
+    send();
 }
 
 void Response::sendError(int statusCode, std::string statusText)
 {
     (void)statusText;
+    setProtocol("HTTP/1.1");
     setContentType("text/html");
     setExtension("html");
     setContentDisposition("inline");

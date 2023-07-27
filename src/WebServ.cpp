@@ -129,6 +129,9 @@ bool WebServ::process(void)
     // timeout.tv_usec = 0;
     while (true)
     {
+        // TODO check request timeout
+        
+        //add responses to _master_set_write
         if (!_requests.empty())
         {            
             for (int i = 0; i <= _max_fd; ++i)
