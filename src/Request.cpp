@@ -430,9 +430,13 @@ void Request::routingCGI()
         CGI cgi(*this);
 
         cgi.executeCGI(*this);
-        _response = cgi.getResponseCGI();
-        ready2send = true;
-        // _response.send();
+        _response.setStatusCode("200");
+        _response.setStatusText("OK");
+        _response.setContentType("text/html");
+        _response.setProtocol("HTTP/1.1");
+        _response.setBody(cgi.getOutputCGI());
+        //ready2send = true;
+        _response.send();
         return;
     }
 
@@ -444,9 +448,8 @@ void Request::routingCGI()
         CGI cgi(*this);
 
         cgi.executeCGI(*this);
-        _response = cgi.getResponseCGI();
-        ready2send = true;
-        // _response.send();
+        //ready2send = true;
+        _response.send();
         return;
     }
 }

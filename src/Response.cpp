@@ -52,7 +52,7 @@ void Response::buildHeader()
 void Response::buildResponse()
 {
     response = header + body;
-    // std::cout << "----- Response : ----" << std::endl << response << std::endl;
+    std::cout << "----- Response : ----" << std::endl << response << std::endl;
 }
 
 void Response::send(void)
@@ -72,7 +72,7 @@ void Response::send(const std::string& path)
     fileContent = buffer.str();
     file.close();
     
-    request->setFileContent(fileContent);
+    setBody(fileContent);   
     send();
 }
 

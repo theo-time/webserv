@@ -27,8 +27,7 @@ class CGI {
         std::string extension;
         std::string outputCGI;
         std::string path;
-
-        Response            _response;
+        Request            _req;
 
     public:
         CGI(Request & req);
@@ -36,12 +35,18 @@ class CGI {
         int pipe_in[2];
         int pipe_out[2];
         std::string _req_body;
+
 	
 	
 	/* ===================================================================
 	 ======================= PUBLIC METHODS ============================*/
 		void executeCGI(Request & req);
-        Response&    getResponseCGI();
+        void    setResponseCGI();
+
+
+        std::string getOutputCGI() {return outputCGI;};
+
+
 };
 
 #endif

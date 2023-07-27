@@ -1,6 +1,6 @@
 #include "CGI.hpp"
 
-CGI::CGI(Request & req) // Initialize all environment variable for CGI
+CGI::CGI(Request & req) : _req(req)// Initialize all environment variable for CGI
 {
 	if ((_envvar = new char*[8]) == NULL)
 		throw std::runtime_error("Error on a cgi malloc\n");
@@ -104,13 +104,12 @@ void CGI::executeCGI(Request & req)
     }
 }
 
-Response& CGI::getResponseCGI() {
-        _response.setStatusCode("200");
-        _response.setStatusText("OK");
-        _response.setContentType("text/html");
-        _response.setProtocol("HTTP/1.1");
-        _response.setBody(outputCGI);
-        _response.buildHeader();
-        _response.buildResponse();
-        return _response;
+void CGI::setResponseCGI() {
+        _req.getResponse().setStatusCode("200");
+        _req.getResponse().setStatusText("OK");
+        _req.getResponse().setContentType("text/html");
+        _req.getResponse().setProtocol("HTTP/1.1");
+        _req.getResponse().setBody(outputCGI);
+        _req.getResponse().buildHeader();
+        _req.getResponse().buildResponse();
 }

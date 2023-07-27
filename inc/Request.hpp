@@ -90,6 +90,7 @@ class Request {
         std::string         getHeader(std::string key);
         void                getRequestConfig();
         Location*           getConfig();
+        Response&           getResponse(){return _response;}
         void                setFileContent(std::string &fileContent);
         void                setResponseString(std::string &response);
         void                setRequestString(std::string &request);

@@ -6,7 +6,7 @@
 /*   By: jde-la-f <jde-la-f@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/13 14:37:03 by adcarnec          #+#    #+#             */
-/*   Updated: 2023/07/26 15:26:33 by jde-la-f         ###   ########.fr       */
+/*   Updated: 2023/07/27 14:13:47 by jde-la-f         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -80,15 +80,7 @@ bool WebServ::runListener(VirtualServer* srv)
     int listenFd = socket(AF_INET, SOCK_STREAM, 0);
     if (listenFd == -1)
         return(strerror(errno), false);
-
-    struct sockaddr_in  srvAddr;
-    ft_bzero(&srvAddr, sizeof(srvAddr));
-    srvAddr.sin_family = AF_INET;
-    srvAddr.sin_addr.s_addr = INADDR_ANY;
-    srvAddr.sin_port = htons(srv->getPort());
-    if (bind(listenFd, (struct sockaddr*)&srvAddr, sizeof(srvAddr)) == -1) // bind the socket to port number
-        return(strerror(errno), close(listenFd), false);
-
+        
     // Allow socket descriptor to be reuseable 
     int on = 1;
     if (setsockopt(listenFd, SOL_SOCKET,  SO_REUSEADDR, (char *)&on, sizeof(on)) == -1)
@@ -96,6 +88,14 @@ bool WebServ::runListener(VirtualServer* srv)
 
     // Set socket to be nonblocking
     if (fcntl(listenFd, F_SETFL, O_NONBLOCK) == -1)
+        return(strerror(errno), close(listenFd), false);
+
+    struct sockaddr_in  srvAddr;
+    // ft_bzero(&srvAddr, sizeof(srvAddr));
+    srvAddr.sin_family = AF_INET;
+    srvAddr.sin_addr.s_addr = INADDR_ANY;
+    srvAddr.sin_port = htons(srv->getPort());
+    if (bind(listenFd, (struct sockaddr*)&srvAddr, sizeof(srvAddr)) == -1) // bind the socket to port number
         return(strerror(errno), close(listenFd), false);
 
     if (listen(listenFd, listenQ) == -1) // wait for connections
