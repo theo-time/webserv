@@ -17,17 +17,13 @@
 #include "VirtualServer.hpp"
 
 typedef std::vector<VirtualServer*>         srvVect;
-typedef std::map<int, Request*>           intCliMap;
-typedef std::map<Request*, std::string>   cliStrMap;
+typedef std::map<int, Request*>             intCliMap;
 typedef std::map<int, int>                  intMap;
-typedef std::map<int, std::string>          intStrMap;
 fd_set                                      WebServ::_master_set_recv;
 fd_set                                      WebServ::_master_set_write;
 int                                         WebServ::_max_fd;
 intCliMap                                   WebServ::_requests;
-cliStrMap                                   WebServ::_reqRessources;
 intMap                                      WebServ::_listeners;
-intStrMap                                   WebServ::_fdRessources;
 
 bool WebServ::runListeners(void)
 {
@@ -185,8 +181,6 @@ bool WebServ::process(void)
             }
             else if (FD_ISSET(i, &working_set_recv) && isServerSocket(i)) 
                 acceptNewCnx(i);
-            else if (FD_ISSET(i, &working_set_recv) && _fdRessources.count(i))
-                readRessource(i);
             else if (FD_ISSET(i, &working_set_recv) && _requests.count(i))
                 readRequest(i, *_requests[i]);
             else if (FD_ISSET(i, &working_set_write) && _requests.count(i))
@@ -206,13 +200,7 @@ bool WebServ::acceptNewCnx(const int& fd)
     {
         clientSocket = accept(fd, (struct sockaddr *)&clientAddress, (socklen_t*)&clientAddressSize);
         if (clientSocket < 0)
-        {/* 
-            if (errno != EWOULDBLOCK) // TODO ne pas utiliser errno
-            {
-                std::cerr << "  accept() failed" << std::endl;
-                stop();
-                return(false);
-            } */
+        {
             break;
         }
 
@@ -315,13 +303,6 @@ static void addChunkedBody(Request &request, std::string& requestRawString)
         std::cout << "requestBodyList.back = " << request.requestBodyList.back() << std::endl; 
     }
 
-
-/*     while (!requestRawString.empty() && (int)request.requestBodyList.back().size() < request.curChunkSize)
-    {
-        request.requestBodyList.back().append(requestRawString.substr(0, 1));
-        requestRawString.erase(0, 1);
-    }*/
-
     if (requestRawString.empty())
         return;
 
@@ -402,7 +383,6 @@ bool WebServ::readRequest(const int &fd, Request &request)
         if (request.getRequestString().find("GET") == 0 || request.getRequestString().find("POST") == 0 || request.getRequestString().find("HEAD") == 0 || request.getRequestString().find("PUT") == 0) 
         {
             request.parseRequest();
-            //WebServ::getRequestConfig(request);
             
             if (request.getHeader("Transfer-Encoding") == "chunked")
             {
@@ -444,104 +424,6 @@ bool WebServ::sendResponse(const int &fd, Request &c)
     }
     
     return(true);
-}
-
-bool WebServ::readRessource(const int& fd)
-{
-    std::cout << "Reading ressource from fd - " << fd << std::endl;
-/* 
-    std::string     fileContent = "";
-    char            buf[BUFFER_SIZE + 1];
-    int             ret = BUFFER_SIZE;
-
-    buf[0] = 0;
-    while (ret == BUFFER_SIZE)
-    {
-        ret = read(fd, buf, BUFFER_SIZE);
-        buf[ret] = 0;
-        fileContent = fileContent + buf;
-    }
-    if (ret == -1)
-    {
-        // TODO fileContent = msg erreur
-    }
-    close(fd); */
-
-    // binary file
-    std::ifstream       file(_fdRessources[fd].c_str());     
-
-    // TODO check file status
-    std::string         fileContent;
-    std::stringstream   buffer;
-    buffer << file.rdbuf();
-    fileContent = buffer.str();
-
-    close(fd);
-    del(fd, _master_set_recv);
-    
-
-    cliStrMap::iterator     it = _reqRessources.begin();
-    while (it != _reqRessources.end())
-    {
-        if (it->second == _fdRessources[fd])
-        {
-            it->first->setFileContent(fileContent);
-            it->first->buildResponse();
-            add(it->first->getClientSocket(), _master_set_write);
-        }
-        it++;
-    }
-    
-    it = _reqRessources.begin();
-    while (_reqRessources.size() > 0 && it != _reqRessources.end())
-    {
-        if (it->second == _fdRessources[fd])
-        {
-            _reqRessources.erase(it);
-        }
-        else
-            it++;
-    }
-    _fdRessources.erase(fd);
-
-    
-
-    return(true);
-}
-
-void WebServ::getRessource(const std::string& path, Request& c)
-{
-    if (!isListedRessource(path))
-    {
-        int fd = open(path.c_str(), O_RDONLY);
-        if (fd == -1)
-        {
-            return;
-        }
-        add(fd, _master_set_recv);
-        _fdRessources[fd] = path;
-    }
-    _reqRessources[&c] = path;
-}
-
-bool WebServ::isListedRessource(const std::string& path)
-{              
-    intStrMap::iterator  it = _fdRessources.begin();
-    while (it != _fdRessources.end())
-    {
-        if (it->second == path)
-            return(true);
-        it++;
-    }
-    return(false);
-}
-
-void WebServ::addResponseToQueue(Request *request)
-{
-    // std::cout << "****** addResponseToQueue" << request->getClientSocket() << std::endl;
-    // std::cout << request->getResponseString() << std::endl;
-    // add(request->getClientSocket(), _master_set_write);
-    request->ready2send = true;
 }
 
 void WebServ::add(const int& fd, fd_set& set)
@@ -618,76 +500,3 @@ bool WebServ::isServerSocket(const int& fd)
     }
     return(false);
 }
-
-
-/* void     WebServ::getRequestConfig(Request& request)
-{
-    std::cout << "------- Config Routing ----------" << std::endl;
-
-    std::cout << "request socket fd :" << request.getServerSocket() << std::endl;
-    
-    std::vector <VirtualServer*>    matching_servers;
-    //Search matching socket
-    std::vector <VirtualServer*>::iterator    it = Config::getVirtualServers().begin();
-    std::vector <VirtualServer*>::iterator    end = Config::getVirtualServers().end();
-    while (it != end)
-    {
-        std::cout << "server socket fd :" << (*it)->getFd() << std::endl;
-        if ((*it)->getFd() == request.getServerSocket())
-            matching_servers.push_back(*it);
-        it++;
-    }
-    std::cout << "Matching servers by socket : " << matching_servers.size() << std::endl;
-    if(matching_servers.size() == 0)
-    {
-        std::cout << "No matching server found" << std::endl;
-        std::cout << "|-------- End of Config Routing ---------|" << std::endl;
-        request.setConfig(NULL);
-        return;
-    }
-    
-    // Search matching server_name
-    VirtualServer *server;
-    it = matching_servers.begin();
-    end = matching_servers.end();
-    server = *it; // First by default
-    while (it != end)
-    {
-        if ((*it)->getName() == request.getHeader("Host"))
-        {
-            server = *it;
-            return;
-        }
-        it++;
-    }
-    std::cout << "Matching servers by name : " << matching_servers.size() << std::endl;
-    
-    //Search matching location
-    std::vector <Location*>  locations = server->getLocations();
-    std::vector <Location*>::iterator    locIt;
-    std::vector <Location*>::iterator    locEnd;
-    std::string                         path = request.getPath();
-    std::string                         location_path;
-    locIt = locations.begin();
-    locEnd = locations.end();
-    // std::cout << "locations size " << server->getLocations().size() << std::endl;
-    request.setConfig(server->getLocations()[0]); // first by default
-    while(locIt != locEnd)
-    {
-        // std::cout <<  (**locIt) << std::endl;
-        location_path = (**locIt).getName();
-        // std::cout << "location path " << location_path << std::endl;
-        // std::cout << "request path " << path << std::endl;
-        if (path.find(location_path) == 0)
-            request.setConfig(*locIt);
-        locIt++;
-    }
-
-
-    std::cout << "|-------- End of Config Routing ---------|" << std::endl;
-    // TODO : throw error
-} */
-
-/* fd_set &    WebServ::getMasterSetWrite() {
-    return(_master_set_write);
-} */

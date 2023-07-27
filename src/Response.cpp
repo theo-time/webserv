@@ -1,5 +1,6 @@
 
 #include "Response.hpp"
+#include "Request.hpp"
 
 Response::Response()
 {
@@ -54,61 +55,60 @@ void Response::buildResponse()
     // std::cout << "----- Response : ----" << std::endl << response << std::endl;
 }
 
+void Response::send(const std::string& path)
+{
+    std::ifstream       file(path.c_str());
+    // TODO check file status
+    std::string         fileContent;
+    std::stringstream   buffer;
+    buffer << file.rdbuf();
+    fileContent = buffer.str();
+    file.close();
+    
+    request->setFileContent(fileContent);
+    buildHeader();
+    buildResponse();
+    request->ready2send = true;
+}
+
 void Response::sendError(int statusCode, std::string statusText)
 {
     (void)statusText;
+    setContentType("text/html");
+    setExtension("html");
+    setContentDisposition("inline");
+
     switch(statusCode)
     {
         case 404: 
             setStatusCode("404");
             setStatusText("Not Found");
-            setContentType("text/html");
             setFilename("404.html");
-            setExtension("html");
-            setContentDisposition("inline");
-            buildHeader();
-            WebServ::getRessource("./data/default/404.html", *request);
+            send("./data/default/404.html");
             break;
         case 403:
             setStatusCode("403");
             setStatusText("Forbidden");
-            setContentType("text/html");
             setFilename("403.html");
-            setExtension("html");
-            setContentDisposition("inline");
-            buildHeader();
-            buildResponse();
-            WebServ::getRessource("./data/default/403.html", *request);
+            send("./data/default/403.html");
             break;
         case 400:
             setStatusCode("400");
             setStatusText("Bad Request");
-            setContentType("text/html");
             setFilename("400.html");
-            setExtension("html");
-            setContentDisposition("inline");
-            buildHeader();
-            WebServ::getRessource("./data/default/400.html", *request);
+            send("./data/default/400.html");
             break;
         case 405:
             setStatusCode("405");
             setStatusText("Method Not Allowed");
-            setContentType("text/html");
             setFilename("405.html");
-            setExtension("html");
-            setContentDisposition("inline");
-            buildHeader();
-            WebServ::getRessource("./data/default/405.html", *request);
+            send("./data/default/405.html");
             break;
         case 500:
             setStatusCode("500");
             setStatusText("Internal Server Error");
-            setContentType("text/html");
             setFilename("500.html");
-            setExtension("html");
-            setContentDisposition("inline");
-            buildHeader();
-            WebServ::getRessource("./data/default/500.html", *request);
+            send("./data/default/500.html");
             break;
         default:
             std::cout << "Fatal Error : Unknown status code" << std::endl;

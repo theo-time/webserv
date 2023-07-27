@@ -339,20 +339,11 @@ void Request::handleRequest()
     {
         std::cout << "HEAD" << std::endl;
         _response.sendError(405, "Method Not Allowed");
-
-        /* _response.setStatusCode("405");// TODO a enlever car juste pour tester
-        _response.setStatusText("Method Not Allowed");
-        _response.setContentType("text/html");
-        _response.setProtocol("HTTP/1.1");
-        WebServ::getRessource("./data/default/empty.html", *this); */
         return;
     }
     else {
         std::cout << "Unknown method" << std::endl;
-        _response.setStatusCode("501");
-        _response.setStatusText("Not Implemented");
-        _response.setContentType("text/html");
-        WebServ::getRessource("./data/default/501.html", *this);
+        _response.sendError(501, "Not Implemented");
     }
 }
 
@@ -364,10 +355,10 @@ void Request::routingGet()
         _response.sendError(403, "Forbidden");
     else
     {
+        _response.setProtocol("HTTP/1.1");
         _response.setStatusCode("200");
         _response.setStatusText("OK");
-        std::cout << "Requesting ressource at path : " << path << std::endl;
-        WebServ::getRessource(path, *this);
+        _response.send(path);
     }
 }
 
@@ -381,10 +372,7 @@ void Request::routingPost()
     {
         std::cout << "Problem with BODY" << path << std::endl;
         std::cout << "Method not allowed" << std::endl;
-        _response.setStatusCode("405");
-        _response.setStatusText("Method not allowed");
-        _response.setContentType("text/html");
-        WebServ::getRessource("./data/default/405.html", *this);
+        _response.sendError(405, "Method not allowed");
         return;
     }
     
@@ -413,8 +401,6 @@ void Request::routingPost()
     _response.buildResponse();
     ready2send = true;
 
-
-    //_response.sendError(405, "Method Not Allowed"); // TODO a enlever car juste pour tester
 }
 
 void Request::routingDelete() 
@@ -425,10 +411,7 @@ void Request::routingDelete()
     if (!my_file.good())
     {
         std::cout << "File not found" << std::endl;
-        _response.setStatusCode("404");
-        _response.setStatusText("Not Found");
-        _response.setContentType("text/html");
-        WebServ::getRessource("./data/default/404.html", *this);
+        _response.sendError(404, "Not Found");
     }
     else 
     {
@@ -443,10 +426,7 @@ void Request::routingDelete()
         else
         {
             std::cout << "Error deleting file" << std::endl;
-            _response.setStatusCode("500");
-            _response.setStatusText("Internal Server Error");
-            _response.setContentType("text/html");
-            WebServ::getRessource("./data/default/500.html", *this);
+            _response.sendError(500, "Internal Server Error");
         }
 
     }
