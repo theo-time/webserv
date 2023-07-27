@@ -53,6 +53,8 @@ class WebServ
 
         static bool                                 init(void);
         static bool                                 process(void);
+        static bool                                 runListener(VirtualServer* srv);
+        static void                                 prepSelect(void);
         static bool                                 acceptNewCnx(const int& fd);
         static bool                                 readRequest(const int& fd, Request& c);
         static bool                                 sendResponse(const int& fd, Request& c);
@@ -60,7 +62,7 @@ class WebServ
         static void                                 add(const int& fd, fd_set& set);
         static void                                 del(const int& fd, fd_set& set);
         static void                                 closeCnx(const int& fd);
-        static void                                 getRequestConfig(Request& c);
+        static bool                                 userExit(void);
 };
 
 #endif

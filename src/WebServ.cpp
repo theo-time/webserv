@@ -63,104 +63,68 @@ bool WebServ::init(void)
         }
         else
         {            
-            // Create server socket to receive incoming connections on
-            int serverSocket = socket(AF_INET, SOCK_STREAM, 0);
-            if (serverSocket == -1) {
-                std::cerr << "Error : socket creation failed" << std::endl;
+            if (!runListener((*srvIt)))
                 return(false);
-            }
-            // Allow socket descriptor to be reuseable 
-            int on = 1;
-            int rc = setsockopt(serverSocket, SOL_SOCKET,  SO_REUSEADDR, (char *)&on, sizeof(on));
-            if (rc < 0)
-            {
-                std::cerr << "Error : setting socket options failed" << std::endl;
-                close(serverSocket);
-                return(false);
-            }
-            // Set socket to be nonblocking.  
-            rc = fcntl(serverSocket, F_SETFL, O_NONBLOCK);
-            if (rc < 0)
-            {
-                std::cerr << "Error : setting nonblocking option failed" << std::endl;
-                close(serverSocket);
-                return(false);
-            }
-            // Bind the socket
-            struct sockaddr_in  serverAddress;
-            serverAddress.sin_family = AF_INET;
-            serverAddress.sin_addr.s_addr = INADDR_ANY;
-            serverAddress.sin_port = htons((*srvIt)->getPort()); 
-            rc = bind(serverSocket, (struct sockaddr*)&serverAddress, sizeof(serverAddress));
-            if (rc < 0)
-            {
-                std::cerr << "Error : socket binding failed" << std::endl;
-                close(serverSocket);
-                return(false);
-            }
-
-            // Set the listen back log
-            rc = listen(serverSocket, 32);
-            if (rc < 0)
-            {
-                std::cerr << "Error : socket listen failed" << std::endl;
-                close(serverSocket);
-                return(false);
-            }
-            std::cout << "... waiting for connexion: port " << (*srvIt)->getPort() << std::endl;
-            (*srvIt)->setFd(serverSocket);
-            add(serverSocket, _master_set_recv);
-            _listeners[(*srvIt)->getPort()] = serverSocket; 
         }
         srvIt++;
     }
+    // check user cmd in terminal
     add(0, _master_set_recv);
     return(true);
 }
 
-bool WebServ::process(void)
+bool WebServ::runListener(VirtualServer* srv)
 {
-    // struct timeval  timeout;    
+    int     listenQ = 32; //maximum length to which the queue of pending connections for socket may grow
+
+    int listenFd = socket(AF_INET, SOCK_STREAM, 0);
+    if (listenFd == -1)
+        return(strerror(errno), false);
+
+    struct sockaddr_in  srvAddr;
+    ft_bzero(&srvAddr, sizeof(srvAddr));
+    srvAddr.sin_family = AF_INET;
+    srvAddr.sin_addr.s_addr = INADDR_ANY;
+    srvAddr.sin_port = htons(srv->getPort());
+    if (bind(listenFd, (struct sockaddr*)&srvAddr, sizeof(srvAddr)) == -1) // bind the socket to port number
+        return(strerror(errno), close(listenFd), false);
+
+    // Allow socket descriptor to be reuseable 
+    int on = 1;
+    if (setsockopt(listenFd, SOL_SOCKET,  SO_REUSEADDR, (char *)&on, sizeof(on)) == -1)
+        return(strerror(errno), close(listenFd), false);
+
+    // Set socket to be nonblocking
+    if (fcntl(listenFd, F_SETFL, O_NONBLOCK) == -1)
+        return(strerror(errno), close(listenFd), false);
+
+    if (listen(listenFd, listenQ) == -1) // wait for connections
+        return(strerror(errno), close(listenFd), false);
+    std::cout << "... waiting for connexion: port " << srv->getPort() << std::endl;
+
+    //add to fd lists
+    srv->setFd(listenFd);
+    add(listenFd, _master_set_recv);
+    _listeners[srv->getPort()] = listenFd; 
+    return(true);
+}
+
+bool WebServ::process(void)
+{  
     int             ret;
     fd_set          working_set_recv;
     fd_set          working_set_write;
 
-    // timeout.tv_sec = 10;
-    // timeout.tv_usec = 0;
     while (true)
     {
-        // TODO check request timeout
-        
-        //add responses to _master_set_write
-        if (!_requests.empty())
-        {            
-            for (int i = 0; i <= _max_fd; ++i)
-            {
-                if (_requests.count(i) && _requests[i]->ready2send)
-                {
-                    del(i, _master_set_recv);
-                    add(i, _master_set_write);
-                }
-            }
-        }
-
+        prepSelect();
         working_set_recv = _master_set_recv;
         working_set_write = _master_set_write;
 
-        // TODO cout à supprimer
-        std::cout << "Preparing select() " << std::endl;
-        for (int i = 0; i <= _max_fd; ++i)
-        {
-            if (FD_ISSET(i, &working_set_recv))
-                std::cout << "  fd - " << i << " : working_set_recv" << std::endl;
-            else if (FD_ISSET(i, &working_set_write))
-                std::cout << "  fd - " << i << " : working_set_write" << std::endl;
-            else
-                std::cout << "  fd - " << i << " : not working set" << std::endl;
-        }
-
+        // TODO check socket errors
         ret = select(_max_fd + 1, &working_set_recv, &working_set_write, NULL, 0);
-        if (ret < 0)
+
+        if (ret == - 1)
         {
             std::cerr << "  select() failed" << std::endl;
             stop();
@@ -176,10 +140,7 @@ bool WebServ::process(void)
         {
             if (FD_ISSET(i, &working_set_recv) && i == 0) 
             {
-                std::string buffer;
-                std::getline(std::cin, buffer);
-
-                if (buffer == "EXIT")
+                if (userExit())
                     return(false);
             }
             else if (FD_ISSET(i, &working_set_recv) && isServerSocket(i)) 
@@ -193,6 +154,36 @@ bool WebServ::process(void)
     return(true);
 }
 
+void WebServ::prepSelect(void)
+{
+    // TODO check request timeout
+    
+    //add responses to _master_set_write
+    if (!_requests.empty())
+    {            
+        for (int i = 0; i <= _max_fd; ++i)
+        {
+            if (_requests.count(i) && _requests[i]->ready2send)
+            {
+                del(i, _master_set_recv);
+                add(i, _master_set_write);
+            }
+        }
+    }
+
+    // TODO cout à supprimer
+    std::cout << "Preparing select() " << std::endl;
+    for (int i = 0; i <= _max_fd; ++i)
+    {
+        if (FD_ISSET(i, &_master_set_recv))
+            std::cout << "  fd - " << i << " : working_set_recv" << std::endl;
+        else if (FD_ISSET(i, &_master_set_write))
+            std::cout << "  fd - " << i << " : working_set_write" << std::endl;
+        else
+            std::cout << "  fd - " << i << " : not working set" << std::endl;
+    }
+}
+
 bool WebServ::acceptNewCnx(const int& fd)
 {
     int                 clientSocket;
@@ -202,27 +193,24 @@ bool WebServ::acceptNewCnx(const int& fd)
     do
     {
         clientSocket = accept(fd, (struct sockaddr *)&clientAddress, (socklen_t*)&clientAddressSize);
-        if (clientSocket < 0)
-        {
+        if (clientSocket == -1)
             break;
-        }
 
         // Set socket to be reusable and nonblocking
         int on = 1;
-        int rc = setsockopt(clientSocket, SOL_SOCKET,  SO_REUSEADDR, (char *)&on, sizeof(on));
-        if (rc < 0)
+        if (setsockopt(clientSocket, SOL_SOCKET,  SO_REUSEADDR, (char *)&on, sizeof(on)) == -1)
         {
-            std::cerr << "Error : setting reusable option failed" << std::endl;
+            strerror(errno);
             close(clientSocket);
             break;
         }  
-        rc = fcntl(clientSocket, F_SETFL, O_NONBLOCK);
-        if (rc < 0)
+        if (fcntl(clientSocket, F_SETFL, O_NONBLOCK) == -1)
         {
-            std::cerr << "Error : setting nonblocking option failed" << std::endl;
+            strerror(errno);
             close(clientSocket);
             break;
         }
+
         // TODO set receive SO_RCVTIMEO and send timeout  SO_SNDTIMEO
         
         add(clientSocket, _master_set_recv);
@@ -260,6 +248,10 @@ static std::string clean(std::string src)
         return(src.substr(found));
 
     found = src.find("PUT");
+    if (found != std::string::npos)
+        return(src.substr(found));
+
+    found = src.find("DELETE");
     if (found != std::string::npos)
         return(src.substr(found));
 
@@ -348,7 +340,8 @@ bool WebServ::readRequest(const int &fd, Request &request)
     else if (   requestRawString.find("GET") != std::string::npos 
             ||  requestRawString.find("POST") != std::string::npos 
             ||  requestRawString.find("HEAD") != std::string::npos 
-            ||  requestRawString.find("PUT") != std::string::npos)
+            ||  requestRawString.find("PUT") != std::string::npos
+            ||  requestRawString.find("DELETE") != std::string::npos)
     {
         request.appendRequestString(clean(requestRawString));
         std::cout << "  ***new valid request:" << std::endl << requestRawString << "***" << std::endl << std::endl;
@@ -383,25 +376,25 @@ bool WebServ::readRequest(const int &fd, Request &request)
         std::cout << "  ***requestBodyString:" << request.requestBodyString << "***" << std::endl;
         
         request.readingHeader = false;
-        if (request.getRequestString().find("GET") == 0 || request.getRequestString().find("POST") == 0 || request.getRequestString().find("HEAD") == 0 || request.getRequestString().find("PUT") == 0) 
+ /*        if (request.getRequestString().find("GET") == 0 || request.getRequestString().find("POST") == 0 ||
+         request.getRequestString().find("HEAD") == 0 || request.getRequestString().find("PUT") == 0) 
+        { */
+        request.parseRequest();
+        
+        if (request.getHeader("Transfer-Encoding") == "chunked")
         {
-            request.parseRequest();
-            
-            if (request.getHeader("Transfer-Encoding") == "chunked")
-            {
-                std::cout << "CHUNKED = TRUE" << std::endl;
-                request.readingBody = true;
-                request.chunkedBody = true;
+            std::cout << "CHUNKED = TRUE" << std::endl;
+            request.readingBody = true;
+            request.chunkedBody = true;
 
-                if (!request.requestBodyString.empty())
-                    addChunkedBody(request, request.requestBodyString);
-            }
-            if (request.readingBody == false)
-                request.handleRequest();
-            // del(fd, _master_set_recv);
+            if (!request.requestBodyString.empty())
+                addChunkedBody(request, request.requestBodyString);
         }
+        if (request.readingBody == false)
+            request.handleRequest();
+/*         }
         else
-           request.clear();
+           request.clear(); */
     }
         
     return(true);
@@ -432,7 +425,6 @@ bool WebServ::sendResponse(const int &fd, Request &c)
 void WebServ::add(const int& fd, fd_set& set)
 {
     FD_SET(fd, &set);
-    // std::cout << "fd:" << fd << std::endl;
 
     if (fd > _max_fd)
         _max_fd = fd;
@@ -501,5 +493,16 @@ bool WebServ::isServerSocket(const int& fd)
             return(true);
         lsIt++;
     }
+    return(false);
+}
+
+bool WebServ::userExit(void)
+{
+    std::string buffer;
+    std::getline(std::cin, buffer);
+
+    if (buffer == "EXIT")
+        return(true);
+
     return(false);
 }
