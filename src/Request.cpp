@@ -65,8 +65,6 @@ void Request::parseRequest(){
     std::cout << "Query: " << query << std::endl;
 }
 
-
-
 void Request::parseMethodToken(const std::string& token)
 {
 	std::string methods[5] = {"GET", "HEAD", "POST", "DELETE", "PUT"};

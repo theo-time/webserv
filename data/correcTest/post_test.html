@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Home</title>
+    
+</head>
+
+<body>
+
+    <header class="header">
+        <div class="container" style='text-align: center'>
+            <div class ="header__inner">
+                <nav class="nav">
+                    <a class="nav__link__dop" href="index.html">Home</a>
+                    <a class="nav__link__dop" href="img_page.html">Test Image</a>
+                    <a class="nav__link__dop" href="../../cgi-bin/get_test.py">CGI GET</a>
+                    <a class="nav__link__dop" href="post_test.html">CGI POST</a>                     
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <form action = "/cgi-bin/post_test.py" method = "post">
+        First Name: <input type = "text" name = "first_name"><br />
+        Last Name: <input type = "text" name = "last_name" />
+        
+        <input type = "submit" value = "Submit" />
+        </form>
+<body>
+</html>
