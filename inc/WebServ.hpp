@@ -37,16 +37,11 @@ class WebServ
     public:
 
         typedef std::vector<VirtualServer*>         srvVect;
-        typedef std::map<int, Request*>           intCliMap;
-        typedef std::map<Request*, std::string>   cliStrMap;
-        typedef std::map<int, std::string>          intStrMap;
+        typedef std::map<int, Request*>             intCliMap;
         typedef std::map<int, int>                  intMap;
 
         static bool                                 runListeners(void);
-        static void                                 getRessource(const std::string& path, Request& c);
         static void                                 stop(void);
-        static void                                 addResponseToQueue(Request *request);
-        // static fd_set                               & getMasterSetWrite();
 
     private:
 
@@ -55,17 +50,13 @@ class WebServ
         static int                                  _max_fd;
         static intMap                               _listeners;
         static intCliMap                            _requests;
-        static cliStrMap                            _reqRessources;
-        static intStrMap                            _fdRessources;
 
         static bool                                 init(void);
         static bool                                 process(void);
         static bool                                 acceptNewCnx(const int& fd);
-        static bool                                 readRessource(const int& fd);
         static bool                                 readRequest(const int& fd, Request& c);
         static bool                                 sendResponse(const int& fd, Request& c);
         static bool                                 isServerSocket(const int& fd);
-        static bool                                 isListedRessource(const std::string& path);
         static void                                 add(const int& fd, fd_set& set);
         static void                                 del(const int& fd, fd_set& set);
         static void                                 closeCnx(const int& fd);

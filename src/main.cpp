@@ -35,7 +35,7 @@ static int     doEpoll(int epollFd);
 
 int main(int ac, char** av)
 {
-    // intercept Ctrl+C
+    // TODO ignorer CTRL+C et CTRL+D
     // signal(SIGINT, ignoreSig);
 
     // TODO del qd epoll ok
