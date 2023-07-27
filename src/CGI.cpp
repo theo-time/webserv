@@ -40,9 +40,11 @@ CGI::~CGI()
 		free(_envvar[i]); _envvar[i] = NULL;}
 	delete[] _envvar;
 	
-	i = -1;
-	while (_args[i++]){
-		free(_args[i]); _args[i] = NULL;}
+	i = 0;
+	while (_args[i]){
+		free(_args[i]); _args[i] = NULL;
+        i++;
+    }
 	delete[] _args;
 }
 
@@ -102,13 +104,13 @@ void CGI::executeCGI(Request & req)
     }
 }
 
-Response CGI::getResponseCGI() {
+Response& CGI::getResponseCGI() {
         _response.setStatusCode("200");
         _response.setStatusText("OK");
         _response.setContentType("text/html");
         _response.setProtocol("HTTP/1.1");
         _response.setBody(outputCGI);
-        _response.buildHeader();
-        _response.buildResponse();
+        // _response.buildHeader();
+        // _response.buildResponse();
         return _response;
 }
