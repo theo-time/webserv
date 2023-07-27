@@ -15,7 +15,6 @@
 #include <cstdlib>
 #include <list>
 
-
 # include "WebServ.hpp"
 # include "VirtualServer.hpp"
 # include "Location.hpp"

@@ -35,6 +35,12 @@ bool Request::parseRequest(){
         return false;
     getRequestConfig();
 
+    if ((method == "GET" && !_config.isGetAllowed()) || (method == "POST" && !_config.isPostAllowed()))
+    {    
+        _response.sendError(400, ": Method not allowed");
+        return false;
+    }
+
     path = "." + path;
 
     if (path == "./")
