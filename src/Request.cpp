@@ -21,19 +21,18 @@ Request::~Request() {
 }
 
 
-void Request::parseRequest(){
+bool Request::parseRequest(){
     std::string firstLine = requestString.substr(0, requestString.find("\r\n"));
     std::vector<std::string> tokens = splitWithSep(firstLine, ' ');
     if (tokens.size() != 3) {
         _response.sendError(400, ": a field from request line is missing"); 
     }
 
-    //std::cout << "REQUEST STRING" << requestString << std::endl;
+    std::cout << "REQUEST STRING" << requestString << std::endl;
 
 	parseMethodToken(tokens[0]);
-    parseURI(tokens[1]);
-	parseHTTPVersion(tokens[2]);
-    parseHeaders();
+    if (!parseURI(tokens[1]) || !parseHTTPVersion(tokens[2]) || !parseHeaders())
+        return false;
     getRequestConfig();
 
     path = "." + path;
@@ -52,6 +51,7 @@ void Request::parseRequest(){
     std::cout << "Path: " << path << std::endl;
     std::cout << "Protocol: " << protocol << std::endl;
     std::cout << "Query: " << query << std::endl;
+    return true;
 }
 
 void Request::parseMethodToken(const std::string& token)
@@ -70,11 +70,18 @@ void Request::parseMethodToken(const std::string& token)
     _response.sendError(400, ": unknown method");
 }
 
-void Request::parseURI(std::string token)
+bool Request::parseURI(std::string token)
 {
-	if (token[0] != '/')
+    if (token.size() > MAX_URI_LEN) {
+        _response.sendError(414, ": URI too long");
+        return false;
+    }
+
+	if (token[0] != '/') {
         _response.sendError(400, ": URI must begin with a /");
-        
+        return false;
+    }
+  
     query = "";
 
 	size_t querryChar = token.find("?");
@@ -85,23 +92,44 @@ void Request::parseURI(std::string token)
 	}
 	else
 		path = token;
+    return true;
 }
 
-void Request::parseHTTPVersion(const std::string& token)
+bool Request::parseHTTPVersion(const std::string& token)
 {
 	if (token.size() < 7 || token.compare(0, 5, "HTTP/") || token.compare(6, 1, ".") || 
 			!isdigit(static_cast<int>(token[5])) || !isdigit(static_cast<int>(token[7])))
+    {
 		_response.sendError(400, ": HTTP version not correct");
-
+        return false;
+    }
 	protocol = token;
+    return true;
 }
 
-void Request::parseHeaders()
+bool Request::parseHeaders()
 {
+    if (requestString.size() > MAX_HEADER_LEN)
+        _response.sendError(431, ": Header too long");
+
     std::string delimiter = "\r\n";
     size_t pos = 0;
     int i = 0;
     std::string tmpRequestString = requestString;
+
+    std::cout << "REQUEST STRING FOR PARSING HEADER" << requestString << std::endl;
+
+    size_t posSC = tmpRequestString.find(":");
+    if (posSC == std::string::npos) {
+		_response.sendError(400, ": No semicolon");
+        return false;
+    }
+    if (hasDuplicateKeys(tmpRequestString))
+    {
+		_response.sendError(400, ": duplicated headers are not allowed");
+        return false;
+    }
+
     while ((pos = tmpRequestString.find(delimiter)) != std::string::npos) {
         std::string token = tmpRequestString.substr(0, pos);
         tmpRequestString.erase(0, pos + delimiter.length());
@@ -118,16 +146,25 @@ void Request::parseHeaders()
         }
         i++;
     }
+
     /*for (std::map<std::string, std::string>::iterator it=headers.begin(); it!=headers.end(); ++it)
         std::cout << it->first << " => " << it->second << '\n';*/
+    return true;
 }
 
-void Request::parseBody()
+bool Request::parseBody()
 {
     if (chunkedBody)
         body = concatenateList(requestBodyList);
     else
         body = requestBodyString;
+    
+    if(body.size() > _config->getClientMaxBodySize()) 
+    {
+        _response.sendError(413, ": received more octets than max body size limit");
+        return false;
+    }
+    return true;
 }
 
 void     Request::getRequestConfig()
@@ -239,7 +276,8 @@ void Request::handleRequest()
     std::string index = _config->getIndex();
 
 
-    parseBody();
+    if (!parseBody())
+        return;
 
     //std::cout << "Body: " << body << std::endl;
 

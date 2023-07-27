@@ -114,3 +114,25 @@ std::string getContentInfo(Request & req, std::string str) {
     std::string contentValue = req.getRequestString().substr(startPos, endPos - startPos);
     return contentValue;
 }
+
+bool hasDuplicateKeys(const std::string& longString) {
+    std::map<std::string, int> keyCount;
+    std::istringstream iss(longString);
+
+    std::string line;
+    while (std::getline(iss, line)) {
+        size_t pos = line.find(": ");
+        if (pos != std::string::npos) {
+            std::string key = line.substr(0, pos);
+            ++keyCount[key];
+        }
+    }
+
+    for (std::map<std::string, int>::const_iterator it = keyCount.begin(); it != keyCount.end(); ++it) {
+        if (it->second > 1) {
+            return true; // Duplicate key found
+        }
+    }
+
+    return false; // No duplicate keys found
+}

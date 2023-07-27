@@ -28,8 +28,8 @@
 #define DELETE 3
 #define UNKNOWN 0
 
-#define MAX_URI_LEN 8000
-#define MAX_HEADER_LEN 8000
+#define MAX_URI_LEN 100
+#define MAX_HEADER_LEN 5000
 
 #define CGI_BUFFER_SIZE 2046
 
@@ -96,7 +96,6 @@ class Request {
         void                setRequestString(std::string &request);
         void                appendRequestString(std::string request);
         void                setConfig(Location* config);
-        void                parseURI(std::string token);
 
         /* Methods */
 
@@ -104,11 +103,12 @@ class Request {
         void routingPost();
         void routingDelete();
         void routingCGI();
-        void parseRequest();
+        bool parseRequest();
         void parseMethodToken(const std::string& token);
-        void parseHTTPVersion(const std::string& token);
-        void parseHeaders();
-        void parseBody();
+        bool parseHTTPVersion(const std::string& token);
+        bool parseHeaders();
+        bool parseBody();
+        bool parseURI(std::string token);
         void handleRequest();
         void buildResponse();
         bool fileExists();

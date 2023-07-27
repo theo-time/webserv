@@ -30,6 +30,7 @@
 #include <dirent.h>
 #include <cstdlib>
 #include <list>
+#include <set>
 
 
 # include "WebServ.hpp"
@@ -59,5 +60,7 @@ std::string getRedirectionHTML(std::string url);
 void	ft_bzero(void *s, size_t n);
 
 std::string getContentInfo(Request & req, std::string str);
+
+bool hasDuplicateKeys(const std::string& longString);
 
 #endif
