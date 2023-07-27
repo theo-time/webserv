@@ -63,58 +63,49 @@ bool WebServ::init(void)
         }
         else
         {            
-            // Create server socket to receive incoming connections on
-            int serverSocket = socket(AF_INET, SOCK_STREAM, 0);
-            if (serverSocket == -1) {
-                std::cerr << "Error : socket creation failed" << std::endl;
+            if (!runListener((*srvIt)))
                 return(false);
-            }
-            // Allow socket descriptor to be reuseable 
-            int on = 1;
-            int rc = setsockopt(serverSocket, SOL_SOCKET,  SO_REUSEADDR, (char *)&on, sizeof(on));
-            if (rc < 0)
-            {
-                std::cerr << "Error : setting socket options failed" << std::endl;
-                close(serverSocket);
-                return(false);
-            }
-            // Set socket to be nonblocking.  
-            rc = fcntl(serverSocket, F_SETFL, O_NONBLOCK);
-            if (rc < 0)
-            {
-                std::cerr << "Error : setting nonblocking option failed" << std::endl;
-                close(serverSocket);
-                return(false);
-            }
-            // Bind the socket
-            struct sockaddr_in  serverAddress;
-            serverAddress.sin_family = AF_INET;
-            serverAddress.sin_addr.s_addr = INADDR_ANY;
-            serverAddress.sin_port = htons((*srvIt)->getPort()); 
-            rc = bind(serverSocket, (struct sockaddr*)&serverAddress, sizeof(serverAddress));
-            if (rc < 0)
-            {
-                std::cerr << "Error : socket binding failed" << std::endl;
-                close(serverSocket);
-                return(false);
-            }
-
-            // Set the listen back log
-            rc = listen(serverSocket, 32);
-            if (rc < 0)
-            {
-                std::cerr << "Error : socket listen failed" << std::endl;
-                close(serverSocket);
-                return(false);
-            }
-            std::cout << "... waiting for connexion: port " << (*srvIt)->getPort() << std::endl;
-            (*srvIt)->setFd(serverSocket);
-            add(serverSocket, _master_set_recv);
-            _listeners[(*srvIt)->getPort()] = serverSocket; 
         }
         srvIt++;
     }
+    // check user cmd in terminal
     add(0, _master_set_recv);
+    return(true);
+}
+
+bool WebServ::runListener(VirtualServer* srv)
+{
+    int     listenQ = 32; //maximum length to which the queue of pending connections for socket may grow
+
+    int listenFd = socket(AF_INET, SOCK_STREAM, 0);
+    if (listenFd == -1)
+        return(strerror(errno), false);
+
+    struct sockaddr_in  srvAddr;
+    ft_bzero(&srvAddr, sizeof(srvAddr));
+    srvAddr.sin_family = AF_INET;
+    srvAddr.sin_addr.s_addr = INADDR_ANY;
+    srvAddr.sin_port = htons(srv->getPort());
+    if (bind(listenFd, (struct sockaddr*)&srvAddr, sizeof(srvAddr)) == -1) // bind the socket to port number
+        return(strerror(errno), close(listenFd), false);
+
+    // Allow socket descriptor to be reuseable 
+    int on = 1;
+    if (setsockopt(listenFd, SOL_SOCKET,  SO_REUSEADDR, (char *)&on, sizeof(on)) == -1)
+        return(strerror(errno), close(listenFd), false);
+
+    // Set socket to be nonblocking
+    if (fcntl(listenFd, F_SETFL, O_NONBLOCK) == -1)
+        return(strerror(errno), close(listenFd), false);
+
+    if (listen(listenFd, listenQ) == -1) // wait for connections
+        return(strerror(errno), close(listenFd), false);
+    std::cout << "... waiting for connexion: port " << srv->getPort() << std::endl;
+
+    //add to fd lists
+    srv->setFd(listenFd);
+    add(listenFd, _master_set_recv);
+    _listeners[srv->getPort()] = listenFd; 
     return(true);
 }
 

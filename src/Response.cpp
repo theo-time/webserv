@@ -55,11 +55,6 @@ void Response::buildResponse()
     // std::cout << "----- Response : ----" << std::endl << response << std::endl;
 }
 
-void Response::sendNoBuild(void)
-{
-    request->ready2send = true;
-}
-
 void Response::send(void)
 {
     buildHeader();

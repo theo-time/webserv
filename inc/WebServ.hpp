@@ -53,6 +53,7 @@ class WebServ
 
         static bool                                 init(void);
         static bool                                 process(void);
+        static bool                                 runListener(VirtualServer* srv);
         static bool                                 acceptNewCnx(const int& fd);
         static bool                                 readRequest(const int& fd, Request& c);
         static bool                                 sendResponse(const int& fd, Request& c);

@@ -110,7 +110,7 @@ Response& CGI::getResponseCGI() {
         _response.setContentType("text/html");
         _response.setProtocol("HTTP/1.1");
         _response.setBody(outputCGI);
-        // _response.buildHeader();
-        // _response.buildResponse();
+        _response.buildHeader();
+        _response.buildResponse();
         return _response;
 }
