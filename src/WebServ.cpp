@@ -6,7 +6,7 @@
 /*   By: jde-la-f <jde-la-f@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/13 14:37:03 by adcarnec          #+#    #+#             */
-/*   Updated: 2023/07/27 16:07:50 by jde-la-f         ###   ########.fr       */
+/*   Updated: 2023/07/27 18:56:08 by jde-la-f         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -379,9 +379,12 @@ bool WebServ::readRequest(const int &fd, Request &request)
  /*        if (request.getRequestString().find("GET") == 0 || request.getRequestString().find("POST") == 0 ||
          request.getRequestString().find("HEAD") == 0 || request.getRequestString().find("PUT") == 0) 
         { */
-        bool err = request.parseRequest();
-        
-        if (request.getHeader("Transfer-Encoding") == "chunked")
+        bool err;
+        if (request.readingBody == false)
+        {
+            err = request.parseRequest();            
+        }
+        if (request.getHeader("Transfer-Encoding") == "chunked" || request.getHeader("Content-Type") == "multipart/form-data")
         {
             std::cout << "CHUNKED = TRUE" << std::endl;
             request.readingBody = true;
