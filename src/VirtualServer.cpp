@@ -27,8 +27,6 @@ void VirtualServer::init(void)
     _name               = "";
     _fd                 = -1;
     _index              = "index.html";
-    _errorPages[404]    = "./default/404.html";
-    _errorPages[500]    = "./default/500.html";
 
     _locations.push_back(new Location("_internal", _root, _index, _allowGet, _allowPost, _allowDel, _clientMaxBodySize, _errorPages));
 }

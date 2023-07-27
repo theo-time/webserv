@@ -58,9 +58,9 @@ _clientMaxBodySize(clientMaxBodySize), _errorPages(errorPages)
             std::string key = tmpVars.front().substr(0, sep);
             std::string valueStr = tmpVars.front().substr(sep + 1, tmpVars.front().length() - sep - 1);
 
-            if (key == "cgi_root" )
+            if (key == "extension" )
             {
-                _root = valueStr;
+                _extension = valueStr;
                 // std::cout << "key: " << key << " value:" << valueStr << std::endl;
                 tmpVars.pop();
                 continue;
@@ -69,14 +69,6 @@ _clientMaxBodySize(clientMaxBodySize), _errorPages(errorPages)
             if (key == "cgi_path" )
             {
                 _path = valueStr;
-                // std::cout << "key: " << key << " value:" << valueStr << std::endl;
-                tmpVars.pop();
-                continue;
-            }
-
-            if (key == "cgi_pgname" )
-            {
-                _pgname = valueStr;
                 // std::cout << "key: " << key << " value:" << valueStr << std::endl;
                 tmpVars.pop();
                 continue;
@@ -95,7 +87,7 @@ _clientMaxBodySize(clientMaxBodySize), _errorPages(errorPages)
                 continue;
             }
 
-            if(key == "cgi_methods")
+            if(key == "methods")
             {
                 while (!valueStr.empty())
                 {
@@ -255,6 +247,11 @@ std::string Location::getPath(void) const
     return(_path);
 }
 
+std::string Location::getExtension(void) const
+{
+    return(_extension);
+}
+
 std::string Location::getPgName(void) const
 {
     return(_pgname);
@@ -295,13 +292,14 @@ std::ostream& operator<<(std::ostream& o, Location& me)
     std::cout << "Location " << me.getName() << std::endl;
     std::cout << "          - type          : " << me.getType() << std::endl;
     std::cout << "          - root          : " << me.getRoot() << std::endl;
-    std::cout << "          - index         : " << me.getIndex() << std::endl;
-    std::cout << "          - path          : " << me.getPath() << std::endl;
-    std::cout << "          - pgname        : " << me.getPgName() << std::endl;
-    std::cout << "          - autoindex     : " << me.isAutoIndex() << std::endl;
     std::cout << "          - get           : " << me.isGetAllowed() << std::endl;
     std::cout << "          - post          : " << me.isPostAllowed() << std::endl;
     std::cout << "          - del           : " << me.isDelAllowed() << std::endl;
+    std::cout << "          - index         : " << me.getIndex() << std::endl;
+    std::cout << "          - ext           : " << me.getExtension() << std::endl;
+    std::cout << "          - path          : " << me.getPath() << std::endl;
+    std::cout << "          - pgname        : " << me.getPgName() << std::endl;
+    std::cout << "          - autoindex     : " << me.isAutoIndex() << std::endl;
     std::cout << "          - clientMax...  : " << me.getClientMaxBodySize() << std::endl;
     return(o);
 }
