@@ -89,6 +89,9 @@ _clientMaxBodySize(clientMaxBodySize), _errorPages(errorPages)
 
             if(key == "methods")
             {
+                _allowGet = false;
+                _allowPost = false;
+                _allowDel = false;
                 while (!valueStr.empty())
                 {
                     std::string tmp = "";
