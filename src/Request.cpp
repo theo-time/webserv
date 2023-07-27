@@ -24,41 +24,30 @@ Request::~Request() {
 void Request::parseRequest(){
     std::string firstLine = requestString.substr(0, requestString.find("\r\n"));
     std::vector<std::string> tokens = splitWithSep(firstLine, ' ');
-    if (tokens.size() != 3)
-		std::cout << "400 : a field from request line is missing";
+    if (tokens.size() != 3) {
+        _response.sendError(400, ": a field from request line is missing"); 
+    }
 
-    std::cout << "REQUEST STRING" << requestString << std::endl;
+    //std::cout << "REQUEST STRING" << requestString << std::endl;
 
 	parseMethodToken(tokens[0]);
     parseURI(tokens[1]);
 	parseHTTPVersion(tokens[2]);
     parseHeaders();
-
     getRequestConfig();
 
     path = "." + path;
 
-    std::string root = _config->getRoot(); 
-    std::string index = _config->getIndex();
-
-    std::cout << _config->getName() << std::endl;
-    std::cout << _config->getRoot() << std::endl;
-    std::cout << _config->getIndex() << std::endl;
-
     if (path == "./")
-        path = path + root.substr(1) + "/" + index;
-
-    //if(_config->getName() == "*.bla")
+        path = path + _config->getRoot().substr(1) + "/" + _config->getIndex();
 
     if(path.find(_config->getName()) != std::string::npos && _config->getType() == "std") {
         path.replace(path.find(_config->getName()), _config->getName().length(), _config->getRoot());
-        //size_t pos = path.find(_config->getRoot(), path.length() - _config->getRoot().length());
-        //std::cout << path.substr(path.length() - _config->getRoot().length()) << std::endl;
         if (!::fileExists(path) && method == "GET")
-            path = path + "/" + index;
+            path = path + "/" + _config->getIndex();
     }
 
-    std::cout << " - PARSING COMPLETED - " << std::endl;
+    std::cout << " ---------- PARSING COMPLETED ---------- " << std::endl;
     std::cout << "Method: " << method << std::endl;
     std::cout << "Path: " << path << std::endl;
     std::cout << "Protocol: " << protocol << std::endl;
@@ -78,15 +67,14 @@ void Request::parseMethodToken(const std::string& token)
 			return ;
 		}
 	}
-
-	std::cout << "400 : unknown method";
+    _response.sendError(400, ": unknown method");
 }
 
 void Request::parseURI(std::string token)
 {
 	if (token[0] != '/')
-		std::cout << "400 : URI must begin with a /" << std::endl;
-	
+        _response.sendError(400, ": URI must begin with a /");
+        
     query = "";
 
 	size_t querryChar = token.find("?");
@@ -103,7 +91,7 @@ void Request::parseHTTPVersion(const std::string& token)
 {
 	if (token.size() < 7 || token.compare(0, 5, "HTTP/") || token.compare(6, 1, ".") || 
 			!isdigit(static_cast<int>(token[5])) || !isdigit(static_cast<int>(token[7])))
-		std::cout << "400 : HTTP version not correct";
+		_response.sendError(400, ": HTTP version not correct");
 
 	protocol = token;
 }
@@ -250,10 +238,6 @@ void Request::handleRequest()
     std::string root = _config->getRoot(); 
     std::string index = _config->getIndex();
 
-    /*if(_config->getName() != "_internal")
-        path.replace(path.find(_config->getName()), _config->getName().length(), _config->getRoot());
-    else 
-        path = root + path;*/
 
     parseBody();
 
@@ -264,7 +248,7 @@ void Request::handleRequest()
     std::cout << _config->getIndex() << std::endl;
 
     if (path == "./")
-        path = path + root.substr(1) + "/" + index;
+        path = path + _config->getRoot().substr(1) + "/" + index;
 
     //if(_config->getName() == "*.bla")
 
@@ -364,7 +348,7 @@ void Request::routingPost()
     {
         std::cout << "Problem with BODY" << path << std::endl;
         std::cout << "Method not allowed" << std::endl;
-        _response.sendError(405, "Method not allowed");
+        _response.sendError(405, "Body size is 0");
         return;
     }
     
@@ -417,7 +401,6 @@ void Request::routingDelete()
             std::cout << "Error deleting file" << std::endl;
             _response.sendError(500, "Internal Server Error");
         }
-
     }
 }
 

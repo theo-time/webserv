@@ -76,9 +76,9 @@ void Response::send(const std::string& path)
     send();
 }
 
-void Response::sendError(int statusCode, std::string statusText)
+void Response::sendError(int statusCode, std::string error_msg)
 {
-    (void)statusText;
+    std::cout << statusCode << error_msg << std::endl;
     setProtocol("HTTP/1.1");
     setContentType("text/html");
     setExtension("html");
@@ -86,17 +86,11 @@ void Response::sendError(int statusCode, std::string statusText)
 
     switch(statusCode)
     {
-        case 404: 
-            setStatusCode("404");
-            setStatusText("Not Found");
-            setFilename("404.html");
-            send("./data/default/404.html");
-            break;
-        case 403:
-            setStatusCode("403");
-            setStatusText("Forbidden");
-            setFilename("403.html");
-            send("./data/default/403.html");
+        case 301:
+            setStatusCode("301");
+            setStatusText("Moved Permanently");
+            setFilename("301.html");
+            send("./data/default/301.html");
             break;
         case 400:
             setStatusCode("400");
@@ -104,17 +98,59 @@ void Response::sendError(int statusCode, std::string statusText)
             setFilename("400.html");
             send("./data/default/400.html");
             break;
+        case 403:
+            setStatusCode("403");
+            setStatusText("Forbidden");
+            setFilename("403.html");
+            send("./data/default/403.html");
+            break;
+        case 404: 
+            setStatusCode("404");
+            setStatusText("Not Found");
+            setFilename("404.html");
+            send("./data/default/404.html");
+            break;
         case 405:
             setStatusCode("405");
             setStatusText("Method Not Allowed");
             setFilename("405.html");
             send("./data/default/405.html");
             break;
+        case 413:
+            setStatusCode("413");
+            setStatusText("Content Too Large");
+            setFilename("413.html");
+            send("./data/default/413.html");
+            break;
+        case 414:
+            setStatusCode("414");
+            setStatusText("URI Too Long");
+            setFilename("414.html");
+            send("./data/default/414.html");
+            break;
+        case 431:
+            setStatusCode("431");
+            setStatusText("Request Header Fields Too Large");
+            setFilename("431.html");
+            send("./data/default/431.html");
+            break;
         case 500:
             setStatusCode("500");
             setStatusText("Internal Server Error");
             setFilename("500.html");
             send("./data/default/500.html");
+            break;
+        case 501:
+            setStatusCode("501");
+            setStatusText("Method Not Implemented");
+            setFilename("501.html");
+            send("./data/default/501.html");
+            break;
+        case 505:
+            setStatusCode("505");
+            setStatusText("HTTP Version Not Supported");
+            setFilename("505.html");
+            send("./data/default/505.html");
             break;
         default:
             std::cout << "Fatal Error : Unknown status code" << std::endl;

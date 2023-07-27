@@ -57,7 +57,7 @@ class Response {
 
         void buildHeader();
         void buildResponse();
-        void sendError(int statusCode, std::string statusText);
+        void sendError(int statusCode, std::string error_msg);
         void send(const std::string& path);
         void send(void);
         void clear();
