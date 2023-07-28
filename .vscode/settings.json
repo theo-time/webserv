@@ -53,6 +53,7 @@
         "streambuf": "cpp",
         "typeinfo": "cpp",
         "list": "cpp",
-        "csignal": "cpp"
+        "csignal": "cpp",
+        "set": "cpp"
     }
 }

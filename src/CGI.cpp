@@ -48,26 +48,32 @@ CGI::~CGI()
 	delete[] _args;
 }
 
-void CGI::executeCGI(Request & req)
+bool CGI::executeCGI(Request & req)
 {
     if (pipe(pipe_in) < 0){
         perror("pipe failed");
         close (pipe_in[1]);
         close (pipe_in[0]);
-        return;
+        return false;
     }
     if (pipe(pipe_out) < 0) {
         perror("pipe failed");
         close (pipe_in[1]);
         close (pipe_in[0]);
+        return false;
     }
     std::cout << "BODY FED : " << req.getBody().c_str() << std::endl;
     std::cout << _args[1] << std::endl;
     write(pipe_in[1], req.getBody().c_str(), _req_body.length());
     //std::cout << "WRITE BYTES : " << tmp << std::endl;
     pid_t pid = fork();
-    if (pid == -1)
+    if (pid == -1) {
         perror("fork failed");
+        close (pipe_in[1]);
+        close (pipe_in[0]);
+        return false;
+    }
+
     else if (pid == 0)  // Child process
     {
         dup2(pipe_in[0], STDIN_FILENO);
@@ -79,7 +85,8 @@ void CGI::executeCGI(Request & req)
 
         execve(_args[0], _args, _envvar);
         //exit(1);
-        perror("execve failed");
+        //perror("execve failed");
+        exit(0);
     }
     else {  // Parent process
         char buffer[4096];
@@ -90,26 +97,20 @@ void CGI::executeCGI(Request & req)
         close(pipe_in[0]);
 
         waitpid(pid, &status, 0); // Wait for the child process to finish
-        if (WIFEXITED(status))
+        if (WEXITSTATUS(status))
 			std::cout << "CGI execution was successful." << std::endl;
-		else
-			std::cout << "CGI execution failed." << std::endl;
+		else {
+            std::cout << "CGI execution failed." << std::endl;
+            return false;
+        }
 
         close(pipe_out[1]);
         while ((bytesRead = read(pipe_out[0], buffer, 4096)) > 0) // Read the output from the child process
             outputCGI.append(buffer, bytesRead);
-        std::cout << "OUTPUTCGI: "<< outputCGI << std::endl;
-        std::cout << "END OUTPUTCGI: "<< std::endl;
+        std::cout << "---- OUTPUTCGI ----"<< std::endl;
+        std::cout << outputCGI << std::endl;
+        std::cout << "---- END OUTPUTCGI ----"<< std::endl;
         close(pipe_out[0]); // Close the read end of the pipe
+        return true;
     }
-}
-
-void CGI::setResponseCGI() {
-        _req.getResponse().setStatusCode("200");
-        _req.getResponse().setStatusText("OK");
-        _req.getResponse().setContentType("text/html");
-        _req.getResponse().setProtocol("HTTP/1.1");
-        _req.getResponse().setBody(outputCGI);
-        _req.getResponse().buildHeader();
-        _req.getResponse().buildResponse();
 }

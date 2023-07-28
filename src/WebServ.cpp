@@ -6,7 +6,7 @@
 /*   By: jde-la-f <jde-la-f@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/13 14:37:03 by adcarnec          #+#    #+#             */
-/*   Updated: 2023/07/27 18:56:08 by jde-la-f         ###   ########.fr       */
+/*   Updated: 2023/07/28 10:50:21 by jde-la-f         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -503,6 +503,9 @@ bool WebServ::userExit(void)
 {
     std::string buffer;
     std::getline(std::cin, buffer);
+
+    if (!std::cin.eof())
+        std::cout << "  Closing cnx - fd " << std::endl;
 
     if (buffer == "EXIT")
         return(true);

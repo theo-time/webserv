@@ -28,7 +28,7 @@ bool Request::parseRequest(){
         _response.sendError(400, ": a field from request line is missing"); 
     }
 
-    std::cout << "REQUEST STRING" << requestString << std::endl;
+    //std::cout << "REQUEST STRING" << requestString << std::endl;
 
 	parseMethodToken(tokens[0]);
     if (!parseURI(tokens[1]) || !parseHTTPVersion(tokens[2]) || !parseHeaders())
@@ -123,7 +123,7 @@ bool Request::parseHeaders()
     int i = 0;
     std::string tmpRequestString = requestString;
 
-    std::cout << "REQUEST STRING FOR PARSING HEADER" << requestString << std::endl;
+    //std::cout << "REQUEST STRING FOR PARSING HEADER" << requestString << std::endl;
 
     size_t posSC = tmpRequestString.find(":");
     if (posSC == std::string::npos) {
@@ -198,7 +198,7 @@ void     Request::getRequestConfig()
         setConfig(NULL);
         return;
     }
-    
+
     /* Search matching server_name */
     VirtualServer *server;
     it = matching_servers.begin();
@@ -475,41 +475,35 @@ void Request::routingDelete()
         else
         {
             std::cout << "Error deleting file" << std::endl;
-            _response.sendError(500, "Internal Server Error");
+            _response.sendError(500, ": Internal Server Error");
         }
     }
 }
 
 void Request::routingCGI()
 {
-    if((getFileExtension(path) == "py" ) && (method == "GET" || method == "POST"))
+    if(getFileExtension(path) == "py" || getFileExtension(path) == "bla")
     {
-        executable_path = "/usr/bin/python3";
-        script_path = path.substr(2);
+        executable_path = _config->getPath();
+        if (getFileExtension(path) == "bla")
+            script_path = "";
+        else
+            script_path = path.substr(2);
+
         CGI cgi(*this);
-
-        cgi.executeCGI(*this);
-        _response.setStatusCode("200");
-        _response.setStatusText("OK");
-        _response.setContentType("text/html");
-        _response.setProtocol("HTTP/1.1");
-        _response.setBody(cgi.getOutputCGI());
-        //ready2send = true;
-        _response.send();
-        return;
-    }
-
-    if((getFileExtension(path) == "bla") && (method == "POST"))
-    {
-        /*CHANGE TO cgi_tester if tested on a MAC*/
-        executable_path = "ubuntu_cgi_tester";
-        script_path = "";
-        CGI cgi(*this);
-
-        cgi.executeCGI(*this);
-        //ready2send = true;
-        _response.send();
-        return;
+        if (!cgi.executeCGI(*this)) {
+            _response.sendError(500, " : Error in CGI execution");
+            return;
+        }
+        else {
+            _response.setStatusCode("200");
+            _response.setStatusText("OK");
+            _response.setContentType("text/html");
+            _response.setProtocol("HTTP/1.1");
+            _response.setBody(cgi.getOutputCGI());
+            _response.send();
+            return;
+        }
     }
 }
 

@@ -40,8 +40,7 @@ class CGI {
 	
 	/* ===================================================================
 	 ======================= PUBLIC METHODS ============================*/
-		void executeCGI(Request & req);
-        void    setResponseCGI();
+		bool        executeCGI(Request & req);
 
 
         std::string getOutputCGI() {return outputCGI;};
