@@ -1,12 +1,14 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
-first_name = "Juan"
-last_name  = "Braco"
+# Import modules for CGI handling 
+import cgi, cgitb 
 
-#print ("Content-type:text/html\r\n")
+# Create instance of FieldStorage 
+form = cgi.FieldStorage() 
 
-
-
+# Get data from fields
+first_name = form.getvalue('first_name')
+last_name  = form.getvalue('last_name')
 
 #print ("\r\n")
 print ("<html>")
