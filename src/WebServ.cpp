@@ -280,7 +280,7 @@ static void addChunkedBody(Request &request, std::string& requestRawString)
     {
         std::cout << "END OF CHUNKED BODY" << std::endl; 
         request.readingBody = false;
-        // request.handleRequest();
+        request.handleRequest();
         return;
     }
 
@@ -377,6 +377,7 @@ bool WebServ::readRequest(const int &fd, Request &request)
                     request.requestBodyString.erase(request.contentLength);
 
                 std::cout << "  ***end of request.requestBodyString:" << std::endl << request.requestBodyString << "***" << std::endl << std::endl;
+                request.handleRequest();
             }
             else
                 std::cout << "  ***added to request.requestBodyString:" << std::endl << requestRawString << "***" << std::endl << std::endl;
@@ -418,11 +419,13 @@ bool WebServ::readRequest(const int &fd, Request &request)
                 addChunkedBody(request, request.requestBodyString);
         }
 
+        if (request.readingBody == false)
+            request.handleRequest();
     }
-
+/* 
     if (request.readingHeader == false && request.readingBody == false)
         request.handleRequest();
-
+ */
     return(true);
 }
 
