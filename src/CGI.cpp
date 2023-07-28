@@ -62,9 +62,10 @@ bool CGI::executeCGI(Request & req)
         close (pipe_in[0]);
         return false;
     }
-    std::cout << "BODY FED : " << req.getBody().c_str() << std::endl;
+    size_t posBod = req.getBody().find("Content-Disposition");
+    std::cout << "BODY FED : " << req.getBody().substr(posBod).c_str() << std::endl;
     std::cout << _args[1] << std::endl;
-    write(pipe_in[1], req.getBody().c_str(), _req_body.length());
+    write(pipe_in[1], req.getBody().substr(posBod).c_str(), _req_body.length());
     //std::cout << "WRITE BYTES : " << tmp << std::endl;
     pid_t pid = fork();
     if (pid == -1) {
@@ -97,13 +98,24 @@ bool CGI::executeCGI(Request & req)
         close(pipe_in[0]);
 
         waitpid(pid, &status, 0); // Wait for the child process to finish
-        if (WEXITSTATUS(status))
-			std::cout << "CGI execution was successful." << std::endl;
-		else {
-            std::cout << "CGI execution failed." << std::endl;
+        if (WIFEXITED(status)) {
+            int exitStatus = WEXITSTATUS(status);
+            if (exitStatus == 0) {
+                std::cout << "CGI execution was successful." << std::endl;
+            } else {
+                std::cout << "CGI execution failed with exit status: " << exitStatus << std::endl;
+                close(pipe_out[1]);
+                while ((bytesRead = read(pipe_out[0], buffer, 4096)) > 0) // Read the output from the child process
+                    outputCGI.append(buffer, bytesRead);
+                std::cout << "---- OUTPUTCGI ----"<< std::endl;
+                std::cout << outputCGI << std::endl;
+                std::cout << "---- END OUTPUTCGI ----"<< std::endl;
+                return false;
+            }
+        } else {
+            std::cout << "CGI execution failed due to an unknown reason." << std::endl;
             return false;
         }
-
         close(pipe_out[1]);
         while ((bytesRead = read(pipe_out[0], buffer, 4096)) > 0) // Read the output from the child process
             outputCGI.append(buffer, bytesRead);
