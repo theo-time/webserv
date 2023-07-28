@@ -298,7 +298,7 @@ void Request::listDirectoryResponse()
     ss << "<ul>" << std::endl;
     while (!fileList.empty())
     {
-        ss << "<li><a href=\"" << originalPath << "/" << fileList.back() << "\">" << fileList.back() << "</a></li>" << std::endl;
+        ss << "<li><a href=\"" << path << fileList.back() << "\">" << fileList.back() << "</a></li>" << std::endl;
         fileList.pop_back();
     }
     ss << "</ul>" << std::endl;
@@ -356,12 +356,22 @@ void Request::handleRequest()
         return;
     }
 
+    // If path is a directory without index file and autoIndex is on
+    std::string myPath = path;
+    if (opendir(myPath.c_str()))
+    {
+        if(myPath.find("//") != std::string::npos)
+            myPath.replace(myPath.find("//"), 2, "/");
+        if(!::fileExists(myPath))
+        {
+            if(!_config->isAutoIndex())
+                return(_response.sendError(403, "Forbidden"));
+            return(listDirectoryResponse());
+        }
+    }
     // If path is a directory, and index file exists, add default index name to path
     /*if (opendir(path.c_str()))
     {
-        //path = "." + root + "/" + index;
-
-
         std::string indexFile = path + "/" + index;
         std::cout << "Effective path: " << indexFile << std::endl;
         if(path.find("//") != std::string::npos)

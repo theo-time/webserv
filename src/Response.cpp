@@ -42,7 +42,6 @@ void Response::buildHeader()
 {
     std::stringstream ss;
     ss << body.length();
-    std::cout << ss << std::endl;
     std::string contentLength;
     ss >> contentLength;
 
