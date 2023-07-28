@@ -475,7 +475,7 @@ bool Config::addSrvConf(std::string& line, int i)
     if (!serverName.empty())
     {
         tmp->setName(serverName);
-        std::string alias = serverName + ":" + portStr;
+        std::string alias = serverName;
         _serverNames[alias] = tmp;
     }
     _virtualServers.push_back(tmp);

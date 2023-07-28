@@ -206,18 +206,25 @@ void     Request::getRequestConfig()
     }
 
     /* Search matching server_name */
+    std::cout << "Matching hostname..." << std::endl;
     VirtualServer *server;
     it = matching_servers.begin();
     end = matching_servers.end();
     server = *it; // First by default
-    while (it != end)
+    std::cout << "... First server by default ..." << std::endl;
+    std::cout << "(*it)->getName()=" << (*it)->getName() << std::endl;
+    std::cout << "getHeader(""Host"")=" << getHeader("Host") << std::endl;
+    if (matching_servers.size() > 1)
     {
-        if ((*it)->getName() == getHeader("Host"))
+        while (it != end)
         {
-            server = *it;
-            return;
+            if ((*it)->getName() == getHeader("Host"))
+            {
+                server = *it;
+                return;
+            }
+            it++;
         }
-        it++;
     }
     std::cout << "Matching servers by name : " << matching_servers.size() << std::endl;
     
@@ -298,7 +305,7 @@ void Request::listDirectoryResponse()
     ss << "<ul>" << std::endl;
     while (!fileList.empty())
     {
-        ss << "<li><a href=\"" << originalPath << "/" << fileList.back() << "\">" << fileList.back() << "</a></li>" << std::endl;
+        ss << "<li><a href=\"" << path << fileList.back() << "\">" << fileList.back() << "</a></li>" << std::endl;
         fileList.pop_back();
     }
     ss << "</ul>" << std::endl;
@@ -356,12 +363,22 @@ void Request::handleRequest()
         return;
     }
 
+    // If path is a directory without index file and autoIndex is on
+    std::string myPath = path;
+    if (opendir(myPath.c_str()))
+    {
+        if(myPath.find("//") != std::string::npos)
+            myPath.replace(myPath.find("//"), 2, "/");
+        if(!::fileExists(myPath))
+        {
+            if(!_config->isAutoIndex())
+                return(_response.sendError(403, "Forbidden"));
+            return(listDirectoryResponse());
+        }
+    }
     // If path is a directory, and index file exists, add default index name to path
     /*if (opendir(path.c_str()))
     {
-        //path = "." + root + "/" + index;
-
-
         std::string indexFile = path + "/" + index;
         std::cout << "Effective path: " << indexFile << std::endl;
         if(path.find("//") != std::string::npos)
