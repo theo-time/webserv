@@ -131,7 +131,7 @@ bool Request::parseHeaders()
 		_response.sendError(400, ": No semicolon");
         return false;
     }
-    if (hasDuplicateKeys(tmpRequestString))
+    if (hasDuplicateKeys(requestHeaderString))
     {
 		_response.sendError(400, ": duplicated headers are not allowed");
         return false;
@@ -385,7 +385,7 @@ void Request::handleRequest()
     std::cout << "Path before method routing :" << getPath() << std::endl;
 
     // Method routing
-    if (getFileExtension(path) == "py" || (getFileExtension(path) == "bla" && method == "POST"))
+    if (getFileExtension(path) == "php" || getFileExtension(path) == "py" || (getFileExtension(path) == "bla" && method == "POST"))
         this->routingCGI();
     else if (method == "GET")
         this->routingGet();
@@ -401,7 +401,7 @@ void Request::handleRequest()
     }
     else {
         std::cout << "Unknown method" << std::endl;
-        _response.sendError(501, "Not Implemented");
+        _response.sendError(405, "Not Implemented");
     }
 }
 
@@ -488,13 +488,21 @@ void Request::routingDelete()
 
 void Request::routingCGI()
 {
-    if(getFileExtension(path) == "py" || getFileExtension(path) == "bla")
+    if(getFileExtension(path) == "py" || getFileExtension(path) == "bla" || getFileExtension(path) == "php")
     {
         executable_path = _config->getPath();
         if (getFileExtension(path) == "bla")
             script_path = "";
-        else
-            script_path = path.substr(2);
+        else {
+            if (getFileExtension(path) == "py") {
+                script_path = path.substr(2);
+            }
+            else if (getFileExtension(path) == "php") {
+                script_path = "";
+            }
+
+        }
+            
 
         CGI cgi(*this);
         if (!cgi.executeCGI(*this)) {

@@ -1,14 +1,21 @@
 #include "CGI.hpp"
+#include <unistd.h>
+
 
 CGI::CGI(Request & req) : _req(req)// Initialize all environment variable for CGI
 {
-	if ((_envvar = new char*[8]) == NULL)
+    std::string cur_wd = get_current_dir_name();
+    std::cout << "CURRENT DIRECTORY : " << get_current_dir_name() << std::endl;
+	if ((_envvar = new char*[10]) == NULL)
 		throw std::runtime_error("Error on a cgi malloc\n");
-		
 	int i = 0;
     _envvar[i++] = strdup("SERVER_PROTOCOL=HTTP/1.1");
-    _envvar[i++] = strdup(("PATH_INFO=" + getFileFromPath(req.getPath())).c_str());
-    _envvar[i++] = strdup(("SCRIPT_FILENAME" + req.getPath()).c_str());
+    _envvar[i++] = strdup(("PATH_INFO="+ req.getPath()).c_str());
+    _envvar[i++] = strdup(("SCRIPT_FILENAME=" + cur_wd + req.getPath().substr(1)).c_str());
+    _envvar[i++] = strdup(("SCRIPT_NAME=" + req.getPath()).c_str());
+    _envvar[i++] = strdup(("REDIRECT_STATUS=200"));
+    _envvar[i++] = strdup(("DOCUMENT_ROOT=" + cur_wd).c_str());
+    
 
     //if (getContentInfo(req, "Content-Type: ") == "")
 
@@ -66,8 +73,6 @@ bool CGI::executeCGI(Request & req)
     }
     std::cout << "BODY FED : " << req.getBody().c_str() << std::endl;
     std::cout << _args[1] << std::endl;
-    write(pipe_in[1], req.getBody().c_str(), _req_body.length());
-    //std::cout << "WRITE BYTES : " << tmp << std::endl;
     pid_t pid = fork();
     if (pid == -1) {
         perror("fork failed");
@@ -78,12 +83,14 @@ bool CGI::executeCGI(Request & req)
 
     else if (pid == 0)  // Child process
     {
-        dup2(pipe_in[0], STDIN_FILENO);
 		dup2(pipe_out[1], STDOUT_FILENO);
+        dup2(pipe_in[0], STDIN_FILENO);
         close(pipe_in[0]);
         close(pipe_in[1]);
         close(pipe_out[0]);
         close(pipe_out[1]);
+        write(pipe_in[1], req.getBody().c_str(), _req_body.length());
+        //std::cout << "WRITE BYTES : " << tmp << std::endl;
 
         execve(_args[0], _args, _envvar);
         //exit(1);

@@ -5,8 +5,9 @@ print("Content-Type: text/html\r")
 print("\r")
 print("<html>\r")
 print("<body>\r")
-
-exec_file = os.environ['PATH_TRANSLATED']
+exec_file = os.environ['PATH_INFO']
+if exec_file == 'upload.py' :
+    print ("GOOD")
 
 exec(open(exec_file).read())
 print("</body>\r")

@@ -5,6 +5,7 @@ import cgi, cgitb
 
 # Create instance of FieldStorage 
 form = cgi.FieldStorage() 
+print(form)
 
 # Get data from fields
 first_name = form.getvalue('first_name')

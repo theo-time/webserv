@@ -1,45 +1,55 @@
 <!DOCTYPE html>
-<html lang="en" >
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>Webserv Project</title>
-    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,800' rel='stylesheet' type='text/css'>
-  <link href='https://fonts.googleapis.com/css?family=Poiret+One' rel='stylesheet' type='text/css'><link rel="stylesheet" href="/css/style.css">
-
+    <title>File Upload</title>
 </head>
 <body>
-<!-- partial:index.partial.html -->
-<div class="full-screen">
-  <div>
+    <h2>File Upload</h2>
     <?php
-      $target_dir = "/tmp/server_eval/uploads_dir/";
-      $target_file = $target_dir . basename($_FILES["fileToUpload"]["name"]);
-      $uploadOk = 1;
-      $imageFileType = strtolower(pathinfo($target_file,PATHINFO_EXTENSION));
-      // Check if image file is a actual image or fake image
-      $uploadOk = 1;
-      if ($uploadOk == 0) {
-      echo "<h2>Sorry, your file was not uploaded.</h2>";
-      // if everything is ok, try to upload file
-      } else {
-      if (move_uploaded_file($_FILES["fileToUpload"]["tmp_name"], $target_file)) {
-       echo "
-        <div id=\"note\">
-          You can delete the file with:<br>
-          curl -vX DELETE localhost:18000/uploaded_files/". htmlspecialchars( basename( $_FILES["fileToUpload"]["name"])) ."
-        </div>";
+    if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_FILES["uploaded_file"])) {
+        $target_dir = "upload_dir/";
+        $target_file = $target_dir . basename($_FILES["uploaded_file"]["name"]);
+        $upload_ok = true;
+        $file_type = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
 
-      echo "<h2>The file ". htmlspecialchars( basename( $_FILES["fileToUpload"]["name"])). " has been uploaded.</h2>";
-      } else {
-      echo "<h2>Sorry, there was an error uploading your file.</h2>";
-      }
-      }
+        // Check if the file is an actual file or a fake file
+        if ($_FILES["uploaded_file"]["size"] == 0) {
+            echo "Error: No file selected.";
+            $upload_ok = false;
+        }
+
+        // Check if the file already exists
+        if (file_exists($target_file)) {
+            echo "Error: File already exists.";
+            $upload_ok = false;
+        }
+
+        // Allow certain file formats (you can customize this list)
+        $allowed_formats = array("jpg", "jpeg", "png", "gif", "pdf");
+        if (!in_array($file_type, $allowed_formats)) {
+            echo "Error: Only JPG, JPEG, PNG, GIF, and PDF files are allowed.";
+            $upload_ok = false;
+        }
+
+        if ($upload_ok) {
+            if (move_uploaded_file($_FILES["uploaded_file"]["tmp_name"], $target_file)) {
+                echo "File uploaded successfully: " . htmlspecialchars(basename($_FILES["uploaded_file"]["name"]));
+            } else {
+                echo "Error uploading file.";
+            }
+        }
+    }
+    else {
+        print_r($_FILES);
+        echo "ERROR";
+        echo $_SERVER["REQUEST_METHOD"];
+    }
     ?>
-    <a class="button-line" href="/uploaded_files">See autoindex of Uploads</a>
-    <a class="button-line" href="/">Go back Home</a>
-  </div>
-</div>
-<!-- partial -->
 
+    <form action="upload.php" method="post" enctype="multipart/form-data">
+        Select file to upload:
+        <input type="file" name="uploaded_file" id="uploaded_file">
+        <input type="submit" value="Upload File" name="submit">
+    </form>
 </body>
 </html>
