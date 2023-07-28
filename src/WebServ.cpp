@@ -280,7 +280,7 @@ static void addChunkedBody(Request &request, std::string& requestRawString)
     {
         std::cout << "END OF CHUNKED BODY" << std::endl; 
         request.readingBody = false;
-        request.handleRequest();
+        // request.handleRequest();
         return;
     }
 
@@ -305,9 +305,8 @@ static void addChunkedBody(Request &request, std::string& requestRawString)
     addChunkedBody(request, requestRawString);
 }
 
-bool WebServ::readRequest(const int &fd, Request &request)
+bool getRequestRawString(const int &fd, std::string& requestRawString)
 {
-    std::cout << "  Reading request - fd " << fd << std::endl;
     char        buffer[BUFFER_SIZE];
     int         rc = 0;
     
@@ -315,7 +314,6 @@ bool WebServ::readRequest(const int &fd, Request &request)
     while (++i < BUFFER_SIZE)
         buffer[i] = 0;
 
-    std::string requestRawString("");
     while (true)
     {
         rc = recv(fd, buffer, sizeof(buffer), 0);
@@ -325,11 +323,24 @@ bool WebServ::readRequest(const int &fd, Request &request)
         if (rc == 0)
         {
             std::cerr << "  Connection closed\n" << std::endl;
-            closeCnx(fd);
-            return(true);
+            // closeCnx(fd);
+            return(false);
         }
         buffer[rc] = 0;
         requestRawString.append(buffer);
+    }
+    return(true);
+}
+
+bool WebServ::readRequest(const int &fd, Request &request)
+{
+    std::cout << "  Reading request - fd " << fd << std::endl;
+    std::string requestRawString("");
+
+    if (!getRequestRawString(fd, requestRawString))
+    {
+        closeCnx(fd);
+        return(true);
     }
 
     if (request.readingHeader)
@@ -348,9 +359,9 @@ bool WebServ::readRequest(const int &fd, Request &request)
         request.requestBodyString = "";
         request.readingHeader = true;
     }
-    else
+    else if (request.readingBody)
     {
-        if (request.chunkedBody && request.readingBody)
+        if (request.chunkedBody)
         {
 
             std::cout << "  ***added to requestBodyList:" << std::endl << requestRawString << "***" << std::endl << std::endl;
@@ -359,9 +370,22 @@ bool WebServ::readRequest(const int &fd, Request &request)
         else
         {
             request.requestBodyString = request.requestBodyString + requestRawString;
-            std::cout << "  ***added to request.requestBodyString:" << std::endl << requestRawString << "***" << std::endl << std::endl;
+            if ((int)request.requestBodyString.size() >= request.contentLength)
+            {
+                request.readingBody = false;
+                if ((int)request.requestBodyString.size() > request.contentLength)
+                    request.requestBodyString.erase(request.contentLength);
+
+                std::cout << "  ***end of request.requestBodyString:" << std::endl << request.requestBodyString << "***" << std::endl << std::endl;
+            }
+            else
+                std::cout << "  ***added to request.requestBodyString:" << std::endl << requestRawString << "***" << std::endl << std::endl;
         }
         
+    }
+    else
+    {
+        std::cout << "  ***ignored requestRawString:" << std::endl << requestRawString << "***" << std::endl << std::endl;
     }
     
     int posBodyStart = -1;
@@ -376,15 +400,15 @@ bool WebServ::readRequest(const int &fd, Request &request)
         std::cout << "  ***requestBodyString:" << request.requestBodyString << "***" << std::endl;
         
         request.readingHeader = false;
- /*        if (request.getRequestString().find("GET") == 0 || request.getRequestString().find("POST") == 0 ||
-         request.getRequestString().find("HEAD") == 0 || request.getRequestString().find("PUT") == 0) 
-        { */
-        bool err;
-        if (request.readingBody == false)
+        if (!request.parseRequest())
+            return(true);
+
+        if (request.contentLength != -1)
         {
-            err = request.parseRequest();            
+            std::cout << "Expected Content-Length = " << request.contentLength << std::endl;
+            request.readingBody = true;
         }
-        if (request.getHeader("Transfer-Encoding") == "chunked" || request.getHeader("Content-Type") == "multipart/form-data")
+        else if (request.getHeader("Transfer-Encoding") == "chunked" )
         {
             std::cout << "CHUNKED = TRUE" << std::endl;
             request.readingBody = true;
@@ -393,13 +417,12 @@ bool WebServ::readRequest(const int &fd, Request &request)
             if (!request.requestBodyString.empty())
                 addChunkedBody(request, request.requestBodyString);
         }
-        if (request.readingBody == false && err)
-            request.handleRequest();
-/*         }
-        else
-           request.clear(); */
+
     }
-        
+
+    if (request.readingHeader == false && request.readingBody == false)
+        request.handleRequest();
+
     return(true);
 }
 

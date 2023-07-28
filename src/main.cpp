@@ -25,7 +25,6 @@
 #include "WebServ.hpp"
 #include "Utils.hpp"
 
-void    ignoreSig(int sig);
 static void    doExit(int epollFd);
 static int     initEpoll(void);
 static int     runListeners(int epollFd);
@@ -33,10 +32,11 @@ static int     runListener(int port);
 static int     addEvent(int epollFd, int fd, int state);
 static int     doEpoll(int epollFd);
 
+
 int main(int ac, char** av)
 {
     // TODO ignorer CTRL+C et CTRL+D
-    // signal(SIGINT, ignoreSig);
+    // signal(SIGINT, SIG_IGN);
 
     // TODO del qd epoll ok
     std::string arg;
@@ -78,14 +78,6 @@ int main(int ac, char** av)
     } 
 
     return 0;
-}
-
-void ignoreSig(int sig)
-{
-    (void)sig;
-    char c;
-    std::cin >> c;
-    signal(SIGINT,SIG_DFL);
 }
 
 static void doExit(int epollFd)
