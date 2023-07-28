@@ -12,6 +12,7 @@ Request::Request(int clientSocket, int serverSocket) : clientSocket(clientSocket
     readingBody = false;
     chunkedBody = false;
     curChunkSize = -1;
+    contentLength = -1;
     ready2send = false;
 }
 
@@ -28,7 +29,7 @@ bool Request::parseRequest(){
         _response.sendError(400, ": a field from request line is missing"); 
     }
 
-    std::cout << "REQUEST STRING" << requestString << std::endl;
+    // std::cout << "REQUEST STRING" << requestString << std::endl;
 
 	parseMethodToken(tokens[0]);
     if (!parseURI(tokens[1]) || !parseHTTPVersion(tokens[2]) || !parseHeaders())
@@ -123,7 +124,7 @@ bool Request::parseHeaders()
     int i = 0;
     std::string tmpRequestString = requestString;
 
-    std::cout << "REQUEST STRING FOR PARSING HEADER" << requestString << std::endl;
+    // std::cout << "REQUEST STRING FOR PARSING HEADER" << requestString << std::endl;
 
     size_t posSC = tmpRequestString.find(":");
     if (posSC == std::string::npos) {
@@ -153,8 +154,13 @@ bool Request::parseHeaders()
         i++;
     }
 
-    /*for (std::map<std::string, std::string>::iterator it=headers.begin(); it!=headers.end(); ++it)
-        std::cout << it->first << " => " << it->second << '\n';*/
+    //get contentLength if any
+    if (headers.count("Content-Length") == 1)
+    {
+        char*               endPtr      = NULL;
+        contentLength = static_cast<unsigned int>(strtoul(headers["Content-Length"].c_str(), &endPtr, 0));
+    }
+    
     return true;
 }
 
@@ -656,5 +662,6 @@ void Request::clear(void)
     chunkedBody = false;
     requestBodyList.clear();
     curChunkSize = -1;
+    contentLength = -1;
     ready2send = false;
 }

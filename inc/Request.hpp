@@ -67,6 +67,7 @@ class Request {
         std::string             requestHeaderString;
         std::list<std::string>  requestBodyList;
         int                     curChunkSize; 
+        int                     contentLength; 
 
         bool                    ready2send;
 
