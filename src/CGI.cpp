@@ -7,7 +7,8 @@ CGI::CGI(Request & req) : _req(req)// Initialize all environment variable for CG
 		
 	int i = 0;
     _envvar[i++] = strdup("SERVER_PROTOCOL=HTTP/1.1");
-    _envvar[i++] = strdup(("PATH_INFO=" + req.getPath()).c_str());
+    _envvar[i++] = strdup(("PATH_INFO=" + getFileFromPath(req.getPath())).c_str());
+    _envvar[i++] = strdup(("SCRIPT_FILENAME" + req.getPath()).c_str());
 
     //if (getContentInfo(req, "Content-Type: ") == "")
 
@@ -30,6 +31,7 @@ CGI::CGI(Request & req) : _req(req)// Initialize all environment variable for CG
 
     _args[0] = strdup(req.executable_path.c_str());
 	_args[1] = strdup(req.script_path.c_str());
+    //_args[1] = NULL;
 	_args[2] = NULL;
 }
 
@@ -62,10 +64,9 @@ bool CGI::executeCGI(Request & req)
         close (pipe_in[0]);
         return false;
     }
-    size_t posBod = req.getBody().find("Content-Disposition");
-    std::cout << "BODY FED : " << req.getBody().substr(posBod).c_str() << std::endl;
+    std::cout << "BODY FED : " << req.getBody().c_str() << std::endl;
     std::cout << _args[1] << std::endl;
-    write(pipe_in[1], req.getBody().substr(posBod).c_str(), _req_body.length());
+    write(pipe_in[1], req.getBody().c_str(), _req_body.length());
     //std::cout << "WRITE BYTES : " << tmp << std::endl;
     pid_t pid = fork();
     if (pid == -1) {

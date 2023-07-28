@@ -63,4 +63,6 @@ std::string getContentInfo(Request & req, std::string str);
 
 bool hasDuplicateKeys(const std::string& longString);
 
+std::string getFileFromPath(std::string const& path);
+
 #endif

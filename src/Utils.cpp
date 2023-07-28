@@ -136,3 +136,10 @@ bool hasDuplicateKeys(const std::string& longString) {
 
     return false; // No duplicate keys found
 }
+
+// returns the filename + ext
+std::string getFileFromPath(std::string const& path) {
+    std::string output = path;
+    size_t lastPartHead = output.find_last_of('/');
+    return output.substr(lastPartHead);
+}
