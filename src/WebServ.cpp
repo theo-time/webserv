@@ -207,11 +207,10 @@ bool WebServ::readRequest(const int &fd, Request &request)
         }
         else {
             request.requestBodyString = request.requestBodyString + requestRawString;
-            if ((int)request.requestBodyString.size() >= request.contentLength){
+            if (static_cast<int>(request.requestBodyString.size()) >= request.contentLength){ // TODO timeout si content lentgh tjs pas atteint au bout d un certain temps
                 request.readingBody = false;
-                if ((int)request.requestBodyString.size() > request.contentLength)
+                if (static_cast<int>(request.requestBodyString.size()) > request.contentLength) // TODO verifier si on doit envoyer erreur
                     request.requestBodyString.erase(request.contentLength);
-
                 std::cout << "  ***end of request.requestBodyString:" << std::endl << request.requestBodyString << "***" << std::endl << std::endl;
                 request.handleRequest();
             }
@@ -219,16 +218,6 @@ bool WebServ::readRequest(const int &fd, Request &request)
                 std::cout << "  ***added to request.requestBodyString:" << std::endl << requestRawString << "***" << std::endl << std::endl;
         }
     }
-/*     else if (   requestRawString.find("GET") != std::string::npos 
-            ||  requestRawString.find("POST") != std::string::npos 
-            ||  requestRawString.find("HEAD") != std::string::npos 
-            ||  requestRawString.find("PUT") != std::string::npos
-            ||  requestRawString.find("DELETE") != std::string::npos){
-        request.appendRequestString(clean(requestRawString));
-        std::cout << "  ***new valid request:" << std::endl << requestRawString << "***" << std::endl << std::endl;
-        request.requestBodyString = "";
-        request.readingHeader = true;
-    } */
     else { 
         std::cout << "  ***new request:" << std::endl << requestRawString << "***" << std::endl << std::endl;
         request.setRequestString(requestRawString);
@@ -248,7 +237,7 @@ bool WebServ::sendResponse(const int &fd, Request &request)
     request.clear();
 
     std::cout << "  *** check RC : " << rc << std::endl;
-    if (rc == -1) {
+    if (rc == -1 || rc == 0) {
         std::cerr << "  send() failed" << std::endl;
         closeCnx(fd);
         del(fd, _master_set_write);
@@ -378,78 +367,6 @@ void WebServ::prepSelect(void)
             std::cout << "  fd - " << i << " : not working set" << std::endl;
     }
 }
-/* 
-static std::string clean(std::string src)
-{
-    size_t found = src.find("GET");
-    if (found != std::string::npos)
-        return(src.substr(found));
-
-    found = src.find("POST");
-    if (found != std::string::npos)
-        return(src.substr(found));
-
-    found = src.find("HEAD");
-    if (found != std::string::npos)
-        return(src.substr(found));
-
-    found = src.find("PUT");
-    if (found != std::string::npos)
-        return(src.substr(found));
-
-    found = src.find("DELETE");
-    if (found != std::string::npos)
-        return(src.substr(found));
-
-    return(src);
-} */
-
-static void addChunkedBody(Request &request, std::string& requestRawString)
-{
-    if (!request.readingBody)
-        return;
-
-    char* pEnd;
-    if (request.curChunkSize == -1 || (int)request.requestBodyList.back().size() == request.curChunkSize)
-    {
-        request.curChunkSize = strtol(requestRawString.c_str(), &pEnd, 16);
-        std::cout << "CHUNK SIZE = " << request.curChunkSize << std::endl; 
-        // TODO check pEnd
-        if (request.curChunkSize != 0)
-        {
-            requestRawString = pEnd + 2;
-            request.requestBodyList.push_back("");
-        }
-    }
-
-    if (request.curChunkSize == 0)
-    {
-        std::cout << "END OF CHUNKED BODY" << std::endl; 
-        request.readingBody = false;
-        request.handleRequest();
-        return;
-    }
-
-    std::cout << "EXTRACTING BODY... request.curChunkSize=" << request.curChunkSize << " request.requestBodyList.back().size()=" << request.requestBodyList.back().size() << " requestRawString.size()=" << requestRawString.size() << std::endl;
-    int missingData = request.curChunkSize - (int)request.requestBodyList.back().size();
-    if ((int)requestRawString.size() <= missingData)
-    {
-        request.requestBodyList.back().append(requestRawString);
-        requestRawString.clear();
-    }
-    else
-    {
-        request.requestBodyList.back().append(requestRawString.substr(0, missingData));
-        requestRawString.erase(0, missingData);
-        std::cout << "requestBodyList.back = " << request.requestBodyList.back() << std::endl; 
-    }
-
-    if (requestRawString.empty())
-        return;
-
-    std::cout << "remaining requestRawString = " << requestRawString << std::endl;
-    addChunkedBody(request, requestRawString);
-}
 
 static bool getRequestRawString(const int &fd, std::string& requestRawString)
 {
@@ -490,8 +407,8 @@ static void handleHeader(Request &request)
         request.requestHeaderString = request.getRequestString().substr(0, posBodyStart);
         request.requestBodyString = request.getRequestString().substr(posBodyStart);
 
-        std::cout << "  ***requestHeaderString:" << request.requestHeaderString << "***" << std::endl;
-        std::cout << "  ***requestBodyString:" << request.requestBodyString << "***" << std::endl;
+        std::cout << "  ***requestHeaderString:"  << std::endl << request.requestHeaderString << "***" << std::endl;
+        std::cout << "  ***requestBodyString:"  << std::endl << request.requestBodyString << "***" << std::endl;
         
         request.readingHeader = false;
         if (!request.parseRequest())
@@ -500,7 +417,7 @@ static void handleHeader(Request &request)
         if (request.contentLength != -1)
         {
             std::cout << "Expected Content-Length = " << request.contentLength << std::endl;
-            if ((int)request.requestBodyString.size() < request.contentLength)
+            if (static_cast<int>(request.requestBodyString.size()) < request.contentLength)
                 request.readingBody = true;
         }
         else if (request.getHeader("Transfer-Encoding") == "chunked" )
@@ -529,3 +446,81 @@ static bool checkEndRequestHeader(const char* src, int size, int* pos)
     }
     return(false);
 }
+
+static void addChunkedBody(Request &request, std::string& requestRawString)
+{
+    if (!request.readingBody)
+        return;
+
+    char* pEnd;
+    if (request.curChunkSize == -1 || static_cast<int>(request.requestBodyList.back().size()) == request.curChunkSize)
+    {
+        request.curChunkSize = strtoul(requestRawString.c_str(), &pEnd, 16);
+        std::cout << "CHUNK SIZE = " << request.curChunkSize << std::endl; 
+        if (pEnd == requestRawString.c_str())
+        {
+            std::cout << "############## ERREUR LECTURE CHUNK SIZE ##############" << std::endl;
+            std::cout << requestRawString << std::endl;
+            std::cout << "#######################################################" << std::endl;
+        }
+        if (request.curChunkSize != 0)
+        {
+            requestRawString = pEnd + 2;
+            request.requestBodyList.push_back("");
+        }
+    }
+
+    if (request.curChunkSize == 0)
+    {
+        std::cout << "END OF CHUNKED BODY" << std::endl; 
+        request.readingBody = false;
+        request.handleRequest();
+        return;
+    }
+
+    std::cout << "EXTRACTING BODY... request.curChunkSize=" << request.curChunkSize << " request.requestBodyList.back().size()=" << request.requestBodyList.back().size() << " requestRawString.size()=" << requestRawString.size() << std::endl;
+    int missingData = request.curChunkSize - static_cast<int>(request.requestBodyList.back().size());
+    if (static_cast<int>(requestRawString.size()) <= missingData)
+    {
+        request.requestBodyList.back().append(requestRawString);
+        requestRawString.clear();
+    }
+    else
+    {
+        request.requestBodyList.back().append(requestRawString.substr(0, missingData));
+        requestRawString.erase(0, missingData);
+        std::cout << "requestBodyList.back = " << request.requestBodyList.back() << std::endl; 
+    }
+
+    if (requestRawString.empty())
+        return;
+
+    std::cout << "remaining requestRawString = " << requestRawString << std::endl;
+    addChunkedBody(request, requestRawString);
+}
+
+/* 
+static std::string clean(std::string src)
+{
+    size_t found = src.find("GET");
+    if (found != std::string::npos)
+        return(src.substr(found));
+
+    found = src.find("POST");
+    if (found != std::string::npos)
+        return(src.substr(found));
+
+    found = src.find("HEAD");
+    if (found != std::string::npos)
+        return(src.substr(found));
+
+    found = src.find("PUT");
+    if (found != std::string::npos)
+        return(src.substr(found));
+
+    found = src.find("DELETE");
+    if (found != std::string::npos)
+        return(src.substr(found));
+
+    return(src);
+} */
