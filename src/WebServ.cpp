@@ -10,11 +10,15 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include <list>
-
 #include "WebServ.hpp"
 #include "Request.hpp"
 #include "VirtualServer.hpp"
+
+static std::string  clean(std::string src);
+static void         handleHeader(Request &request);
+static bool         checkEndRequestHeader(const char* src, int size, int* pos);
+static void         addChunkedBody(Request &request, std::string& requestRawString);
+static bool         getRequestRawString(const int &fd, std::string& requestRawString);
 
 typedef std::vector<VirtualServer*>         srvVect;
 typedef std::map<int, Request*>             intCliMap;
@@ -56,7 +60,7 @@ bool WebServ::init(void)
     while(srvIt != srvEnd)
     {
         std::cout << "Starting virtual server " << (*srvIt)->getPort() << " " << (*srvIt)->getRoot() << "..." << std::endl;
-        if (_listeners.count((*srvIt)->getPort())) // TODO prendre en compte host?
+        if (_listeners.count((*srvIt)->getPort())) // TODO prendre en compte host
         {
             (*srvIt)->setFd(_listeners[(*srvIt)->getPort()]);
             std::cout << "... binding to existing server socket - fd " << (*srvIt)->getFd() << std::endl;
@@ -115,8 +119,7 @@ bool WebServ::process(void)
     fd_set          working_set_recv;
     fd_set          working_set_write;
 
-    while (true)
-    {
+    while (true) {
         prepSelect();
         working_set_recv = _master_set_recv;
         working_set_write = _master_set_write;
@@ -124,22 +127,18 @@ bool WebServ::process(void)
         // TODO check socket errors
         ret = select(_max_fd + 1, &working_set_recv, &working_set_write, NULL, 0);
 
-        if (ret == - 1)
-        {
+        if (ret == - 1) {
             std::cerr << "  select() failed" << std::endl;
             stop();
             return(false);
         }
-        if (ret == 0)
-        {
+        if (ret == 0) {
             std::cerr << "  select() timed out.  End program.\n" << std::endl;
             stop();
             return(false);
         }
-        for (int i = 0; i <= _max_fd; ++i)
-        {
-            if (FD_ISSET(i, &working_set_recv) && i == 0) 
-            {
+        for (int i = 0; i <= _max_fd; ++i) {
+            if (FD_ISSET(i, &working_set_recv) && i == 0) {
                 if (userExit())
                     return(false);
             }
@@ -154,58 +153,25 @@ bool WebServ::process(void)
     return(true);
 }
 
-void WebServ::prepSelect(void)
-{
-    // TODO check request timeout
-    
-    //add responses to _master_set_write
-    if (!_requests.empty())
-    {            
-        for (int i = 0; i <= _max_fd; ++i)
-        {
-            if (_requests.count(i) && _requests[i]->ready2send)
-            {
-                del(i, _master_set_recv);
-                add(i, _master_set_write);
-            }
-        }
-    }
-
-    // TODO cout à supprimer
-    std::cout << "Preparing select() " << std::endl;
-    for (int i = 0; i <= _max_fd; ++i)
-    {
-        if (FD_ISSET(i, &_master_set_recv))
-            std::cout << "  fd - " << i << " : working_set_recv" << std::endl;
-        else if (FD_ISSET(i, &_master_set_write))
-            std::cout << "  fd - " << i << " : working_set_write" << std::endl;
-        else
-            std::cout << "  fd - " << i << " : not working set" << std::endl;
-    }
-}
-
 bool WebServ::acceptNewCnx(const int& fd)
 {
     int                 clientSocket;
     struct sockaddr_in  clientAddress;
     long                clientAddressSize = sizeof(clientAddress);
 
-    do
-    {
+    do {
         clientSocket = accept(fd, (struct sockaddr *)&clientAddress, (socklen_t*)&clientAddressSize);
         if (clientSocket == -1)
             break;
 
         // Set socket to be reusable and nonblocking
         int on = 1;
-        if (setsockopt(clientSocket, SOL_SOCKET,  SO_REUSEADDR, (char *)&on, sizeof(on)) == -1)
-        {
+        if (setsockopt(clientSocket, SOL_SOCKET,  SO_REUSEADDR, (char *)&on, sizeof(on)) == -1) {
             strerror(errno);
             close(clientSocket);
             break;
         }  
-        if (fcntl(clientSocket, F_SETFL, O_NONBLOCK) == -1)
-        {
+        if (fcntl(clientSocket, F_SETFL, O_NONBLOCK) == -1) {
             strerror(errno);
             close(clientSocket);
             break;
@@ -221,226 +187,70 @@ bool WebServ::acceptNewCnx(const int& fd)
     return(true);
 }
 
-static bool checkEndRequestHeader(const char* src, int size, int* pos)
-{
-    int i = 0;
-    while (i < size - 3)
-    {
-        if (src[i] == '\r' && src[i + 1] == '\n' && src[i + 2] == '\r' && src[i + 3] == '\n')
-            return(*pos = i + 4, true);
-        i++;
-    }
-    return(false);
-}
-
-static std::string clean(std::string src)
-{
-    size_t found = src.find("GET");
-    if (found != std::string::npos)
-        return(src.substr(found));
-
-    found = src.find("POST");
-    if (found != std::string::npos)
-        return(src.substr(found));
-
-    found = src.find("HEAD");
-    if (found != std::string::npos)
-        return(src.substr(found));
-
-    found = src.find("PUT");
-    if (found != std::string::npos)
-        return(src.substr(found));
-
-    found = src.find("DELETE");
-    if (found != std::string::npos)
-        return(src.substr(found));
-
-    return(src);
-}
-
-static void addChunkedBody(Request &request, std::string& requestRawString)
-{
-    if (!request.readingBody)
-        return;
-
-    char* pEnd;
-    if (request.curChunkSize == -1 || (int)request.requestBodyList.back().size() == request.curChunkSize)
-    {
-        request.curChunkSize = strtol(requestRawString.c_str(), &pEnd, 16);
-        std::cout << "CHUNK SIZE = " << request.curChunkSize << std::endl; 
-        // TODO check pEnd
-        if (request.curChunkSize != 0)
-        {
-            requestRawString = pEnd + 2;
-            request.requestBodyList.push_back("");
-        }
-    }
-
-    if (request.curChunkSize == 0)
-    {
-        std::cout << "END OF CHUNKED BODY" << std::endl; 
-        request.readingBody = false;
-        // request.handleRequest();
-        return;
-    }
-
-    std::cout << "EXTRACTING BODY... request.curChunkSize=" << request.curChunkSize << " request.requestBodyList.back().size()=" << request.requestBodyList.back().size() << " requestRawString.size()=" << requestRawString.size() << std::endl;
-    int missingData = request.curChunkSize - (int)request.requestBodyList.back().size();
-    if ((int)requestRawString.size() <= missingData)
-    {
-        request.requestBodyList.back().append(requestRawString);
-        requestRawString.clear();
-    }
-    else
-    {
-        request.requestBodyList.back().append(requestRawString.substr(0, missingData));
-        requestRawString.erase(0, missingData);
-        std::cout << "requestBodyList.back = " << request.requestBodyList.back() << std::endl; 
-    }
-
-    if (requestRawString.empty())
-        return;
-
-    std::cout << "remaining requestRawString = " << requestRawString << std::endl;
-    addChunkedBody(request, requestRawString);
-}
-
-bool getRequestRawString(const int &fd, std::string& requestRawString)
-{
-    char        buffer[BUFFER_SIZE];
-    int         rc = 0;
-    
-    int i = -1;
-    while (++i < BUFFER_SIZE)
-        buffer[i] = 0;
-
-    while (true)
-    {
-        rc = recv(fd, buffer, sizeof(buffer), 0);
-        std::cout << "  " << rc << " bytes received" << std::endl;
-        if (rc < 0)
-            break;
-        if (rc == 0)
-        {
-            std::cerr << "  Connection closed\n" << std::endl;
-            // closeCnx(fd);
-            return(false);
-        }
-        buffer[rc] = 0;
-        requestRawString.append(buffer);
-    }
-    return(true);
-}
-
 bool WebServ::readRequest(const int &fd, Request &request)
 {
     std::cout << "  Reading request - fd " << fd << std::endl;
     std::string requestRawString("");
-
-    if (!getRequestRawString(fd, requestRawString))
-    {
+    if (!getRequestRawString(fd, requestRawString)){
         closeCnx(fd);
         return(true);
     }
 
-    if (request.readingHeader)
-    {
+    if (request.readingHeader){
         request.appendRequestString(requestRawString);
         std::cout << "  ***requestRawString added to existing request:" << std::endl << requestRawString << "***" << std::endl << std::endl;
     }
-    else if (   requestRawString.find("GET") != std::string::npos 
-            ||  requestRawString.find("POST") != std::string::npos 
-            ||  requestRawString.find("HEAD") != std::string::npos 
-            ||  requestRawString.find("PUT") != std::string::npos
-            ||  requestRawString.find("DELETE") != std::string::npos)
-    {
-        request.appendRequestString(clean(requestRawString));
-        std::cout << "  ***new valid request:" << std::endl << requestRawString << "***" << std::endl << std::endl;
-        request.requestBodyString = "";
-        request.readingHeader = true;
-    }
-    else if (request.readingBody)
-    {
-        if (request.chunkedBody)
-        {
-
+    else if (request.readingBody){
+        if (request.chunkedBody){
             std::cout << "  ***added to requestBodyList:" << std::endl << requestRawString << "***" << std::endl << std::endl;
             addChunkedBody(request, requestRawString);
         }
-        else
-        {
+        else {
             request.requestBodyString = request.requestBodyString + requestRawString;
-            if ((int)request.requestBodyString.size() >= request.contentLength)
-            {
+            if ((int)request.requestBodyString.size() >= request.contentLength){
                 request.readingBody = false;
                 if ((int)request.requestBodyString.size() > request.contentLength)
                     request.requestBodyString.erase(request.contentLength);
 
                 std::cout << "  ***end of request.requestBodyString:" << std::endl << request.requestBodyString << "***" << std::endl << std::endl;
+                request.handleRequest();
             }
             else
                 std::cout << "  ***added to request.requestBodyString:" << std::endl << requestRawString << "***" << std::endl << std::endl;
         }
-        
     }
-    else
-    {
+    else if (   requestRawString.find("GET") != std::string::npos 
+            ||  requestRawString.find("POST") != std::string::npos 
+            ||  requestRawString.find("HEAD") != std::string::npos 
+            ||  requestRawString.find("PUT") != std::string::npos
+            ||  requestRawString.find("DELETE") != std::string::npos){
+        request.appendRequestString(clean(requestRawString));
+        std::cout << "  ***new valid request:" << std::endl << requestRawString << "***" << std::endl << std::endl;
+        request.requestBodyString = "";
+        request.readingHeader = true;
+    }
+    else { 
         std::cout << "  ***ignored requestRawString:" << std::endl << requestRawString << "***" << std::endl << std::endl;
     }
-    
-    int posBodyStart = -1;
-    if (request.readingHeader && checkEndRequestHeader(request.getRequestString().c_str(), request.getRequestString().size(), &posBodyStart))
-    {
-        std::cout << "  " << request.getRequestString().size() << " total bytes received\n  ***************\n" << std::endl;
 
-        request.requestHeaderString = request.getRequestString().substr(0, posBodyStart);
-        request.requestBodyString = request.getRequestString().substr(posBodyStart);
-
-        std::cout << "  ***requestHeaderString:" << request.requestHeaderString << "***" << std::endl;
-        std::cout << "  ***requestBodyString:" << request.requestBodyString << "***" << std::endl;
-        
-        request.readingHeader = false;
-        if (!request.parseRequest())
-            return(true);
-
-        if (request.contentLength != -1)
-        {
-            std::cout << "Expected Content-Length = " << request.contentLength << std::endl;
-            request.readingBody = true;
-        }
-        else if (request.getHeader("Transfer-Encoding") == "chunked" )
-        {
-            std::cout << "CHUNKED = TRUE" << std::endl;
-            request.readingBody = true;
-            request.chunkedBody = true;
-
-            if (!request.requestBodyString.empty())
-                addChunkedBody(request, request.requestBodyString);
-        }
-
-    }
-
-    if (request.readingHeader == false && request.readingBody == false)
-        request.handleRequest();
-
+    handleHeader(request);
     return(true);
 }
 
-bool WebServ::sendResponse(const int &fd, Request &c)
+bool WebServ::sendResponse(const int &fd, Request &request)
 {
     std::cout << "  Sending response - fd " << fd << std::endl;
-    std::cout << c.getResponseString() << std::endl;
-    int rc  = send(fd, c.getResponseString().c_str(), c.getResponseString().length(), 0);
-    c.clear();
+    std::cout << request.getResponseString() << std::endl;
+    int rc  = send(fd, request.getResponseString().c_str(), request.getResponseString().length(), 0);
+    request.clear();
+
     std::cout << "  *** check RC : " << rc << std::endl;
-    if (rc < 0)
-    {
+    if (rc == -1) {
         std::cerr << "  send() failed" << std::endl;
         closeCnx(fd);
         del(fd, _master_set_write);
     }
-    else
-    {
+    else {
         del(fd, _master_set_write);
         add(fd, _master_set_recv);
     }
@@ -534,4 +344,185 @@ bool WebServ::userExit(void)
         return(true);
 
     return(false);
+}
+
+void WebServ::prepSelect(void)
+{
+    // TODO check request timeout
+    
+    //add responses to _master_set_write
+    if (!_requests.empty())
+    {            
+        for (int i = 0; i <= _max_fd; ++i)
+        {
+            if (_requests.count(i) && _requests[i]->ready2send)
+            {
+                del(i, _master_set_recv);
+                add(i, _master_set_write);
+            }
+        }
+    }
+
+    // TODO cout à supprimer
+    std::cout << "Preparing select() " << std::endl;
+    for (int i = 0; i <= _max_fd; ++i)
+    {
+        if (FD_ISSET(i, &_master_set_recv))
+            std::cout << "  fd - " << i << " : working_set_recv" << std::endl;
+        else if (FD_ISSET(i, &_master_set_write))
+            std::cout << "  fd - " << i << " : working_set_write" << std::endl;
+        else
+            std::cout << "  fd - " << i << " : not working set" << std::endl;
+    }
+}
+
+static bool checkEndRequestHeader(const char* src, int size, int* pos)
+{
+    int i = 0;
+    while (i < size - 3)
+    {
+        if (src[i] == '\r' && src[i + 1] == '\n' && src[i + 2] == '\r' && src[i + 3] == '\n')
+            return(*pos = i + 4, true);
+        i++;
+    }
+    return(false);
+}
+
+static std::string clean(std::string src)
+{
+    size_t found = src.find("GET");
+    if (found != std::string::npos)
+        return(src.substr(found));
+
+    found = src.find("POST");
+    if (found != std::string::npos)
+        return(src.substr(found));
+
+    found = src.find("HEAD");
+    if (found != std::string::npos)
+        return(src.substr(found));
+
+    found = src.find("PUT");
+    if (found != std::string::npos)
+        return(src.substr(found));
+
+    found = src.find("DELETE");
+    if (found != std::string::npos)
+        return(src.substr(found));
+
+    return(src);
+}
+
+static void addChunkedBody(Request &request, std::string& requestRawString)
+{
+    if (!request.readingBody)
+        return;
+
+    char* pEnd;
+    if (request.curChunkSize == -1 || (int)request.requestBodyList.back().size() == request.curChunkSize)
+    {
+        request.curChunkSize = strtol(requestRawString.c_str(), &pEnd, 16);
+        std::cout << "CHUNK SIZE = " << request.curChunkSize << std::endl; 
+        // TODO check pEnd
+        if (request.curChunkSize != 0)
+        {
+            requestRawString = pEnd + 2;
+            request.requestBodyList.push_back("");
+        }
+    }
+
+    if (request.curChunkSize == 0)
+    {
+        std::cout << "END OF CHUNKED BODY" << std::endl; 
+        request.readingBody = false;
+        request.handleRequest();
+        return;
+    }
+
+    std::cout << "EXTRACTING BODY... request.curChunkSize=" << request.curChunkSize << " request.requestBodyList.back().size()=" << request.requestBodyList.back().size() << " requestRawString.size()=" << requestRawString.size() << std::endl;
+    int missingData = request.curChunkSize - (int)request.requestBodyList.back().size();
+    if ((int)requestRawString.size() <= missingData)
+    {
+        request.requestBodyList.back().append(requestRawString);
+        requestRawString.clear();
+    }
+    else
+    {
+        request.requestBodyList.back().append(requestRawString.substr(0, missingData));
+        requestRawString.erase(0, missingData);
+        std::cout << "requestBodyList.back = " << request.requestBodyList.back() << std::endl; 
+    }
+
+    if (requestRawString.empty())
+        return;
+
+    std::cout << "remaining requestRawString = " << requestRawString << std::endl;
+    addChunkedBody(request, requestRawString);
+}
+
+static bool getRequestRawString(const int &fd, std::string& requestRawString)
+{
+    char        buffer[BUFFER_SIZE];
+    int         rc = 0;
+    
+    int i = -1;
+    while (++i < BUFFER_SIZE)
+        buffer[i] = 0;
+
+    while (true)
+    {
+        rc = recv(fd, buffer, sizeof(buffer), 0);
+        std::cout << "  " << rc << " bytes received" << std::endl;
+        if (rc == -1)
+        {
+            strerror(errno);
+            break;
+        }
+        if (rc == 0)
+        {
+            std::cerr << "  Connection closed\n" << std::endl;
+            return(false);
+        }
+        buffer[rc] = 0;
+        requestRawString.append(buffer);
+    }
+    return(true);
+}
+
+static void handleHeader(Request &request)
+{
+    
+    int posBodyStart = -1;
+    if (request.readingHeader && checkEndRequestHeader(request.getRequestString().c_str(), request.getRequestString().size(), &posBodyStart))
+    {
+        std::cout << "  " << request.getRequestString().size() << " total bytes received\n  ***************\n" << std::endl;
+
+        request.requestHeaderString = request.getRequestString().substr(0, posBodyStart);
+        request.requestBodyString = request.getRequestString().substr(posBodyStart);
+
+        std::cout << "  ***requestHeaderString:" << request.requestHeaderString << "***" << std::endl;
+        std::cout << "  ***requestBodyString:" << request.requestBodyString << "***" << std::endl;
+        
+        request.readingHeader = false;
+        if (!request.parseRequest())
+            return;
+
+        if (request.contentLength != -1)
+        {
+            std::cout << "Expected Content-Length = " << request.contentLength << std::endl;
+            request.readingBody = true;
+        }
+        else if (request.getHeader("Transfer-Encoding") == "chunked" )
+        {
+            std::cout << "CHUNKED = TRUE" << std::endl;
+            request.readingBody = true;
+            request.chunkedBody = true;
+
+            if (!request.requestBodyString.empty())
+                addChunkedBody(request, request.requestBodyString);
+        }
+
+        if (request.readingBody == false)
+            request.handleRequest();
+    }
 }
