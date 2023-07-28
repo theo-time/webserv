@@ -14,7 +14,7 @@
 #include "Request.hpp"
 #include "VirtualServer.hpp"
 
-static std::string  clean(std::string src);
+// static std::string  clean(std::string src);
 static void         handleHeader(Request &request);
 static bool         checkEndRequestHeader(const char* src, int size, int* pos);
 static void         addChunkedBody(Request &request, std::string& requestRawString);
@@ -219,7 +219,7 @@ bool WebServ::readRequest(const int &fd, Request &request)
                 std::cout << "  ***added to request.requestBodyString:" << std::endl << requestRawString << "***" << std::endl << std::endl;
         }
     }
-    else if (   requestRawString.find("GET") != std::string::npos 
+/*     else if (   requestRawString.find("GET") != std::string::npos 
             ||  requestRawString.find("POST") != std::string::npos 
             ||  requestRawString.find("HEAD") != std::string::npos 
             ||  requestRawString.find("PUT") != std::string::npos
@@ -228,9 +228,12 @@ bool WebServ::readRequest(const int &fd, Request &request)
         std::cout << "  ***new valid request:" << std::endl << requestRawString << "***" << std::endl << std::endl;
         request.requestBodyString = "";
         request.readingHeader = true;
-    }
+    } */
     else { 
-        std::cout << "  ***ignored requestRawString:" << std::endl << requestRawString << "***" << std::endl << std::endl;
+        std::cout << "  ***new request:" << std::endl << requestRawString << "***" << std::endl << std::endl;
+        request.setRequestString(requestRawString);
+        request.requestBodyString = "";
+        request.readingHeader = true;
     }
 
     handleHeader(request);
@@ -375,19 +378,7 @@ void WebServ::prepSelect(void)
             std::cout << "  fd - " << i << " : not working set" << std::endl;
     }
 }
-
-static bool checkEndRequestHeader(const char* src, int size, int* pos)
-{
-    int i = 0;
-    while (i < size - 3)
-    {
-        if (src[i] == '\r' && src[i + 1] == '\n' && src[i + 2] == '\r' && src[i + 3] == '\n')
-            return(*pos = i + 4, true);
-        i++;
-    }
-    return(false);
-}
-
+/* 
 static std::string clean(std::string src)
 {
     size_t found = src.find("GET");
@@ -411,7 +402,7 @@ static std::string clean(std::string src)
         return(src.substr(found));
 
     return(src);
-}
+} */
 
 static void addChunkedBody(Request &request, std::string& requestRawString)
 {
@@ -490,8 +481,7 @@ static bool getRequestRawString(const int &fd, std::string& requestRawString)
 }
 
 static void handleHeader(Request &request)
-{
-    
+{    
     int posBodyStart = -1;
     if (request.readingHeader && checkEndRequestHeader(request.getRequestString().c_str(), request.getRequestString().size(), &posBodyStart))
     {
@@ -510,7 +500,8 @@ static void handleHeader(Request &request)
         if (request.contentLength != -1)
         {
             std::cout << "Expected Content-Length = " << request.contentLength << std::endl;
-            request.readingBody = true;
+            if ((int)request.requestBodyString.size() < request.contentLength)
+                request.readingBody = true;
         }
         else if (request.getHeader("Transfer-Encoding") == "chunked" )
         {
@@ -525,4 +516,16 @@ static void handleHeader(Request &request)
         if (request.readingBody == false)
             request.handleRequest();
     }
+}
+
+static bool checkEndRequestHeader(const char* src, int size, int* pos)
+{
+    int i = 0;
+    while (i < size - 3)
+    {
+        if (src[i] == '\r' && src[i + 1] == '\n' && src[i + 2] == '\r' && src[i + 3] == '\n')
+            return(*pos = i + 4, true);
+        i++;
+    }
+    return(false);
 }
