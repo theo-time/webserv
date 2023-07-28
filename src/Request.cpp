@@ -206,18 +206,25 @@ void     Request::getRequestConfig()
     }
 
     /* Search matching server_name */
+    std::cout << "Matching hostname..." << std::endl;
     VirtualServer *server;
     it = matching_servers.begin();
     end = matching_servers.end();
     server = *it; // First by default
-    while (it != end)
+    std::cout << "... First server by default ..." << std::endl;
+    std::cout << "(*it)->getName()=" << (*it)->getName() << std::endl;
+    std::cout << "getHeader(""Host"")=" << getHeader("Host") << std::endl;
+    if (matching_servers.size() > 1)
     {
-        if ((*it)->getName() == getHeader("Host"))
+        while (it != end)
         {
-            server = *it;
-            return;
+            if ((*it)->getName() == getHeader("Host"))
+            {
+                server = *it;
+                return;
+            }
+            it++;
         }
-        it++;
     }
     std::cout << "Matching servers by name : " << matching_servers.size() << std::endl;
     
