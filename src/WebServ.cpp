@@ -498,8 +498,8 @@ static void addChunkedBody(Request &request, std::string& requestRawString)
     std::cout << "remaining requestRawString = " << requestRawString << std::endl;
     addChunkedBody(request, requestRawString);
 }
-
 /* 
+
 static std::string clean(std::string src)
 {
     size_t found = src.find("GET");
@@ -523,4 +523,5 @@ static std::string clean(std::string src)
         return(src.substr(found));
 
     return(src);
-} */
+}
+ */
