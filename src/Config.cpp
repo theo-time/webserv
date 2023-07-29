@@ -199,7 +199,6 @@ bool Config::parseConfData()
     bool                                srv = false; 
     std::size_t                         found;
     
-
     while (!_tmpConfData.empty())
     {
         if (!srv)

@@ -112,9 +112,29 @@ void VirtualServer::setLocationsConf(strQueue conf)
 
         std::string     name = _tmpLocationsConf.front().substr(0, sep);
         std::string     conf = _tmpLocationsConf.front().substr(sep + 1);
-        if (name.empty() || conf.empty())
+        if (name.empty() || conf.empty() || conf.find(";") == std::string::npos)
         {
             std::cout << "Error: invalid location configuration: " << _tmpLocationsConf.front() << std::endl;
+            _tmpLocationsConf.pop();
+            continue;
+        }
+
+        // check each line has key and value
+        bool    error = false;
+        sep = conf.find(";");
+        while (sep != std::string::npos)
+        {
+            std::size_t key = conf.find("=");
+            if (key == std::string::npos || key >= sep - 1)
+            {
+                error = true;
+                break;
+            }
+            sep = conf.find(";", sep + 1);
+        }
+        if (error)
+        {
+            std::cout << "Warning: invalid location configuration ignored: " << _tmpLocationsConf.front() << std::endl;
             _tmpLocationsConf.pop();
             continue;
         }
