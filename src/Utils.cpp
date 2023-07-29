@@ -143,3 +143,14 @@ std::string getFileFromPath(std::string const& path) {
     size_t lastPartHead = output.find_last_of('/');
     return output.substr(lastPartHead);
 }
+
+std::string removeContentTypeHeader(const std::string& CGIResponse) {
+    std::string result = CGIResponse;
+    size_t content_type_pos = CGIResponse.find("Content-type:");
+    if (content_type_pos != std::string::npos) {
+            size_t end_of_line = CGIResponse.find("\r\n", content_type_pos);
+            result.erase(content_type_pos, end_of_line - content_type_pos + 2); // +2 to remove '\r\n'
+    }
+
+    return result;
+}

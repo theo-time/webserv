@@ -65,4 +65,6 @@ bool hasDuplicateKeys(const std::string& longString);
 
 std::string getFileFromPath(std::string const& path);
 
+std::string removeContentTypeHeader(const std::string& httpResponse);
+
 #endif

@@ -16,7 +16,7 @@
                     <a class="nav__link__dop" href="img_page.html">Test Image</a>
                     <a class="nav__link__dop" href="../../cgi-bin/get_test.py">CGI GET</a>
                     <a class="nav__link__dop" href="post_test.html">CGI POST</a>
-                    <a class="nav__link__dop" href="file_to_upload.html">file uploading</a>
+                    <a class="nav__link__dop" href="../../cgi-bin/upload.php">File Upload</a>
                     <a class="nav__link__dop" href="/pouetka">HTTP redirection</a>     
                     <a class="nav__link__dop" href="/listing">Directory listing</a>                              
                 </nav>
@@ -24,9 +24,9 @@
         </div>
     </header>
 
-    <form enctype="multipart/form-data" action = "/cgi-bin/upload.php" method="POST">
-        <input type="file" name="fileToUpload" id="fileToUpload"><br>
-        <input type="submit" value="Upload File" name="submit">
+    <form enctype = "multipart/form-data"  action = "/cgi-bin/upload.py" method = "post">
+    <p>File: <input type = "file" name = "filename" /></p>
+    <p><input type = "submit" value = "Upload" /></p>
     </form>
 <body>
 </html>

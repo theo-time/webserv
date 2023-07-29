@@ -84,13 +84,11 @@ bool CGI::executeCGI(Request & req)
     else if (pid == 0)  // Child process
     {
 		dup2(pipe_out[1], STDOUT_FILENO);
+        close(pipe_out[0]);
+        close(pipe_out[1]);
         dup2(pipe_in[0], STDIN_FILENO);
         close(pipe_in[0]);
         close(pipe_in[1]);
-        close(pipe_out[0]);
-        close(pipe_out[1]);
-        write(pipe_in[1], req.getBody().c_str(), _req_body.length());
-        //std::cout << "WRITE BYTES : " << tmp << std::endl;
 
         execve(_args[0], _args, _envvar);
         //exit(1);
@@ -101,6 +99,13 @@ bool CGI::executeCGI(Request & req)
         char buffer[4096];
         ssize_t bytesRead;
         int status;
+        int tmp;
+
+        close(pipe_out[1]);
+        if (req.getMethod() == "POST") {
+            tmp = write(pipe_in[1], req.getBody().c_str(), req.getBody().length());
+            std::cout << "WRITE BYTES : " << tmp << std::endl;
+        }
 
         close(pipe_in[1]);
         close(pipe_in[0]);
@@ -112,21 +117,21 @@ bool CGI::executeCGI(Request & req)
                 std::cout << "CGI execution was successful." << std::endl;
             } else {
                 std::cout << "CGI execution failed with exit status: " << exitStatus << std::endl;
-                close(pipe_out[1]);
                 while ((bytesRead = read(pipe_out[0], buffer, 4096)) > 0) // Read the output from the child process
                     outputCGI.append(buffer, bytesRead);
                 std::cout << "---- OUTPUTCGI ----"<< std::endl;
                 std::cout << outputCGI << std::endl;
                 std::cout << "---- END OUTPUTCGI ----"<< std::endl;
+                close(pipe_out[0]); // Close the read end of the pipe
                 return false;
             }
         } else {
             std::cout << "CGI execution failed due to an unknown reason." << std::endl;
             return false;
         }
-        close(pipe_out[1]);
         while ((bytesRead = read(pipe_out[0], buffer, 4096)) > 0) // Read the output from the child process
             outputCGI.append(buffer, bytesRead);
+        outputCGI = removeContentTypeHeader(outputCGI);
         std::cout << "---- OUTPUTCGI ----"<< std::endl;
         std::cout << outputCGI << std::endl;
         std::cout << "---- END OUTPUTCGI ----"<< std::endl;
