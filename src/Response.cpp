@@ -88,7 +88,7 @@ void Response::sendError(int statusCode, std::string error_msg)
     std::string errorPagePath;
     std::stringstream ss;
     ss << statusCode;
-    if (request->getConfig()->getErrorPages().count(statusCode))
+    if (request->getConfig() && request->getConfig()->getErrorPages().count(statusCode))
         errorPagePath = request->getConfig()->getErrorPages()[statusCode];
     else
         errorPagePath = "./data/default/" + ss.str() + ".html";

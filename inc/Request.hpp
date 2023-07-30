@@ -67,7 +67,9 @@ class Request {
         std::string             requestHeaderString;
         std::list<std::string>  requestBodyList;
         int                     curChunkSize; 
-        int                     contentLength; 
+        int                     contentLength;
+	    unsigned long	        curRequestTime;
+	    unsigned long	        lastActivityTime;
 
         bool                    ready2send;
 

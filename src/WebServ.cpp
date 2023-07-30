@@ -13,6 +13,8 @@
 #include "WebServ.hpp"
 #include "Request.hpp"
 #include "VirtualServer.hpp"
+#include <ctime>
+#include <sys/time.h>
 
 typedef std::vector<VirtualServer*>         srvVect;
 typedef std::map<int, Request*>             intCliMap;
@@ -178,8 +180,8 @@ bool WebServ::acceptNewCnx(const int& fd)
             break;
         }
 
-        // TODO set receive SO_RCVTIMEO and send timeout  SO_SNDTIMEO
-        
+        // TODO set receive SO_RCVTIMEO and send timeout  SO_SNDTIMEO ?
+
         add(clientSocket, _master_set_recv);
         _requests[clientSocket] = new Request(clientSocket, fd);
         std::cout << "  New incoming connection - fd " << clientSocket << std::endl;
@@ -333,10 +335,7 @@ bool WebServ::userExit(void)
     std::string buffer;
     std::getline(std::cin, buffer);
 
-    if (!std::cin.eof())
-        std::cout << "  Closing cnx - fd " << std::endl;
-
-    if (buffer == "EXIT")
+    if (std::cin.eof() || buffer == "EXIT")
         return(true);
 
     return(false);
@@ -345,7 +344,7 @@ bool WebServ::userExit(void)
 void WebServ::prepSelect(void)
 {
     // TODO check request timeout
-    
+
     //add responses to _master_set_write
     if (!_requests.empty())
     {            

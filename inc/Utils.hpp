@@ -67,4 +67,6 @@ std::string getFileFromPath(std::string const& path);
 
 std::string removeContentTypeHeader(const std::string& httpResponse);
 
+unsigned long ft_now();
+
 #endif

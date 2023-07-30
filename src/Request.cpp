@@ -15,6 +15,8 @@ Request::Request(int clientSocket, int serverSocket) : clientSocket(clientSocket
     curChunkSize = -1;
     contentLength = -1;
     ready2send = false;
+    lastActivityTime = ft_now();
+    curRequestTime = -1;
 }
 
 
@@ -24,6 +26,10 @@ Request::~Request() {
 
 
 bool Request::parseRequest(){
+
+    lastActivityTime = ft_now();
+    curRequestTime = ft_now();
+
     std::string firstLine = requestString.substr(0, requestString.find("\r\n"));
     std::vector<std::string> tokens = splitWithSep(firstLine, ' ');
     if (tokens.size() != 3) {
@@ -308,6 +314,8 @@ void Request::listDirectoryResponse()
 
 void Request::handleRequest() 
 {
+    lastActivityTime = ft_now();
+
     // Conf file variables
     std::string root = _config->getRoot(); 
     std::string index = _config->getIndex();
@@ -669,6 +677,8 @@ void Request::clear(void)
     curChunkSize = -1;
     contentLength = -1;
     ready2send = false;
+    lastActivityTime = ft_now();
+    curRequestTime = -1;
 }
 
 int Request::getChunkedBodySize() {

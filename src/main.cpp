@@ -35,8 +35,7 @@ static int     doEpoll(int epollFd);
 
 int main(int ac, char** av)
 {
-    // TODO ignorer CTRL+C et CTRL+D
-    // signal(SIGINT, SIG_IGN);
+    signal(SIGINT, SIG_IGN);
 
     // TODO del qd epoll ok
     std::string arg;

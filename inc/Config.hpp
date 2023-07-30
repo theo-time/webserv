@@ -46,6 +46,7 @@ class Config
 
         const static unsigned int                       _clientMaxBodySize_min;
         const static unsigned int                       _clientMaxBodySize_max;
+        const static unsigned long                      _requestTimeout;
 
     private:
 
