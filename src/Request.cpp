@@ -4,6 +4,7 @@
 #include <fstream>
 #include <algorithm>
 
+typedef std::map<std::string, VirtualServer*>   srvMap;
 
 Request::Request(int clientSocket, int serverSocket) : clientSocket(clientSocket), serverSocket(serverSocket) {
     std::cout << "Request created" << std::endl;
@@ -184,52 +185,34 @@ void     Request::getRequestConfig()
     std::cout << "------- Config Routing ----------" << std::endl;
 
     std::cout << "request socket fd :" << getServerSocket() << std::endl;
-    
-    std::vector <VirtualServer*>    matching_servers;
-   /* Search matching socket */
-    std::vector <VirtualServer*>::iterator    it = Config::getVirtualServers().begin();
-    std::vector <VirtualServer*>::iterator    end = Config::getVirtualServers().end();
-    while (it != end)
+
+    VirtualServer *server = NULL;
+
+    // check if hostname is an alias
+    if (Config::getHostsMap().count(getHeader("Host")))
+        server = Config::getHostsMap()[getHeader("Host")];
+    else // Search matching socket
     {
-        std::cout << "server socket fd :" << (*it)->getFd() << std::endl;
-        if ((*it)->getFd() == getServerSocket())
-            matching_servers.push_back(*it);
-        it++;
+        std::vector <VirtualServer*>::iterator    it = Config::getVirtualServers().begin();
+        while (it != Config::getVirtualServers().end())
+        {
+            if ((*it)->getFd() == getServerSocket())
+            {
+                server = *it; // first by default
+                break;
+            }
+            it++;
+        }
     }
-    std::cout << "Matching servers by socket : " << matching_servers.size() << std::endl;
-    if(matching_servers.size() == 0)
+    if (server == NULL)
     {
         std::cout << "No matching server found" << std::endl;
         std::cout << "|-------- End of Config Routing ---------|" << std::endl;
         setConfig(NULL);
         return;
     }
-
-    /* Search matching server_name */
-    std::cout << "Matching hostname..." << std::endl;
-    VirtualServer *server;
-    it = matching_servers.begin();
-    end = matching_servers.end();
-    server = *it; // First by default
-    std::cout << "... First server by default ..." << std::endl;
-    std::cout << "(*it)->getName()=" << (*it)->getName() << std::endl;
-    std::cout << "getHeader(""Host"")=" << getHeader("Host") << std::endl;
-    if (matching_servers.size() > 1)
-    {
-        while (it != end)
-        {
-            if ((*it)->getName() == getHeader("Host"))
-            {
-                server = *it;
-                return;
-            }
-            it++;
-        }
-    }
-    std::cout << "Matching servers by name : " << matching_servers.size() << std::endl;
     
     /* Search matching location */
-    std::cout << "locations size " << server->getLocations().size() << std::endl;
     setConfig(server->getLocations()[0]); // first by default
 
     if (server->getLocations().size() > 1)
@@ -265,10 +248,7 @@ void     Request::getRequestConfig()
             locIt = locations.begin();
             while(locIt != locEnd)
             {
-                // std::cout <<  (**locIt) << std::endl;
                 location_path = (**locIt).getName();
-                // std::cout << "location path " << location_path << std::endl;
-                // std::cout << "request path " << path << std::endl;
                 if (path.find(location_path) == 0)
                 {
                     setConfig(*locIt);

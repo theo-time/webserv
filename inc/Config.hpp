@@ -39,6 +39,7 @@ class Config
         static void                                     init(const std::string& filename);
         static bool&                                    isValid(void);
         static srvVect&                                 getVirtualServers(void);
+        static srvMap&                                  getHostsMap(void);
         static void                                     clear(void);
 
         static unsigned int&                             getClientMaxBodySize(void);

@@ -550,5 +550,17 @@ static void clean(std::string& src)
         }
         i++;
     }
-    src.erase();
+
+    //trim
+    std::string::iterator it = src.begin();
+    while (it != src.end() && (*it == '\n' || *it == ' ' || (*it >= 9 && *it <= 13)))
+    {
+        src.erase(it);
+        // it++;
+    }
+    if (src.empty())
+        return;
+/* 
+    std::cout << "  ***ERROR: invalid HTTP method:" << src << "***" << std::endl << std::endl;
+    src.erase(); */
 }
