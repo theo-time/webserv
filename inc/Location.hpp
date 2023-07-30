@@ -30,10 +30,10 @@ class Location
 
         Location(const std::string& name, const std::string& root, const std::string& index, 
             const bool allowGet, const bool allowPost, const bool allowDel, 
-            const unsigned int clientMaxBodySize, const intStrMap errorPages);
+            const unsigned int clientMaxBodySize, intStrMap& errorPages);
         Location(const std::string& name, const std::string& root, const std::string& index, 
             const bool allowGet, const bool allowPost, const bool allowDel, 
-            const unsigned int clientMaxBodySize, const intStrMap errorPages, const std::string& conf);
+            const unsigned int clientMaxBodySize, intStrMap& errorPages, const std::string& conf);
         ~Location(void);
         
         Location& operator=(const Location& rhs);
@@ -54,10 +54,10 @@ class Location
         bool                isAutoIndex(void) const;
 
     private:
-    
+/*     
         Location(void);
         Location(const Location& src);
-
+ */
         std::string         _name;
         std::string         _type;
         std::string         _root;
@@ -70,7 +70,7 @@ class Location
         bool                _allowPost;
         bool                _allowDel;
         unsigned int        _clientMaxBodySize;
-        intStrMap           _errorPages;
+        intStrMap&          _errorPages;
 };
 
 std::ostream& operator<<(std::ostream& o, Location& me);

@@ -35,7 +35,13 @@ bool Request::parseRequest(){
 	parseMethodToken(tokens[0]);
     if (!parseURI(tokens[1]) || !parseHTTPVersion(tokens[2]) || !parseHeaders())
         return false;
+
     getRequestConfig();
+    if (_config == NULL)
+    {    
+        _response.sendError(404, ": virtual server configuration not found");
+        return false;
+    }
 
     if ((method == "GET" && !_config->isGetAllowed()) || (method == "POST" && !_config->isPostAllowed()))
     {    
