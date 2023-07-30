@@ -50,6 +50,7 @@ class Location
         bool                isGetAllowed(void) const;
         bool                isPostAllowed(void) const;
         bool                isDelAllowed(void) const;
+        bool                isAllowed(std::string& method) const;
         bool                isAutoIndex(void) const;
 
     private:

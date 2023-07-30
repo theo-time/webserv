@@ -285,6 +285,14 @@ bool Location::isDelAllowed(void) const
     return(_allowDel);
 }
 
+bool Location::isAllowed(std::string& method) const
+{
+    if ((method == "GET" && _allowGet) || (method == "POST" && _allowPost) || (method == "DELETE" && _allowDel))
+        return(true);
+    
+    return(false);
+}
+
 bool Location::isAutoIndex(void) const
 {
     return(_autoIndex);

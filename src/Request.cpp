@@ -248,7 +248,7 @@ void     Request::getRequestConfig()
             if ((*locIt)->getType() == "cgi")
             {
                 // std::cout <<  (**locIt) << std::endl;
-                if ((*locIt)->getExtension() == extension)
+                if ((*locIt)->getExtension() == extension && (*locIt)->isAllowed(method))
                 {
                     setConfig(*locIt);
                     isCGI = true;
@@ -683,4 +683,15 @@ void Request::clear(void)
     curChunkSize = -1;
     contentLength = -1;
     ready2send = false;
+}
+
+int Request::getChunkedBodySize() {
+    int totalBodySize = 0;
+    std::list<std::string>::iterator it = requestBodyList.begin();
+    while (it != requestBodyList.end())
+    {
+        totalBodySize = totalBodySize + static_cast<int>((*it).size());
+        it++;
+    }
+    return totalBodySize;
 }

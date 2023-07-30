@@ -26,9 +26,9 @@ static bool         getRequestRawString(const int &fd, std::string& requestRawSt
 
 fd_set                                      WebServ::_master_set_recv;
 fd_set                                      WebServ::_master_set_write;
-int                                         WebServ::_max_fd;
 intCliMap                                   WebServ::_requests;
 intMap                                      WebServ::_listeners;
+int                                         WebServ::_max_fd;
 
 bool WebServ::runListeners(void)
 {
@@ -456,6 +456,9 @@ static void addChunkedBody(Request &request, std::string& requestRawString)
     if (!request.readingBody)
         return;
 
+    if (requestRawString.empty())
+        return;
+
     char* pEnd;
     if (request.curChunkSize == -1 || static_cast<int>(request.requestBodyList.back().size()) == request.curChunkSize)
     {
@@ -476,7 +479,7 @@ static void addChunkedBody(Request &request, std::string& requestRawString)
 
     if (request.curChunkSize == 0)
     {
-        std::cout << "END OF CHUNKED BODY" << std::endl; 
+        std::cout << "END OF CHUNKED BODY: TOTAL SIZE=" << request.getChunkedBodySize() << std::endl; 
         request.readingBody = false;
         request.handleRequest();
         return;
@@ -548,30 +551,4 @@ static void clean(std::string& src)
         i++;
     }
     src.erase();
-
-/*     size_t found = src.find("GET");
-    if (found != std::string::npos)
-        return(src.substr(found));
-
-    found = src.find("HEAD");
-    if (found != std::string::npos)
-        return(src.substr(found));
-
-    found = src.find("POST");
-    if (found != std::string::npos)
-        return(src.substr(found));
-
-    found = src.find("PUT");
-    if (found != std::string::npos)
-        return(src.substr(found));
-
-    found = src.find("DELETE");
-    if (found != std::string::npos)
-        return(src.substr(found));
-
-    found = src.find("CONNECT");
-    if (found != std::string::npos)
-        return(src.substr(found));
-
-    return(src); */
 }

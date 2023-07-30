@@ -114,6 +114,7 @@ class Request {
         bool fileExists();
         void listDirectoryResponse();
         void clear();
+        int  getChunkedBodySize();
 };
 
 #endif
