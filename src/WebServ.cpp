@@ -123,12 +123,10 @@ bool WebServ::process(void)
     fd_set          working_set_write;
     struct timeval  timeout;
 
-    // initialize the timeval struct
-    timeout.tv_sec  = 30;
-    timeout.tv_usec = 0;
-    
-
     while (true) {
+        // initialize the timeval struct
+        timeout.tv_sec  = 10;
+        timeout.tv_usec = 0;
 
         // update fd_set
         prepSelect();
@@ -136,7 +134,7 @@ bool WebServ::process(void)
         working_set_write = _master_set_write;
 
         // check i/o activity
-        ret = select(_max_fd + 1, &working_set_recv, &working_set_write, NULL, 0); // TODO check socket errors
+        ret = select(_max_fd + 1, &working_set_recv, &working_set_write, NULL, &timeout); // TODO check socket errors
 
         if (ret == - 1) {
             std::cerr << "  select() failed" << std::endl;
@@ -144,7 +142,6 @@ bool WebServ::process(void)
             return(true);
         }
         if (ret == 0 && !_requests.empty()) {
-            std::cout << "  select() timed out\n" << std::endl;
             handleTimeout();
         }
         for (int i = 0; i <= _max_fd; ++i) {
@@ -375,7 +372,7 @@ void WebServ::prepSelect(void)
         {
             if (_requests.count(i))
             {
-                std::cout << "      fd=" << i  << ", curRequestTime=" << _requests[i]->curRequestTime << std::endl;
+                std::cout << "      fd - " << i  << ", curRequestTime=" << _requests[i]->curRequestTime << std::endl;
                 if (_requests[i]->ready2send)
                 {
                     del(i, _master_set_recv);
@@ -406,8 +403,11 @@ void WebServ::handleTimeout(void)
         {
             if (it->second->curRequestTime > 0)
             {
-                std::cout << "TIMEOUT FOR REQUEST TBC fd - " << it->first << std::endl;
-                //closeCnx(i);
+                if (ft_now() >= it->second->curRequestTime + Config::requestTimeout)
+                {
+                    std::cout << "TIMEOUT FOR REQUEST fd - " << it->first << std::endl;
+                    it->second->getResponse().sendError(500, "Timeout");
+                }
             }
             it++;
         }
