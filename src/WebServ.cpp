@@ -349,16 +349,18 @@ bool WebServ::userExit(void)
 
 void WebServ::prepSelect(void)
 {
-    intCliMap::iterator it  = _requests.begin();
-    while (it != _requests.end())
+    std::cout << "Preparing select" << std::endl;
+    // print server sockets
+    for (int i = 0; i <= _max_fd; ++i)
     {
-        std::cout << "  fd - " << it->first << " : client socket" << std::endl;
-        it++;
+        if (FD_ISSET(i, &_master_set_recv) && isServerSocket(i)) 
+            std::cout << "  fd - " << i << " : server socket" << std::endl;
     }
 
     if (!_requests.empty())
     {            
         std::cout << "  Existing client sockets:" << std::endl;
+        
         // add responses to _master_set_write
         for (int i = 0; i <= _max_fd; ++i)
         {
@@ -373,12 +375,10 @@ void WebServ::prepSelect(void)
             }
         }
 
-        // print socket list
+        // print client sockets
         for (int i = 0; i <= _max_fd; ++i)
         {
-            if (FD_ISSET(i, &_master_set_recv) && isServerSocket(i)) 
-                std::cout << "  fd - " << i << " : server socket" << std::endl;
-            else if (FD_ISSET(i, &_master_set_recv))
+            if (FD_ISSET(i, &_master_set_recv))
                 std::cout << "  fd - " << i << " : working_set_recv" << std::endl;
             else if (FD_ISSET(i, &_master_set_write))
                 std::cout << "  fd - " << i << " : working_set_write" << std::endl;
@@ -386,7 +386,6 @@ void WebServ::prepSelect(void)
                 std::cout << "  fd - " << i << " : not working set" << std::endl;
         }
     }
-
 }
 
 void WebServ::handleTimeout(void)
