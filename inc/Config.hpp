@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Config.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: adcarnec <marvin@42.fr>                    +#+  +:+       +#+        */
+/*   By: jde-la-f <jde-la-f@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/13 14:37:16 by adcarnec          #+#    #+#             */
-/*   Updated: 2023/06/13 14:37:20 by adcarnec         ###   ########.fr       */
+/*   Updated: 2023/07/31 19:33:01 by jde-la-f         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -42,7 +42,7 @@ class Config
         static srvMap&                                  getHostsMap(void);
         static void                                     clear(void);
 
-        static unsigned int&                             getClientMaxBodySize(void);
+        static unsigned int&                            getClientMaxBodySize(void);
 
         const static unsigned int                       _clientMaxBodySize_min;
         const static unsigned int                       _clientMaxBodySize_max;

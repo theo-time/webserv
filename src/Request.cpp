@@ -460,12 +460,14 @@ void Request::routingDelete()
     }
     else 
     {
-        _response.setStatusCode("200");
-        _response.setStatusText("OK");
         std::cout << "Requesting ressource at path : " << path << std::endl;
         if(!remove(path.c_str()))
         {
             std::cout << "File deleted" << std::endl;
+            _response.setStatusCode("200");
+            _response.setStatusText("OK");
+            _response.setProtocol("HTTP/1.1");
+            _response.send();
             // TODO : send 200 response without body
         }
         else
@@ -478,7 +480,7 @@ void Request::routingDelete()
 
 void Request::routingCGI()
 {
-    if(getFileExtension(path) == "py" || getFileExtension(path) == "bla" || getFileExtension(path) == "php")
+    if(getFileExtension(path) == "py" || getFileExtension(path) == "php")
     {
         executable_path = _config->getPath();
         if (getFileExtension(path) == "py") {
