@@ -54,15 +54,21 @@ bool Request::parseRequest(){
         return false;
     }
 
-    path = "." + path;
+    if (path == "/") {
+        if (!_config->getRoot().empty()){
+            path = path + _config->getRoot() + "/";
+        }
+        path = path + _config->getIndex();
+    }
 
-    if (path == "./")
-        path = path + _config->getRoot().substr(1) + "/" + _config->getIndex();
+    path = "." + path;
 
     if(path.find(_config->getName()) != std::string::npos && _config->getType() == "std") {
         path.replace(path.find(_config->getName()), _config->getName().length(), _config->getRoot());
-        if (!::fileExists(path) && method == "GET")
-            path = path + "/" + _config->getIndex();
+        if (!::fileExists(path) && method == "GET" && !_config->getRoot().empty())
+        {
+                path = path + "/" + _config->getIndex();
+        }
     }
 
     std::cout << " ---------- PARSING COMPLETED ---------- " << std::endl;
@@ -328,9 +334,6 @@ void Request::handleRequest()
     std::cout << _config->getName() << std::endl;
     std::cout << _config->getRoot() << std::endl;
     std::cout << _config->getIndex() << std::endl;
-
-    if (path == "./")
-        path = path + _config->getRoot().substr(1) + "/" + index;
 
     //if(_config->getName() == "*.bla")
 
