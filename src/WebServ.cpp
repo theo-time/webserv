@@ -126,7 +126,9 @@ bool WebServ::process(void)
     // initialize the timeval struct
     timeout.tv_sec  = Config::requestTimeout;
     timeout.tv_usec = 0;
+
     while (true) {
+
         // update fd_set
         prepSelect();
         working_set_recv = _master_set_recv;
@@ -134,17 +136,15 @@ bool WebServ::process(void)
 
         // check i/o activity
         ret = select(_max_fd + 1, &working_set_recv, &working_set_write, NULL, &timeout); // TODO check socket errors
-        std::cout << "SELECT RET = " << ret << std::endl;
 
         if (ret == - 1) {
             std::cerr << "  select() failed" << std::endl;
             stop(); // TODO a checker
             return(true);
         }
-        if (ret == 0) {
+        if (ret == 0 && !_requests.empty()) {
             std::cout << "  select() timed out\n" << std::endl;
-            if (_max_fd > 0) // existing client sockets
-                handleTimeout();
+            handleTimeout();
         }
         for (int i = 0; i <= _max_fd; ++i) {
             if (FD_ISSET(i, &working_set_recv) && i == 0) {
@@ -349,30 +349,44 @@ bool WebServ::userExit(void)
 
 void WebServ::prepSelect(void)
 {
-    // add responses to _master_set_write
+    intCliMap::iterator it  = _requests.begin();
+    while (it != _requests.end())
+    {
+        std::cout << "  fd - " << it->first << " : client socket" << std::endl;
+        it++;
+    }
+
     if (!_requests.empty())
     {            
+        std::cout << "  Existing client sockets:" << std::endl;
+        // add responses to _master_set_write
         for (int i = 0; i <= _max_fd; ++i)
         {
-            if (_requests.count(i) && _requests[i]->ready2send)
+            if (_requests.count(i))
             {
-                del(i, _master_set_recv);
-                add(i, _master_set_write);
+                std::cout << "      fd=" << i  << ", curRequestTime=" << _requests[i]->curRequestTime << std::endl;
+                if (_requests[i]->ready2send)
+                {
+                    del(i, _master_set_recv);
+                    add(i, _master_set_write);
+                }
             }
+        }
+
+        // print socket list
+        for (int i = 0; i <= _max_fd; ++i)
+        {
+            if (FD_ISSET(i, &_master_set_recv) && isServerSocket(i)) 
+                std::cout << "  fd - " << i << " : server socket" << std::endl;
+            else if (FD_ISSET(i, &_master_set_recv))
+                std::cout << "  fd - " << i << " : working_set_recv" << std::endl;
+            else if (FD_ISSET(i, &_master_set_write))
+                std::cout << "  fd - " << i << " : working_set_write" << std::endl;
+            else
+                std::cout << "  fd - " << i << " : not working set" << std::endl;
         }
     }
 
-    // TODO cout à supprimer
-    std::cout << "Preparing select() _max_fd = " << _max_fd << std::endl;
-    for (int i = 0; i <= _max_fd; ++i)
-    {
-        if (FD_ISSET(i, &_master_set_recv))
-            std::cout << "  fd - " << i << " : working_set_recv" << std::endl;
-        else if (FD_ISSET(i, &_master_set_write))
-            std::cout << "  fd - " << i << " : working_set_write" << std::endl;
-        else
-            std::cout << "  fd - " << i << " : not working set" << std::endl;
-    }
 }
 
 void WebServ::handleTimeout(void)
@@ -381,10 +395,8 @@ void WebServ::handleTimeout(void)
 
     for (int i = 3; i <= _max_fd; ++i)
     {
-        if (FD_ISSET(i, &_master_set_recv)) 
-            del(i, _master_set_recv);
-        if (FD_ISSET(i, &_master_set_write))
-            del(i, _master_set_write);
+        if (!isServerSocket(i)) 
+            closeCnx(i);
     }
 }
 
