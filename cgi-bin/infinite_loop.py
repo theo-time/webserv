@@ -1,4 +1,4 @@
 #!/usr/bin/python
 
 while (1) :
-    print("a")
+    print("")
