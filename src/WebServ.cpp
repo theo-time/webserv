@@ -416,6 +416,7 @@ static void handleHeader(Request &request)
         request.readingHeader = false;
         if (!request.parseRequest())
             return;
+        request.curRequestTime = ft_now();
 
         if (request.contentLength != -1)
         {
@@ -544,7 +545,7 @@ static void clean(std::string& src)
         found = src.find(WebServ::httpMethods[i]);
         if (found != std::string::npos)
         {
-            src.erase(0, found);
+            src.erase(0, found); // enlever juste whitespaces 
             return;
         }
         i++;
