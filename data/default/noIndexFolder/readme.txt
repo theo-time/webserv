@@ -1,1 +1,1 @@
-root folder for www data
+WebServ: test for directory listing
