@@ -6,7 +6,7 @@
 /*   By: jde-la-f <jde-la-f@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/07/26 10:42:20 by adcarnec          #+#    #+#             */
-/*   Updated: 2023/07/26 17:16:48 by jde-la-f         ###   ########.fr       */
+/*   Updated: 2023/07/31 09:35:55 by jde-la-f         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,7 +35,7 @@ static int     doEpoll(int epollFd);
 
 int main(int ac, char** av)
 {
-    signal(SIGINT, SIG_IGN);
+    //signal(SIGINT, SIG_IGN);
 
     // TODO del qd epoll ok
     std::string arg;
