@@ -17,7 +17,7 @@ const unsigned int                              Config::_clientMaxBodySize_min =
 const unsigned int                              Config::_clientMaxBodySize_max = 5 * 1024 * 1024;
 unsigned int                                    Config::_clientMaxBodySize = 1024 * 1024;
 bool                                            Config::_valid = false;
-const unsigned long                             Config::requestTimeout = 10; // sec
+const unsigned long                             Config::requestTimeout = 15; // sec
 
 typedef std::queue<std::string>                 strQueue;
 typedef std::map<int, std::string>              intStrMap;
