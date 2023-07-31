@@ -32,7 +32,7 @@ bool Request::parseRequest(){
     std::string firstLine = requestString.substr(0, requestString.find("\r\n"));
     std::vector<std::string> tokens = splitWithSep(firstLine, ' ');
     if (tokens.size() != 3) {
-        _response.sendError(400, ": a field from request line is missing"); 
+        _response.sendError(400, ": a field from 1st request line is missing"); 
     }
 
     // std::cout << "REQUEST STRING" << requestString << std::endl;
@@ -71,7 +71,7 @@ bool Request::parseRequest(){
         }
     }
 
-    std::cout << " ---------- PARSING COMPLETED ---------- " << std::endl;
+    std::cout << " ---------- HEADER VALUES ---------- " << std::endl;
     std::cout << "Method: " << method << std::endl;
     std::cout << "Path: " << path << std::endl;
     std::cout << "Protocol: " << protocol << std::endl;
@@ -325,22 +325,16 @@ void Request::handleRequest()
     std::string root = _config->getRoot(); 
     std::string index = _config->getIndex();
 
-
     if (!parseBody())
         return;
 
-    //std::cout << "Body: " << body << std::endl;
-
-    std::cout << _config->getName() << std::endl;
-    std::cout << _config->getRoot() << std::endl;
-    std::cout << _config->getIndex() << std::endl;
-
-    //if(_config->getName() == "*.bla")
+    std::cout << " ---------- CURRENT LOCATION VALUES ---------- " << std::endl;
+    std::cout << "Location Name: " << _config->getName() << std::endl;
+    std::cout << "Location Root: " << _config->getRoot() << std::endl;
+    std::cout << "Location Index: " << _config->getIndex() << std::endl;
 
     if(path.find(_config->getName()) != std::string::npos && _config->getType() == "std") {
         path.replace(path.find(_config->getName()), _config->getName().length(), _config->getRoot());
-        //size_t pos = path.find(_config->getRoot(), path.length() - _config->getRoot().length());
-        //std::cout << path.substr(path.length() - _config->getRoot().length()) << std::endl;
         if (!::fileExists(path) && method == "GET")
             path = path + "/" + index;
     }
@@ -377,33 +371,11 @@ void Request::handleRequest()
         }
         closedir(dir);
     }
-    // If path is a directory, and index file exists, add default index name to path
-    /*if (opendir(path.c_str()))
-    {
-        std::string indexFile = path + "/" + index;
-        std::cout << "Effective path: " << indexFile << std::endl;
-        if(path.find("//") != std::string::npos)
-            path.replace(path.find("//"), 2, "/");
-        if(!::fileExists(indexFile))
-        {
-            if(!_config->isAutoIndex())
-                return(_response.sendError(403, "Forbidden"));
-            return(listDirectoryResponse());
-        }
-        else
-            path = indexFile;
-    }*/
-
-    // Modifying URI with root and index directive if any, checking for the allowed methods
-    //std::string realUri = reconstructFullURI(_req->getMethod(), loc, _req->getPath());
-
-    // Checking if the targeted file is a CGI based on his extension
-    //std::string *cgiName = getCgiExecutableName(realUri, loc.second);
 
     std::cout << "Path before method routing :" << getPath() << std::endl;
 
     // Method routing
-    if (getFileExtension(path) == "php" || getFileExtension(path) == "py" || (getFileExtension(path) == "bla" && method == "POST"))
+    if (getFileExtension(path) == "php" || getFileExtension(path) == "py")
         this->routingCGI();
     else if (method == "GET")
         this->routingGet();
@@ -509,19 +481,12 @@ void Request::routingCGI()
     if(getFileExtension(path) == "py" || getFileExtension(path) == "bla" || getFileExtension(path) == "php")
     {
         executable_path = _config->getPath();
-        if (getFileExtension(path) == "bla")
-            script_path = "";
-        else {
-            if (getFileExtension(path) == "py") {
-                script_path = path.substr(2);
-            }
-            else if (getFileExtension(path) == "php") {
-                script_path = "";
-            }
-
+        if (getFileExtension(path) == "py") {
+            script_path = path.substr(2);
         }
-            
-
+        else if (getFileExtension(path) == "php") {
+            script_path = "";
+        }
         CGI cgi(*this);
         if (!cgi.executeCGI(*this)) {
             _response.sendError(500, " : Error in CGI execution");

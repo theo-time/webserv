@@ -61,28 +61,22 @@ CGI::~CGI()
 
 bool CGI::executeCGI(Request & req)
 {
-    if (pipe(pipe_in) < 0){
+    if (pipe(pipe_in) < 0 || pipe(pipe_out) < 0){
         perror("pipe failed");
-        close (pipe_in[1]);
-        close (pipe_in[0]);
-        return false;
-    }
-    if (pipe(pipe_out) < 0) {
-        perror("pipe failed");
-        close (pipe_in[1]);
-        close (pipe_in[0]);
-        return false;
-    }
-    std::cout << "BODY FED : " << req.getBody().c_str() << std::endl;
-    std::cout << _args[1] << std::endl;
-    pid_t pid = fork();
-    if (pid == -1) {
-        perror("fork failed");
         close (pipe_in[1]);
         close (pipe_in[0]);
         return false;
     }
 
+    pid_t pid = fork();
+    if (pid == -1) {
+        perror("fork failed");
+        close (pipe_in[1]);
+        close (pipe_in[0]);
+        close (pipe_out[1]);
+        close (pipe_out[0]);
+        return false;
+    }
     else if (pid == 0)  // Child process
     {
 		dup2(pipe_out[1], STDOUT_FILENO);
@@ -93,51 +87,45 @@ bool CGI::executeCGI(Request & req)
         close(pipe_in[1]);
 
         execve(_args[0], _args, _envvar);
-        //exit(1);
-        //perror("execve failed");
-        exit(0);
+        exit(EXIT_FAILURE);
     }
     else {  // Parent process
-        char buffer[4096];
-        ssize_t bytesRead;
-        int status;
-        int tmp;
-
         close(pipe_out[1]);
         if (req.getMethod() == "POST") {
-            tmp = write(pipe_in[1], req.getBody().c_str(), req.getBody().length());
-            std::cout << "WRITE BYTES : " << tmp << std::endl;
+            if(write(pipe_in[1], req.getBody().c_str(), req.getBody().length()) < 0)
+                return false;
         }
-
         close(pipe_in[1]);
         close(pipe_in[0]);
 
-        waitpid(pid, &status, 0); // Wait for the child process to finish
-        if (WIFEXITED(status)) {
-            int exitStatus = WEXITSTATUS(status);
-            if (exitStatus == 0) {
-                std::cout << "CGI execution was successful." << std::endl;
-            } else {
-                std::cout << "CGI execution failed with exit status: " << exitStatus << std::endl;
-                while ((bytesRead = read(pipe_out[0], buffer, 4096)) > 0) // Read the output from the child process
-                    outputCGI.append(buffer, bytesRead);
-                std::cout << "---- OUTPUTCGI ----"<< std::endl;
-                std::cout << outputCGI << std::endl;
-                std::cout << "---- END OUTPUTCGI ----"<< std::endl;
-                close(pipe_out[0]); // Close the read end of the pipe
-                return false;
-            }
-        } else {
-            std::cout << "CGI execution failed due to an unknown reason." << std::endl;
-            return false;
-        }
+        int status = 0;
+        waitpid(pid, &status, 0);
+
+        char buffer[4096];
+        ssize_t bytesRead;
         while ((bytesRead = read(pipe_out[0], buffer, 4096)) > 0) // Read the output from the child process
             outputCGI.append(buffer, bytesRead);
         outputCGI = removeContentTypeHeader(outputCGI);
         std::cout << "---- OUTPUTCGI ----"<< std::endl;
         std::cout << outputCGI << std::endl;
         std::cout << "---- END OUTPUTCGI ----"<< std::endl;
-        close(pipe_out[0]); // Close the read end of the pipe
-        return true;
+        if (WIFEXITED(status)) {
+            int exitStatus = WEXITSTATUS(status);
+            if (exitStatus == 0) {
+                std::cout << "CGI execution was successful." << std::endl;
+                close(pipe_out[0]);
+                return true;
+            } else {
+                std::cout << "CGI execution failed with exit status: " << exitStatus << std::endl;
+                close(pipe_out[0]);
+                return false;
+            }
+        } else {
+            std::cout << "CGI execution failed due to an unknown reason." << std::endl;
+            close(pipe_out[0]);
+            return false;
+        }
+
+
     }
 }
