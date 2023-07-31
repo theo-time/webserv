@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Config.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: adcarnec <marvin@42.fr>                    +#+  +:+       +#+        */
+/*   By: jde-la-f <jde-la-f@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/13 14:37:03 by adcarnec          #+#    #+#             */
-/*   Updated: 2023/06/13 14:37:05 by adcarnec         ###   ########.fr       */
+/*   Updated: 2023/07/31 18:41:07 by jde-la-f         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,7 +17,7 @@ const unsigned int                              Config::_clientMaxBodySize_min =
 const unsigned int                              Config::_clientMaxBodySize_max = 5 * 1024 * 1024;
 unsigned int                                    Config::_clientMaxBodySize = 1024 * 1024;
 bool                                            Config::_valid = false;
-const unsigned long                             Config::requestTimeout = 15; // sec
+const unsigned long                             Config::requestTimeout = 5; // sec
 
 typedef std::queue<std::string>                 strQueue;
 typedef std::map<int, std::string>              intStrMap;

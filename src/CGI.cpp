@@ -1,6 +1,11 @@
 #include "CGI.hpp"
 #include <unistd.h>
-
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <iostream>
+#include <cstring>
+#include <signal.h>
+#include <fcntl.h>
 
 CGI::CGI(Request & req) : _req(req)// Initialize all environment variable for CGI
 {
@@ -59,6 +64,12 @@ CGI::~CGI()
 	delete[] _args;
 }
 
+volatile sig_atomic_t alarm_triggered = 0;
+
+void handle_alarm(int) {
+    alarm_triggered = 1;
+}
+
 bool CGI::executeCGI(Request & req)
 {
     int pipe_in[2];
@@ -69,6 +80,10 @@ bool CGI::executeCGI(Request & req)
         close (pipe_in[1]);
         close (pipe_in[0]);
         return false;
+    }
+    if (req.getMethod() == "POST") {
+        if(write(pipe_in[1], req.getBody().c_str(), req.getBody().length()) < 0)
+            return false;
     }
     pid_t pid = fork();
     if (pid == -1) {
@@ -92,72 +107,55 @@ bool CGI::executeCGI(Request & req)
         exit(EXIT_FAILURE);
     }
     else {  // Parent process
+        signal(SIGALRM, handle_alarm);
+
         close(pipe_out[1]);
-        if (req.getMethod() == "POST") {
-            if(write(pipe_in[1], req.getBody().c_str(), req.getBody().length()) < 0)
-                return false;
-        }
         close(pipe_in[1]);
         close(pipe_in[0]);
 
         int status = 0;
 
-        sleep(1);
-        while (waitpid(pid, &status, WNOHANG) == 0) {
-            kill(pid, SIGTERM);
-            // The child process is still running, handle other tasks here if needed
-        }
+        ssize_t bytesRead;
         char buffer[4096];
 
-        /*struct timeval timeout;
-        timeout.tv_sec = 100; // Set the timeout in seconds
-        timeout.tv_usec = 0;
+        alarm(5);
 
-        fd_set readfds;
-        FD_ZERO(&readfds);
-        FD_SET(pipe_out[0], &readfds);
-
-        int ready = select(1000, &readfds, NULL, NULL, &timeout);
-        std::cout << "Done Select" << std::endl;
-
-        if (ready == 0) {
-            std::cout << " Timeout of the child process" << std::endl;
-            kill(pid, SIGTERM);
-        } else {
-            waitpid(pid, &status, WNOHANG);
-
-            // Additional check: If the child process has not exited, kill it
-            if (!WIFEXITED(status) && !WIFSIGNALED(status)) {
-                std::cout << "Child process is still running, terminating it" << std::endl;
-                kill(pid, SIGTERM);
+        // Wait for the child process to exit or data to be available in the pipe_out
+        while (waitpid(pid, &status, WNOHANG) == 0) {
+            if (alarm_triggered == 1) {
+                    std::cout << "TIMEOUT" << std::endl;
+                    kill(pid, SIGTERM);
+                    //break;
+            } else {
+                // Data available to read from the child process
+                bytesRead = read(pipe_out[0], buffer, sizeof(buffer));
+                if (bytesRead > 0) {
+                    // Process the data if needed
+                    outputCGI.append(buffer, bytesRead);
+                } else {
+                    break;
+                }
             }
-        }*/
+        }
 
+        // After the loop, the child process has either exited or its output is fully read.
+        close(pipe_out[0]);
 
-        ssize_t bytesRead;
-        while ((bytesRead = read(pipe_out[0], buffer, 4096)) > 0) // Read the output from the child process
-            outputCGI.append(buffer, bytesRead);
-        outputCGI = removeContentTypeHeader(outputCGI);
-        std::cout << "---- OUTPUTCGI ----"<< std::endl;
-        std::cout << outputCGI << std::endl;
-        std::cout << "---- END OUTPUTCGI ----"<< std::endl;
+        alarm(0);
+        alarm_triggered = 0;
+
         if (WIFEXITED(status)) {
             int exitStatus = WEXITSTATUS(status);
             if (exitStatus == 0) {
                 std::cout << "CGI execution was successful." << std::endl;
-                close(pipe_out[0]);
                 return true;
             } else {
                 std::cout << "CGI execution failed with exit status: " << exitStatus << std::endl;
-                close(pipe_out[0]);
                 return false;
             }
         } else {
             std::cout << "CGI execution failed due to an unknown reason." << std::endl;
-            close(pipe_out[0]);
             return false;
         }
-
-
     }
 }
