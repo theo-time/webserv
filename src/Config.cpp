@@ -324,7 +324,7 @@ bool Config::addSrvConf(std::string& line, int i)
     std::string     index = "";
     std::string     root = "";
     std::string     host = "";
-    bool            isGetAllowed = false;
+    bool            isGetAllowed = true;
     bool            isPostAllowed = false;
     bool            isDelAllowed = false;
     while (!tmpVars.empty())
@@ -371,6 +371,7 @@ bool Config::addSrvConf(std::string& line, int i)
 
         if(key == "methods")
         {
+            isGetAllowed = false;
             while (!valueStr.empty())
             {
                 std::string tmp = "";
