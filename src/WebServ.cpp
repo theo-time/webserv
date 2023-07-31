@@ -13,21 +13,24 @@
 #include "WebServ.hpp"
 #include "Request.hpp"
 #include "VirtualServer.hpp"
+#include <ctime>
+#include <sys/time.h>
 
-// static std::string  clean(std::string src);
+typedef std::vector<VirtualServer*>         srvVect;
+typedef std::map<int, Request*>             intCliMap;
+typedef std::map<int, int>                  intMap;
+
+static void         clean(std::string& src);
 static void         handleHeader(Request &request);
 static bool         checkEndRequestHeader(const char* src, int size, int* pos);
 static void         addChunkedBody(Request &request, std::string& requestRawString);
 static bool         getRequestRawString(const int &fd, std::string& requestRawString);
 
-typedef std::vector<VirtualServer*>         srvVect;
-typedef std::map<int, Request*>             intCliMap;
-typedef std::map<int, int>                  intMap;
 fd_set                                      WebServ::_master_set_recv;
 fd_set                                      WebServ::_master_set_write;
-int                                         WebServ::_max_fd;
 intCliMap                                   WebServ::_requests;
 intMap                                      WebServ::_listeners;
+int                                         WebServ::_max_fd;
 
 bool WebServ::runListeners(void)
 {
@@ -177,8 +180,8 @@ bool WebServ::acceptNewCnx(const int& fd)
             break;
         }
 
-        // TODO set receive SO_RCVTIMEO and send timeout  SO_SNDTIMEO
-        
+        // TODO set receive SO_RCVTIMEO and send timeout  SO_SNDTIMEO ?
+
         add(clientSocket, _master_set_recv);
         _requests[clientSocket] = new Request(clientSocket, fd);
         std::cout << "  New incoming connection - fd " << clientSocket << std::endl;
@@ -220,6 +223,9 @@ bool WebServ::readRequest(const int &fd, Request &request)
     }
     else { 
         std::cout << "  ***new request:" << std::endl << requestRawString << "***" << std::endl << std::endl;
+        clean(requestRawString);
+        if (requestRawString.empty())
+            return(true);
         request.setRequestString(requestRawString);
         request.requestBodyString = "";
         request.readingHeader = true;
@@ -329,10 +335,7 @@ bool WebServ::userExit(void)
     std::string buffer;
     std::getline(std::cin, buffer);
 
-    if (!std::cin.eof())
-        std::cout << "  Closing cnx - fd " << std::endl;
-
-    if (buffer == "EXIT")
+    if (std::cin.eof() || buffer == "EXIT")
         return(true);
 
     return(false);
@@ -341,7 +344,7 @@ bool WebServ::userExit(void)
 void WebServ::prepSelect(void)
 {
     // TODO check request timeout
-    
+
     //add responses to _master_set_write
     if (!_requests.empty())
     {            
@@ -452,6 +455,9 @@ static void addChunkedBody(Request &request, std::string& requestRawString)
     if (!request.readingBody)
         return;
 
+    if (requestRawString.empty())
+        return;
+
     char* pEnd;
     if (request.curChunkSize == -1 || static_cast<int>(request.requestBodyList.back().size()) == request.curChunkSize)
     {
@@ -472,7 +478,7 @@ static void addChunkedBody(Request &request, std::string& requestRawString)
 
     if (request.curChunkSize == 0)
     {
-        std::cout << "END OF CHUNKED BODY" << std::endl; 
+        std::cout << "END OF CHUNKED BODY: TOTAL SIZE=" << request.getChunkedBodySize() << std::endl; 
         request.readingBody = false;
         request.handleRequest();
         return;
@@ -498,30 +504,62 @@ static void addChunkedBody(Request &request, std::string& requestRawString)
     std::cout << "remaining requestRawString = " << requestRawString << std::endl;
     addChunkedBody(request, requestRawString);
 }
-/* 
 
-static std::string clean(std::string src)
+/*
+GET
+The GET method requests a representation of the specified resource. Requests using GET should only retrieve data.
+
+HEAD
+The HEAD method asks for a response identical to a GET request, but without the response body.
+
+POST
+The POST method submits an entity to the specified resource, often causing a change in state or side effects on the server.
+
+PUT
+The PUT method replaces all current representations of the target resource with the request payload.
+
+DELETE
+The DELETE method deletes the specified resource.
+
+CONNECT
+The CONNECT method establishes a tunnel to the server identified by the target resource.
+
+OPTIONS
+The OPTIONS method describes the communication options for the target resource.
+
+TRACE
+The TRACE method performs a message loop-back test along the path to the target resource.
+
+PATCH
+The PATCH method applies partial modifications to a resource.
+*/
+
+const std::string   WebServ::httpMethods[9] = {"GET", "HEAD", "POST", "PUT", "DELETE", "CONNECT", "OPTIONS", "TRACE", "PATCH"};
+static void clean(std::string& src)
 {
-    size_t found = src.find("GET");
-    if (found != std::string::npos)
-        return(src.substr(found));
+    size_t found;
+    int i = 0;
+    while (i < 9)
+    {
+        found = src.find(WebServ::httpMethods[i]);
+        if (found != std::string::npos)
+        {
+            src.erase(0, found);
+            return;
+        }
+        i++;
+    }
 
-    found = src.find("POST");
-    if (found != std::string::npos)
-        return(src.substr(found));
-
-    found = src.find("HEAD");
-    if (found != std::string::npos)
-        return(src.substr(found));
-
-    found = src.find("PUT");
-    if (found != std::string::npos)
-        return(src.substr(found));
-
-    found = src.find("DELETE");
-    if (found != std::string::npos)
-        return(src.substr(found));
-
-    return(src);
+    //trim
+    std::string::iterator it = src.begin();
+    while (it != src.end() && (*it == '\n' || *it == ' ' || (*it >= 9 && *it <= 13)))
+    {
+        src.erase(it);
+        // it++;
+    }
+    if (src.empty())
+        return;
+/* 
+    std::cout << "  ***ERROR: invalid HTTP method:" << src << "***" << std::endl << std::endl;
+    src.erase(); */
 }
- */

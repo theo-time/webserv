@@ -23,8 +23,7 @@ VirtualServer::VirtualServer(const unsigned int& port, const std::string& root, 
 
 void VirtualServer::init(void)
 {
-    _host               = "localhost";
-    _name               = "";
+    _name               = "localhost";
     _fd                 = -1;
     _index              = "index.html";
 
@@ -46,7 +45,6 @@ std::ostream& operator<<(std::ostream& o, VirtualServer& me)
 {
     std::cout << "Virtual Server configuration" << std::endl;
     std::cout << "          port                " << me.getPort() << std::endl;
-    std::cout << "          host                " << me.getHost() << std::endl;
     std::cout << "          name                " << me.getName() << std::endl;
     std::cout << "          index               " << me.getIndex() << std::endl;
     std::cout << "          root                " << me.getRoot() << std::endl;
@@ -90,7 +88,7 @@ void VirtualServer::setErrorPages(intStrMap conf)
     while (it != conf.end())
     {
         //TODO check code
-        _errorPages[it->first] = _root + it->second;
+        _errorPages[it->first] = "." + _root + it->second;
         it++;
     }
 }
@@ -156,12 +154,6 @@ void VirtualServer::setFd(int fd)
     _fd = fd;
 }
 
-void VirtualServer::setHost(std::string host)
-{
-    // TODO check valid host
-    _host = host;
-}
-
 void VirtualServer::setName(std::string name)
 {
     // TODO check valid name
@@ -209,11 +201,6 @@ unsigned int VirtualServer::getPort(void) const
 int VirtualServer::getFd(void) const
 {
     return(_fd);
-}
-
-std::string VirtualServer::getHost(void) const
-{
-    return(_host);
 }
 
 std::string VirtualServer::getIndex(void) const

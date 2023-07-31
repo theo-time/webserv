@@ -17,7 +17,7 @@ typedef std::map<int, std::string>      intStrMap;
 
 Location::Location(const std::string& name, const std::string& root, const std::string& index, 
             const bool allowGet, const bool allowPost, const bool allowDel, 
-            const unsigned int clientMaxBodySize, const intStrMap errorPages) :
+            const unsigned int clientMaxBodySize, intStrMap& errorPages) :
 _name(name), _type("std"), _root(root), _index(index), 
 _autoIndex(false), _allowGet(allowGet), _allowPost(allowPost), _allowDel(allowDel), 
 _clientMaxBodySize(clientMaxBodySize), _errorPages(errorPages)
@@ -25,7 +25,7 @@ _clientMaxBodySize(clientMaxBodySize), _errorPages(errorPages)
 
 Location::Location(const std::string& name, const std::string& root, const std::string& index, 
             const bool allowGet, const bool allowPost, const bool allowDel, 
-            const unsigned int clientMaxBodySize, const intStrMap errorPages, const std::string& conf)  :
+            const unsigned int clientMaxBodySize, intStrMap& errorPages, const std::string& conf)  :
 _name(name), _type("std"), _root(root), _index(index), 
 _autoIndex(false), _allowGet(allowGet), _allowPost(allowPost), _allowDel(allowDel), 
 _clientMaxBodySize(clientMaxBodySize), _errorPages(errorPages)
@@ -73,7 +73,7 @@ _clientMaxBodySize(clientMaxBodySize), _errorPages(errorPages)
                 tmpVars.pop();
                 continue;
             }
-            
+/*             
             sep = key.find("cgi_error_page:");
             if(sep != std::string::npos)
             {
@@ -85,7 +85,7 @@ _clientMaxBodySize(clientMaxBodySize), _errorPages(errorPages)
                 // std::cout << "key: " << code << " value:" << valueStr << std::endl;
                 tmpVars.pop();
                 continue;
-            }
+            } */
 
             if(key == "methods")
             {
@@ -209,14 +209,14 @@ _clientMaxBodySize(clientMaxBodySize), _errorPages(errorPages)
         tmpVars.pop();
     }  
 }
-
+/* 
 Location::Location(void){}
 
 Location::Location(const Location& src)
 {
     *this = src;
 }
-
+ */
 Location::~Location(void){}
 
 Location& Location::operator=(const Location& rhs)
@@ -283,6 +283,14 @@ bool Location::isPostAllowed(void) const
 bool Location::isDelAllowed(void) const
 {
     return(_allowDel);
+}
+
+bool Location::isAllowed(std::string& method) const
+{
+    if ((method == "GET" && _allowGet) || (method == "POST" && _allowPost) || (method == "DELETE" && _allowDel))
+        return(true);
+    
+    return(false);
 }
 
 bool Location::isAutoIndex(void) const

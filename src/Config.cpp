@@ -17,6 +17,7 @@ const unsigned int                              Config::_clientMaxBodySize_min =
 const unsigned int                              Config::_clientMaxBodySize_max = 5 * 1024 * 1024;
 unsigned int                                    Config::_clientMaxBodySize = 1024 * 1024;
 bool                                            Config::_valid = false;
+const unsigned long                             Config::_requestTimeout = 10; // sec
 
 typedef std::queue<std::string>                 strQueue;
 typedef std::map<int, std::string>              intStrMap;
@@ -70,7 +71,7 @@ void Config::init(const std::string& filename)
     srvMap::iterator it = _serverNames.begin();
     while (it != _serverNames.end())
     {
-        std::cout << "      " << it-> first << " => " << it->second->getRoot() << std::endl;
+        std::cout << "      " << it-> first << " => Port:" << it->second->getPort() << ", Root:" << it->second->getRoot() << std::endl;
         it++;
     }
     std::cout << std::endl;
@@ -347,13 +348,6 @@ bool Config::addSrvConf(std::string& line, int i)
             continue;
         }
 
-        if(key == "host")
-        {
-            host = valueStr;
-            tmpVars.pop();
-            continue;
-        }
-
         if(key == "server_name")
         {
             serverName = valueStr;
@@ -467,15 +461,25 @@ bool Config::addSrvConf(std::string& line, int i)
     VirtualServer* tmp = new VirtualServer(port, root, isGetAllowed, isPostAllowed, isDelAllowed, maxBodySize);
     if (!tmpLocations.empty())
         tmp->setLocationsConf(tmpLocations);
-    if (!host.empty())
-        tmp->setHost(host);
     if (!tmpErrorPages.empty())
         tmp->setErrorPages(tmpErrorPages);
     if (!serverName.empty())
-    {
+    { 
         tmp->setName(serverName);
+
+        // split hostnames list if needed (sep = ",") and map to current virtual server
         std::string alias = serverName;
-        _serverNames[alias] = tmp;
+        while (true)
+        {
+            sep = alias.find(",");
+            if (sep == std::string::npos)
+            {
+                _serverNames[alias] = tmp;
+                break;
+            }
+            _serverNames[alias.substr(0, sep)] = tmp;
+            alias.erase(0, sep + 1);
+        }
     }
     _virtualServers.push_back(tmp);
     return(true);
@@ -510,4 +514,9 @@ bool& Config::isValid(void)
 srvVect& Config::getVirtualServers(void)
 {
     return(_virtualServers);
+}
+
+srvMap& Config::getHostsMap(void)
+{
+    return(_serverNames);
 }

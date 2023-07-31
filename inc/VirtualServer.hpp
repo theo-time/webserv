@@ -44,7 +44,6 @@ class VirtualServer
 
         unsigned int        getPort(void) const;
         int                 getFd(void) const;
-        std::string         getHost(void) const;
         std::string         getName(void) const;
         std::string         getIndex(void) const;
         std::string         getRoot(void) const;
@@ -61,7 +60,6 @@ class VirtualServer
         void                setFd(int fd);
         void                setLocationsConf(strQueue conf);
         void                setErrorPages(intStrMap conf);
-        void                setHost(std::string host);
         void                setName(std::string name);
         void                setIndex(std::string index);
         void                setClientMaxBodySize(unsigned int value);
@@ -75,7 +73,6 @@ class VirtualServer
 
         unsigned int        _port;
         std::string         _listen;
-        std::string         _host;
         std::string         _name;
         std::string         _index;
         std::string         _root;

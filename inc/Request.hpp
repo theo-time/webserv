@@ -67,7 +67,9 @@ class Request {
         std::string             requestHeaderString;
         std::list<std::string>  requestBodyList;
         int                     curChunkSize; 
-        int                     contentLength; 
+        int                     contentLength;
+	    unsigned long	        curRequestTime;
+	    unsigned long	        lastActivityTime;
 
         bool                    ready2send;
 
@@ -114,6 +116,7 @@ class Request {
         bool fileExists();
         void listDirectoryResponse();
         void clear();
+        int  getChunkedBodySize();
 };
 
 #endif

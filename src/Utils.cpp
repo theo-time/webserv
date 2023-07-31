@@ -1,6 +1,7 @@
 
 #include "Utils.hpp"
 #include <sys/stat.h>
+#include <sys/time.h>
 
 bool fileExists(std::string path) {
     struct stat fileInfo;
@@ -153,4 +154,11 @@ std::string removeContentTypeHeader(const std::string& CGIResponse) {
     }
 
     return result;
+}
+
+unsigned long ft_now()
+{
+	struct timeval	now;
+	gettimeofday(&now, 0);
+	return (now.tv_sec + now.tv_usec * 1e-6);
 }

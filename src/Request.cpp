@@ -4,6 +4,7 @@
 #include <fstream>
 #include <algorithm>
 
+typedef std::map<std::string, VirtualServer*>   srvMap;
 
 Request::Request(int clientSocket, int serverSocket) : clientSocket(clientSocket), serverSocket(serverSocket) {
     std::cout << "Request created" << std::endl;
@@ -14,6 +15,8 @@ Request::Request(int clientSocket, int serverSocket) : clientSocket(clientSocket
     curChunkSize = -1;
     contentLength = -1;
     ready2send = false;
+    lastActivityTime = ft_now();
+    curRequestTime = -1;
 }
 
 
@@ -23,6 +26,10 @@ Request::~Request() {
 
 
 bool Request::parseRequest(){
+
+    lastActivityTime = ft_now();
+    curRequestTime = ft_now();
+
     std::string firstLine = requestString.substr(0, requestString.find("\r\n"));
     std::vector<std::string> tokens = splitWithSep(firstLine, ' ');
     if (tokens.size() != 3) {
@@ -34,7 +41,13 @@ bool Request::parseRequest(){
 	parseMethodToken(tokens[0]);
     if (!parseURI(tokens[1]) || !parseHTTPVersion(tokens[2]) || !parseHeaders())
         return false;
+
     getRequestConfig();
+    if (_config == NULL)
+    {    
+        _response.sendError(404, ": virtual server configuration not found");
+        return false;
+    }
 
     if ((method == "GET" && !_config->isGetAllowed()) || (method == "POST" && !_config->isPostAllowed()))
     {    
@@ -184,52 +197,34 @@ void     Request::getRequestConfig()
     std::cout << "------- Config Routing ----------" << std::endl;
 
     std::cout << "request socket fd :" << getServerSocket() << std::endl;
-    
-    std::vector <VirtualServer*>    matching_servers;
-   /* Search matching socket */
-    std::vector <VirtualServer*>::iterator    it = Config::getVirtualServers().begin();
-    std::vector <VirtualServer*>::iterator    end = Config::getVirtualServers().end();
-    while (it != end)
+
+    VirtualServer *server = NULL;
+
+    // check if hostname is an alias
+    if (Config::getHostsMap().count(getHeader("Host")))
+        server = Config::getHostsMap()[getHeader("Host")];
+    else // Search matching socket
     {
-        std::cout << "server socket fd :" << (*it)->getFd() << std::endl;
-        if ((*it)->getFd() == getServerSocket())
-            matching_servers.push_back(*it);
-        it++;
+        std::vector <VirtualServer*>::iterator    it = Config::getVirtualServers().begin();
+        while (it != Config::getVirtualServers().end())
+        {
+            if ((*it)->getFd() == getServerSocket())
+            {
+                server = *it; // first by default
+                break;
+            }
+            it++;
+        }
     }
-    std::cout << "Matching servers by socket : " << matching_servers.size() << std::endl;
-    if(matching_servers.size() == 0)
+    if (server == NULL)
     {
         std::cout << "No matching server found" << std::endl;
         std::cout << "|-------- End of Config Routing ---------|" << std::endl;
         setConfig(NULL);
         return;
     }
-
-    /* Search matching server_name */
-    std::cout << "Matching hostname..." << std::endl;
-    VirtualServer *server;
-    it = matching_servers.begin();
-    end = matching_servers.end();
-    server = *it; // First by default
-    std::cout << "... First server by default ..." << std::endl;
-    std::cout << "(*it)->getName()=" << (*it)->getName() << std::endl;
-    std::cout << "getHeader(""Host"")=" << getHeader("Host") << std::endl;
-    if (matching_servers.size() > 1)
-    {
-        while (it != end)
-        {
-            if ((*it)->getName() == getHeader("Host"))
-            {
-                server = *it;
-                return;
-            }
-            it++;
-        }
-    }
-    std::cout << "Matching servers by name : " << matching_servers.size() << std::endl;
     
     /* Search matching location */
-    std::cout << "locations size " << server->getLocations().size() << std::endl;
     setConfig(server->getLocations()[0]); // first by default
 
     if (server->getLocations().size() > 1)
@@ -248,7 +243,7 @@ void     Request::getRequestConfig()
             if ((*locIt)->getType() == "cgi")
             {
                 // std::cout <<  (**locIt) << std::endl;
-                if ((*locIt)->getExtension() == extension)
+                if ((*locIt)->getExtension() == extension && (*locIt)->isAllowed(method))
                 {
                     setConfig(*locIt);
                     isCGI = true;
@@ -265,10 +260,7 @@ void     Request::getRequestConfig()
             locIt = locations.begin();
             while(locIt != locEnd)
             {
-                // std::cout <<  (**locIt) << std::endl;
                 location_path = (**locIt).getName();
-                // std::cout << "location path " << location_path << std::endl;
-                // std::cout << "request path " << path << std::endl;
                 if (path.find(location_path) == 0)
                 {
                     setConfig(*locIt);
@@ -322,6 +314,8 @@ void Request::listDirectoryResponse()
 
 void Request::handleRequest() 
 {
+    lastActivityTime = ft_now();
+
     // Conf file variables
     std::string root = _config->getRoot(); 
     std::string index = _config->getIndex();
@@ -683,4 +677,17 @@ void Request::clear(void)
     curChunkSize = -1;
     contentLength = -1;
     ready2send = false;
+    lastActivityTime = ft_now();
+    curRequestTime = -1;
+}
+
+int Request::getChunkedBodySize() {
+    int totalBodySize = 0;
+    std::list<std::string>::iterator it = requestBodyList.begin();
+    while (it != requestBodyList.end())
+    {
+        totalBodySize = totalBodySize + static_cast<int>((*it).size());
+        it++;
+    }
+    return totalBodySize;
 }
