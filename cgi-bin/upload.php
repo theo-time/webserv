@@ -7,7 +7,7 @@
     <h2>File Upload</h2>
     <?php
     if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_FILES["uploaded_file"])) {
-    $target_dir = "/tmp/";
+    $target_dir = "/mnt/nfs/homes/jde-la-f/E42/webserv/data/upload_dir/";
     $target_file = $target_dir . basename($_FILES["uploaded_file"]["name"]);
     $upload_ok = true;
     $file_type = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
