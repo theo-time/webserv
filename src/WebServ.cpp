@@ -343,9 +343,23 @@ bool WebServ::userExit(void)
 
 void WebServ::prepSelect(void)
 {
-    // TODO check request timeout
+    // check request timeout
+    if (!_requests.empty())
+    {            
+        for (int i = 0; i <= _max_fd; ++i)
+        {
+            if (_requests.count(i))
+            {
+                std::cout << "CHECK REQUEST TIMEOUT: curRequestTime=" << _requests[i]->curRequestTime;
+                std::cout << ", requestTimeout=" << Config::requestTimeout * 1e-6;
+                std::cout << ", ft_now=" << ft_now() << std::endl;
+                if (_requests[i]->curRequestTime + Config::requestTimeout * 1e-6 > ft_now())
+                    std::cout << "**** TIME IS  OUT !!!" << std::endl;
+            }
+        }
+    }
 
-    //add responses to _master_set_write
+    // add responses to _master_set_write
     if (!_requests.empty())
     {            
         for (int i = 0; i <= _max_fd; ++i)
