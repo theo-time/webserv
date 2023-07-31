@@ -6,7 +6,7 @@
 /*   By: jde-la-f <jde-la-f@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/13 14:37:03 by adcarnec          #+#    #+#             */
-/*   Updated: 2023/07/31 15:08:40 by jde-la-f         ###   ########.fr       */
+/*   Updated: 2023/07/31 17:09:39 by jde-la-f         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -124,7 +124,7 @@ bool WebServ::process(void)
     struct timeval  timeout;
 
     // initialize the timeval struct
-    timeout.tv_sec  = 1;
+    timeout.tv_sec  = 10;
     timeout.tv_usec = 0;
     
 
@@ -136,7 +136,7 @@ bool WebServ::process(void)
         working_set_write = _master_set_write;
 
         // check i/o activity
-        ret = select(_max_fd + 1, &working_set_recv, &working_set_write, NULL, &timeout); // TODO check socket errors
+        ret = select(_max_fd + 1, &working_set_recv, &working_set_write, NULL, 0); // TODO check socket errors
 
         if (ret == - 1) {
             std::cerr << "  select() failed" << std::endl;

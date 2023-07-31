@@ -61,13 +61,15 @@ CGI::~CGI()
 
 bool CGI::executeCGI(Request & req)
 {
+    int pipe_in[2];
+    int pipe_out[2];
+
     if (pipe(pipe_in) < 0 || pipe(pipe_out) < 0){
         perror("pipe failed");
         close (pipe_in[1]);
         close (pipe_in[0]);
         return false;
     }
-
     pid_t pid = fork();
     if (pid == -1) {
         perror("fork failed");
@@ -99,9 +101,39 @@ bool CGI::executeCGI(Request & req)
         close(pipe_in[0]);
 
         int status = 0;
-        waitpid(pid, &status, 0);
 
+        sleep(1);
+        while (waitpid(pid, &status, WNOHANG) == 0) {
+            kill(pid, SIGTERM);
+            // The child process is still running, handle other tasks here if needed
+        }
         char buffer[4096];
+
+        /*struct timeval timeout;
+        timeout.tv_sec = 100; // Set the timeout in seconds
+        timeout.tv_usec = 0;
+
+        fd_set readfds;
+        FD_ZERO(&readfds);
+        FD_SET(pipe_out[0], &readfds);
+
+        int ready = select(1000, &readfds, NULL, NULL, &timeout);
+        std::cout << "Done Select" << std::endl;
+
+        if (ready == 0) {
+            std::cout << " Timeout of the child process" << std::endl;
+            kill(pid, SIGTERM);
+        } else {
+            waitpid(pid, &status, WNOHANG);
+
+            // Additional check: If the child process has not exited, kill it
+            if (!WIFEXITED(status) && !WIFSIGNALED(status)) {
+                std::cout << "Child process is still running, terminating it" << std::endl;
+                kill(pid, SIGTERM);
+            }
+        }*/
+
+
         ssize_t bytesRead;
         while ((bytesRead = read(pipe_out[0], buffer, 4096)) > 0) // Read the output from the child process
             outputCGI.append(buffer, bytesRead);
