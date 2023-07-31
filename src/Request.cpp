@@ -28,7 +28,6 @@ Request::~Request() {
 bool Request::parseRequest(){
 
     lastActivityTime = ft_now();
-    curRequestTime = ft_now();
 
     std::string firstLine = requestString.substr(0, requestString.find("\r\n"));
     std::vector<std::string> tokens = splitWithSep(firstLine, ' ');
