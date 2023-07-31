@@ -43,6 +43,7 @@ class WebServ
         static bool                                 runListeners(void);
         static void                                 stop(void);
 	    static const std::string                    httpMethods[9];
+        static void                                 add(const int& fd);
 
     private:
 

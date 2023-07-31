@@ -271,6 +271,14 @@ void WebServ::add(const int& fd, fd_set& set)
         _max_fd = fd;
 }
 
+void WebServ::add(const int& fd)
+{
+    FD_SET(fd, &_master_set_recv);
+
+    if (fd > _max_fd)
+        _max_fd = fd;
+}
+
 void WebServ::del(const int& fd, fd_set& set)
 {
     FD_CLR(fd, &set);
