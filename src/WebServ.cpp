@@ -121,24 +121,30 @@ bool WebServ::process(void)
     int             ret;
     fd_set          working_set_recv;
     fd_set          working_set_write;
+    struct timeval  timeout;
 
+    // initialize the timeval struct
+    timeout.tv_sec  = Config::requestTimeout;
+    timeout.tv_usec = 0;
     while (true) {
+        // update fd_set
         prepSelect();
         working_set_recv = _master_set_recv;
         working_set_write = _master_set_write;
 
-        // TODO check socket errors
-        ret = select(_max_fd + 1, &working_set_recv, &working_set_write, NULL, 0);
+        // check i/o activity
+        ret = select(_max_fd + 1, &working_set_recv, &working_set_write, NULL, &timeout); // TODO check socket errors
+        std::cout << "SELECT RET = " << ret << std::endl;
 
         if (ret == - 1) {
             std::cerr << "  select() failed" << std::endl;
-            stop();
-            return(false);
+            stop(); // TODO a checker
+            return(true);
         }
         if (ret == 0) {
-            std::cerr << "  select() timed out.  End program.\n" << std::endl;
-            stop();
-            return(false);
+            std::cout << "  select() timed out\n" << std::endl;
+            if (_max_fd > 0) // existing client sockets
+                handleTimeout();
         }
         for (int i = 0; i <= _max_fd; ++i) {
             if (FD_ISSET(i, &working_set_recv) && i == 0) {
@@ -343,22 +349,6 @@ bool WebServ::userExit(void)
 
 void WebServ::prepSelect(void)
 {
-    // check request timeout
-    if (!_requests.empty())
-    {            
-        for (int i = 0; i <= _max_fd; ++i)
-        {
-            if (_requests.count(i))
-            {
-                std::cout << "CHECK REQUEST TIMEOUT: curRequestTime=" << _requests[i]->curRequestTime;
-                std::cout << ", requestTimeout=" << Config::requestTimeout * 1e-6;
-                std::cout << ", ft_now=" << ft_now() << std::endl;
-                if (_requests[i]->curRequestTime + Config::requestTimeout * 1e-6 > ft_now())
-                    std::cout << "**** TIME IS  OUT !!!" << std::endl;
-            }
-        }
-    }
-
     // add responses to _master_set_write
     if (!_requests.empty())
     {            
@@ -373,7 +363,7 @@ void WebServ::prepSelect(void)
     }
 
     // TODO cout à supprimer
-    std::cout << "Preparing select() " << std::endl;
+    std::cout << "Preparing select() _max_fd = " << _max_fd << std::endl;
     for (int i = 0; i <= _max_fd; ++i)
     {
         if (FD_ISSET(i, &_master_set_recv))
@@ -382,6 +372,19 @@ void WebServ::prepSelect(void)
             std::cout << "  fd - " << i << " : working_set_write" << std::endl;
         else
             std::cout << "  fd - " << i << " : not working set" << std::endl;
+    }
+}
+
+void WebServ::handleTimeout(void)
+{
+    std::cout << "handleTimeout()  :))))))))))))))))" << std::endl;
+
+    for (int i = 3; i <= _max_fd; ++i)
+    {
+        if (FD_ISSET(i, &_master_set_recv)) 
+            del(i, _master_set_recv);
+        if (FD_ISSET(i, &_master_set_write))
+            del(i, _master_set_write);
     }
 }
 

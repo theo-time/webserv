@@ -64,6 +64,7 @@ class WebServ
         static void                                 del(const int& fd, fd_set& set);
         static void                                 closeCnx(const int& fd);
         static bool                                 userExit(void);
+        static void                                 handleTimeout(void);
 };
 
 #endif
