@@ -16,7 +16,7 @@
 
 int main(int ac, char** av)
 {
-    //signal(SIGINT, SIG_IGN);
+    signal(SIGINT, SIG_IGN);
     
     if (ac == 1)
         Config::init("./conf/default.conf"); // Loading default configuration file

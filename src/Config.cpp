@@ -51,7 +51,7 @@ void Config::init(const std::string& filename)
         _tmpVarConf.pop();
     }
 
-    std::cout << "  Found " << _tmpSrvConf.size() << " virtual server configuration(s)" << std::endl;
+    std::cout << std::endl << "  Found " << _tmpSrvConf.size() << " virtual server configuration(s)" << std::endl;
     int i = 0; // used to display conf number
     while (!_tmpSrvConf.empty())
     {
@@ -60,6 +60,7 @@ void Config::init(const std::string& filename)
         _tmpSrvConf.pop();
     }
         
+    std::cout << "  Created " << _virtualServers.size() << " virtual server(s)" << std::endl;
     srvVect::iterator itv = _virtualServers.begin();
     while (itv != _virtualServers.end())
     {
@@ -459,6 +460,21 @@ bool Config::addSrvConf(std::string& line, int i)
     if (maxBodySizeStr.empty())
         maxBodySize = Config::getClientMaxBodySize();
 
+    // check if host:port already exists
+    srvVect::iterator it = _virtualServers.begin();
+    while (it != _virtualServers.end())
+    {
+        if ((*it)->getPort() == port)
+        {
+            if (serverName.empty() && (*it)->getName() == "localhost")
+            {
+                std::cout << "      Warning: host:port combination already used: " << **it << std::endl;
+                return(true);
+            }
+        }
+        it++;
+    }
+
     VirtualServer* tmp = new VirtualServer(port, root, isGetAllowed, isPostAllowed, isDelAllowed, maxBodySize);
     if (!tmpLocations.empty())
         tmp->setLocationsConf(tmpLocations);
@@ -483,6 +499,7 @@ bool Config::addSrvConf(std::string& line, int i)
         }
     }
     _virtualServers.push_back(tmp);
+    std::cout << "      OK" << std::endl;
     return(true);
 }
     
