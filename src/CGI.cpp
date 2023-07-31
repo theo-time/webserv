@@ -4,17 +4,17 @@
 
 CGI::CGI(Request & req) : _req(req)// Initialize all environment variable for CGI
 {
-    std::string cur_wd = get_current_dir_name();
-    std::cout << "CURRENT DIRECTORY : " << get_current_dir_name() << std::endl;
+    char* cur_wd = get_current_dir_name();
+    std::string current_dir = cur_wd;
 	if ((_envvar = new char*[10]) == NULL)
 		throw std::runtime_error("Error on a cgi malloc\n");
 	int i = 0;
     _envvar[i++] = strdup("SERVER_PROTOCOL=HTTP/1.1");
     _envvar[i++] = strdup(("PATH_INFO="+ req.getPath()).c_str());
-    _envvar[i++] = strdup(("SCRIPT_FILENAME=" + cur_wd + req.getPath().substr(1)).c_str());
+    _envvar[i++] = strdup(("SCRIPT_FILENAME=" + current_dir + req.getPath().substr(1)).c_str());
     _envvar[i++] = strdup(("SCRIPT_NAME=" + req.getPath()).c_str());
     _envvar[i++] = strdup(("REDIRECT_STATUS=200"));
-    _envvar[i++] = strdup(("DOCUMENT_ROOT=" + cur_wd).c_str());
+    _envvar[i++] = strdup(("DOCUMENT_ROOT=" + current_dir).c_str());
     
 
     //if (getContentInfo(req, "Content-Type: ") == "")
@@ -40,6 +40,8 @@ CGI::CGI(Request & req) : _req(req)// Initialize all environment variable for CG
 	_args[1] = strdup(req.script_path.c_str());
     //_args[1] = NULL;
 	_args[2] = NULL;
+
+    free(cur_wd);
 }
 
 CGI::~CGI()
