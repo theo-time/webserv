@@ -16,7 +16,7 @@ Request::Request(int clientSocket, int serverSocket) : clientSocket(clientSocket
     contentLength = -1;
     ready2send = false;
     lastActivityTime = ft_now();
-    curRequestTime = -1;
+    curRequestTime = 0;
 }
 
 
@@ -650,7 +650,8 @@ void Request::clear(void)
     contentLength = -1;
     ready2send = false;
     lastActivityTime = ft_now();
-    curRequestTime = -1;
+    curRequestTime = 0;
+    std::cout << "CLIENT SOCKET CLEARED: fd - " << getClientSocket() << ", curRequestTime=" << curRequestTime << std::endl;
 }
 
 int Request::getChunkedBodySize() {

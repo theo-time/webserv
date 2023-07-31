@@ -6,7 +6,7 @@
 /*   By: jde-la-f <jde-la-f@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/13 14:37:03 by adcarnec          #+#    #+#             */
-/*   Updated: 2023/07/31 17:09:39 by jde-la-f         ###   ########.fr       */
+/*   Updated: 2023/07/31 17:40:23 by jde-la-f         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -124,7 +124,7 @@ bool WebServ::process(void)
     struct timeval  timeout;
 
     // initialize the timeval struct
-    timeout.tv_sec  = 10;
+    timeout.tv_sec  = 30;
     timeout.tv_usec = 0;
     
 
@@ -145,7 +145,7 @@ bool WebServ::process(void)
         }
         if (ret == 0 && !_requests.empty()) {
             std::cout << "  select() timed out\n" << std::endl;
-            //handleTimeout();
+            handleTimeout();
         }
         for (int i = 0; i <= _max_fd; ++i) {
             if (FD_ISSET(i, &working_set_recv) && i == 0) {
@@ -399,12 +399,18 @@ void WebServ::prepSelect(void)
 
 void WebServ::handleTimeout(void)
 {
-    std::cout << "handleTimeout()  :))))))))))))))))" << std::endl;
-
-    for (int i = 3; i <= _max_fd; ++i)
+    if (!_requests.empty())
     {
-        if (!isServerSocket(i)) 
-            closeCnx(i);
+        intCliMap::iterator it  = _requests.begin();
+        while(it != _requests.end())
+        {
+            if (it->second->curRequestTime > 0)
+            {
+                std::cout << "TIMEOUT FOR REQUEST TBC fd - " << it->first << std::endl;
+                //closeCnx(i);
+            }
+            it++;
+        }
     }
 }
 
