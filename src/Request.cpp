@@ -358,16 +358,21 @@ void Request::handleRequest()
 
     // If path is a directory without index file and autoIndex is on
     std::string myPath = path;
-    if (opendir(myPath.c_str()))
+    DIR *dir = opendir(myPath.c_str());
+    if (dir)
     {
         if(myPath.find("//") != std::string::npos)
             myPath.replace(myPath.find("//"), 2, "/");
         if(!::fileExists(myPath))
         {
-            if(!_config->isAutoIndex())
+            if(!_config->isAutoIndex()) {
+                closedir(dir);
                 return(_response.sendError(403, "Forbidden"));
+            }
+            closedir(dir);
             return(listDirectoryResponse());
         }
+        closedir(dir);
     }
     // If path is a directory, and index file exists, add default index name to path
     /*if (opendir(path.c_str()))
