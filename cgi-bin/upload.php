@@ -17,7 +17,7 @@
         echo "Error: No file selected.";
         $upload_ok = false;
     }
-
+    echo $_FILES["uploaded_file"]["size"];
     // Check if the file already exists
     if (file_exists($target_file)) {
         echo "Error: File already exists.";
@@ -27,7 +27,7 @@
     // Allow certain file formats (you can customize this list)
     $allowed_formats = array("cpp", "txt", "jpg", "png", "html", "css");
     if (!in_array($file_type, $allowed_formats)) {
-        echo "Error: Only CPP, JPEG, PNG, HTML, CSS and TXT files are allowed.";
+        echo "Error: Only CPP, JPG, PNG, HTML, CSS and TXT files are allowed.";
         $upload_ok = false;
     }
 
