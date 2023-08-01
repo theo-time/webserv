@@ -17,6 +17,7 @@
 #include "Request.hpp"
 #include "Response.hpp"
 #include "Utils.hpp"
+#include "WebServ.hpp"
 
 class CGI {
     private:

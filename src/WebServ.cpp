@@ -6,7 +6,7 @@
 /*   By: jde-la-f <jde-la-f@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/13 14:37:03 by adcarnec          #+#    #+#             */
-/*   Updated: 2023/07/31 19:19:54 by jde-la-f         ###   ########.fr       */
+/*   Updated: 2023/08/01 10:10:02 by jde-la-f         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -137,7 +137,7 @@ bool WebServ::process(void)
         ret = select(_max_fd + 1, &working_set_recv, &working_set_write, NULL, &timeout); // TODO check socket errors
 
         if (ret == - 1) {
-            std::cerr << "  select() failed" << std::endl;
+            std::cerr << " select() failed" << std::endl;
             stop(); // TODO a checker
             return(true);
         }

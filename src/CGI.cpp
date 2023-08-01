@@ -82,9 +82,10 @@ bool CGI::executeCGI(Request & req)
         return false;
     }
     if (req.getMethod() == "POST") {
-
+        WebServ::addFd2Select(pipe_in[1]);
         if(write(pipe_in[1], req.getBody().c_str(), req.getBody().length()) < 0)
             return false;
+        WebServ::delFd2Select(pipe_in[1]);
     }
     pid_t pid = fork();
     if (pid == -1) {
@@ -122,6 +123,7 @@ bool CGI::executeCGI(Request & req)
         alarm(5);
 
         int err = 0;
+        WebServ::addFd2Select(pipe_out[0]);
         // Wait for the child process to exit or data to be available in the pipe_out
         while (waitpid(pid, &status, WNOHANG) == 0) {
                 //std::cout << "loop : " << i << std::endl;
@@ -145,6 +147,7 @@ bool CGI::executeCGI(Request & req)
                     kill(pid, SIGTERM);
                 }
         }
+        WebServ::delFd2Select(pipe_out[0]);
 
         // After the loop, the child process has either exited or its output is fully read.
         close(pipe_out[0]);
