@@ -122,29 +122,27 @@ bool CGI::executeCGI(Request & req)
 
         alarm(5);
 
-        int err = 0;
+        //int err = 0;
         WebServ::addFd2Select(pipe_out[0]);
         // Wait for the child process to exit or data to be available in the pipe_out
         while (waitpid(pid, &status, WNOHANG) == 0) {
                 //std::cout << "loop : " << i << std::endl;
                 // Data available to read from the child process
-                if (status != 0)
-                    err = status;
+                /*if (status != 0)
+                    err = status;*/
+                if (alarm_triggered == 1) {
+                    kill(pid, SIGTERM);
+                }
                 bytesRead = read(pipe_out[0], buffer, sizeof(buffer));
                 if (bytesRead > 0) {
                     outputCGI.append(buffer, bytesRead);
                 }
                 else if (bytesRead == 0) {
-                    std::cout << "" << std::endl;
                     break;
                 }
                 else {
                     std::cout << "Child process error in read" << std::endl;
                     return false;
-                }
-                if (alarm_triggered == 1) {
-                    //std::cout << "TIMEOUT" << std::endl;
-                    kill(pid, SIGTERM);
                 }
         }
         WebServ::delFd2Select(pipe_out[0]);
@@ -158,7 +156,7 @@ bool CGI::executeCGI(Request & req)
         outputCGI = removeContentTypeHeader(outputCGI);
 
         if (WIFEXITED(status)) {
-            int exitStatus = std::max(WEXITSTATUS(status), err);
+            int exitStatus = WEXITSTATUS(status);
             if (exitStatus == 0) {
                 std::cout << "CGI execution was successful." << std::endl;
                 return true;

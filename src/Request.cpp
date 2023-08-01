@@ -292,7 +292,8 @@ void Request::listDirectoryResponse()
     ss << "<ul>" << std::endl;
     while (!fileList.empty())
     {
-        ss << "<li><a href=\"" << path << fileList.back() << "\">" << fileList.back() << "</a></li>" << std::endl;
+        if (fileList.back() != ".." && fileList.back() != ".")
+            ss << "<li><a href=\"" << path << fileList.back() << "\">" << fileList.back() << "</a></li>" << std::endl;
         fileList.pop_back();
     }
     ss << "</ul>" << std::endl;

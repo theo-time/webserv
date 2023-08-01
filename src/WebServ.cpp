@@ -6,7 +6,7 @@
 /*   By: jde-la-f <jde-la-f@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/13 14:37:03 by adcarnec          #+#    #+#             */
-/*   Updated: 2023/08/01 10:13:46 by jde-la-f         ###   ########.fr       */
+/*   Updated: 2023/08/01 11:59:57 by jde-la-f         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -212,7 +212,7 @@ bool WebServ::readRequest(const int &fd, Request &request)
         }
         else {
             request.requestBodyString = request.requestBodyString + requestRawString;
-            if (static_cast<int>(request.requestBodyString.size()) >= request.contentLength || request.requestBodyString.find("Content-Type: image") != std::string::npos)
+            if (static_cast<int>(request.requestBodyString.size()) >= request.contentLength)
             {
                 request.readingBody = false;
                 if (static_cast<int>(request.requestBodyString.size()) > request.contentLength) 
@@ -476,8 +476,6 @@ static void handleHeader(Request &request)
             std::cout << "Expected Content-Length   = " << request.contentLength << std::endl;
             if (static_cast<int>(request.requestBodyString.size()) < request.contentLength)
                 request.readingBody = true;
-            if (request.requestBodyString.find("Content-Type: image") != std::string::npos)
-                request.readingBody = false;
         }
         else if (request.getHeader("Transfer-Encoding") == "chunked" )
         {
@@ -519,12 +517,6 @@ static void addChunkedBody(Request &request, std::string& requestRawString)
     {
         request.curChunkSize = strtoul(requestRawString.c_str(), &pEnd, 16);
         std::cout << "CHUNK SIZE = " << request.curChunkSize << std::endl; 
-        if (pEnd == requestRawString.c_str())
-        {
-            std::cout << "############## ERREUR LECTURE CHUNK SIZE ##############" << std::endl;
-            std::cout << requestRawString << std::endl;
-            std::cout << "#######################################################" << std::endl;
-        }
         if (request.curChunkSize != 0)
         {
             requestRawString = pEnd + 2;
@@ -590,7 +582,7 @@ PATCH
 The PATCH method applies partial modifications to a resource.
 */
 
-const std::string   WebServ::httpMethods[9] = {"GET", "HEAD", "POST", "PUT", "DELETE", "CONNECT", "OPTIONS", "TRACE", "PATCH"};
+const std::string   WebServ::httpMethods[9] = {"GET ", "HEAD ", "POST ", "PUT ", "DELETE ", "CONNECT ", "OPTIONS ", "TRACE ", "PATCH "};
 static void clean(std::string& src)
 {
     size_t found;

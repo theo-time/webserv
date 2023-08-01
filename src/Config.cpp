@@ -6,7 +6,7 @@
 /*   By: jde-la-f <jde-la-f@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/13 14:37:03 by adcarnec          #+#    #+#             */
-/*   Updated: 2023/07/31 18:41:07 by jde-la-f         ###   ########.fr       */
+/*   Updated: 2023/08/01 11:33:59 by jde-la-f         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,8 +14,8 @@
 #include "VirtualServer.hpp"
 
 const unsigned int                              Config::_clientMaxBodySize_min = 0;
-const unsigned int                              Config::_clientMaxBodySize_max = 5 * 1024 * 1024;
-unsigned int                                    Config::_clientMaxBodySize = 1024 * 1024;
+const unsigned int                              Config::_clientMaxBodySize_max = 5 * 1024 * 10 ;
+unsigned int                                    Config::_clientMaxBodySize = 1024 * 10;
 bool                                            Config::_valid = false;
 const unsigned long                             Config::requestTimeout = 5; // sec
 
