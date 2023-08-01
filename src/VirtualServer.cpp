@@ -87,7 +87,6 @@ void VirtualServer::setErrorPages(intStrMap conf)
     intStrMap::iterator it = conf.begin();
     while (it != conf.end())
     {
-        //TODO check code
         _errorPages[it->first] = "." + _root + it->second;
         it++;
     }
