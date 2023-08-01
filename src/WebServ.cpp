@@ -214,9 +214,8 @@ bool WebServ::readRequest(const int &fd, Request &request)
         }
         else {
             request.requestBodyString = request.requestBodyString + requestRawString;
-            std::cout << "request.contentLength     = " << request.contentLength << std::endl;
-            std::cout << "requestBodyString.size    = " << sizeof(request.requestBodyString.c_str()) << std::endl;
-            if (static_cast<int>(request.requestBodyString.size()) >= request.contentLength){
+            if (static_cast<int>(request.requestBodyString.size()) >= request.contentLength || request.requestBodyString.find("Content-Type: image") != std::string::npos)
+            {
                 request.readingBody = false;
                 if (static_cast<int>(request.requestBodyString.size()) > request.contentLength) // TODO verifier si on doit envoyer erreur
                     request.requestBodyString.erase(request.contentLength);
@@ -477,9 +476,10 @@ static void handleHeader(Request &request)
         if (request.contentLength != -1)
         {
             std::cout << "Expected Content-Length   = " << request.contentLength << std::endl;
-            std::cout << "requestBodyString.size    = " << strlen(request.requestBodyString.c_str()) << std::endl;
             if (static_cast<int>(request.requestBodyString.size()) < request.contentLength)
                 request.readingBody = true;
+            if (request.requestBodyString.find("Content-Type: image") != std::string::npos)
+                request.readingBody = false;
         }
         else if (request.getHeader("Transfer-Encoding") == "chunked" )
         {
