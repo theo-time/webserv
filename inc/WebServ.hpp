@@ -43,7 +43,8 @@ class WebServ
         static bool                                 runListeners(void);
         static void                                 stop(void);
 	    static const std::string                    httpMethods[9];
-        static void                                 add(const int& fd);
+        static void                                 addFd2Select(const int& fd);
+        static void                                 delFd2Select(const int& fd);
 
     private:
 

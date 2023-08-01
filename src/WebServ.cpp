@@ -214,7 +214,9 @@ bool WebServ::readRequest(const int &fd, Request &request)
         }
         else {
             request.requestBodyString = request.requestBodyString + requestRawString;
-            if (static_cast<int>(request.requestBodyString.size()) >= request.contentLength){ // TODO timeout si content lentgh tjs pas atteint au bout d un certain temps
+            std::cout << "request.contentLength     = " << request.contentLength << std::endl;
+            std::cout << "requestBodyString.size    = " << sizeof(request.requestBodyString.c_str()) << std::endl;
+            if (static_cast<int>(request.requestBodyString.size()) >= request.contentLength){
                 request.readingBody = false;
                 if (static_cast<int>(request.requestBodyString.size()) > request.contentLength) // TODO verifier si on doit envoyer erreur
                     request.requestBodyString.erase(request.contentLength);
@@ -268,12 +270,23 @@ void WebServ::add(const int& fd, fd_set& set)
         _max_fd = fd;
 }
 
-void WebServ::add(const int& fd)
+void WebServ::addFd2Select(const int& fd)
 {
-    FD_SET(fd, &_master_set_recv);
+    FD_CLR(fd, &_master_set_recv);
 
     if (fd > _max_fd)
         _max_fd = fd;
+}
+
+void WebServ::delFd2Select(const int& fd)
+{
+    FD_SET(fd, &_master_set_recv);
+
+    if (fd == _max_fd)
+    {
+        while (FD_ISSET(_max_fd, &_master_set_recv) == 0)
+        _max_fd--;
+    }
 }
 
 void WebServ::del(const int& fd, fd_set& set)
@@ -463,7 +476,8 @@ static void handleHeader(Request &request)
 
         if (request.contentLength != -1)
         {
-            std::cout << "Expected Content-Length = " << request.contentLength << std::endl;
+            std::cout << "Expected Content-Length   = " << request.contentLength << std::endl;
+            std::cout << "requestBodyString.size    = " << strlen(request.requestBodyString.c_str()) << std::endl;
             if (static_cast<int>(request.requestBodyString.size()) < request.contentLength)
                 request.readingBody = true;
         }

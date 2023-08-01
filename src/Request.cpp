@@ -135,7 +135,7 @@ bool Request::parseHTTPVersion(const std::string& token)
 
 bool Request::parseHeaders()
 {
-    if (requestString.size() > MAX_HEADER_LEN)
+    if (requestHeaderString.size() > MAX_HEADER_LEN)
         _response.sendError(431, ": Header too long");
 
     std::string delimiter = "\r\n";
