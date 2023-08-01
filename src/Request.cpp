@@ -51,7 +51,7 @@ bool Request::parseRequest(){
 
     if ((method == "GET" && !_config->isGetAllowed()) || (method == "POST" && !_config->isPostAllowed()))
     {    
-        _response.sendError(400, ": Method not allowed");
+        _response.sendError(405, ": Method not allowed");
         return false;
     }
 
@@ -366,8 +366,14 @@ void Request::handleRequest()
     std::cout << "Path before method routing :" << getPath() << std::endl;
 
     // Method routing
-    if (getFileExtension(path) == "php" || getFileExtension(path) == "py")
-        this->routingCGI();
+    if (getFileExtension(path) == "php" || getFileExtension(path) == "py") {
+        if (_config->getType() == "cgi")
+            this->routingCGI();
+        else {
+            _response.sendError(405, "Don't match config file");
+            return;
+        }
+    }
     else if (method == "GET")
         this->routingGet();
     else if(method == "POST" || method == "PUT")

@@ -104,8 +104,12 @@ bool CGI::executeCGI(Request & req)
         dup2(pipe_in[0], STDIN_FILENO);
         close(pipe_in[0]);
         close(pipe_in[1]);
-
+        /*std::cout << "" << std::endl;
+        std::cout << "AAAAAAAAAAA" << std::endl;
+        std::cout << "" << std::endl;*/
         execve(_args[0], _args, _envvar);
+        //WebServ::stop();
+        
         exit(EXIT_FAILURE);
     }
     else {  // Parent process
