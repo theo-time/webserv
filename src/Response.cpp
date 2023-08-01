@@ -135,6 +135,12 @@ void Response::sendError(int statusCode, std::string error_msg)
             setFilename("405.html");
             send(errorPagePath);
             break;
+        case 408:
+            setStatusCode("408");
+            setStatusText("Request Timeout");
+            setFilename("408.html");
+            send(errorPagePath);
+            break;
         case 413:
             setStatusCode("413");
             setStatusText("Content Too Large");
