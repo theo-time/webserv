@@ -471,6 +471,16 @@ void Request::routingDelete()
 
 void Request::routingCGI()
 {
+    if (method == "GET") {
+        if(!::fileExists(path)) {
+            _response.sendError(404, "Not Found");
+            return;
+        }
+        else if(!::fileIsReadable(path)) {
+            _response.sendError(403, "Forbidden");
+            return;
+        }
+    }
     if(getFileExtension(path) == "py" || getFileExtension(path) == "php")
     {
         executable_path = _config->getPath();

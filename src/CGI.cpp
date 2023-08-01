@@ -82,6 +82,7 @@ bool CGI::executeCGI(Request & req)
         return false;
     }
     if (req.getMethod() == "POST") {
+
         if(write(pipe_in[1], req.getBody().c_str(), req.getBody().length()) < 0)
             return false;
     }
@@ -116,26 +117,33 @@ bool CGI::executeCGI(Request & req)
         int status = 0;
 
         ssize_t bytesRead;
-        char buffer[4096];
+        char buffer[10];
 
         alarm(5);
 
+        int err = 0;
         // Wait for the child process to exit or data to be available in the pipe_out
         while (waitpid(pid, &status, WNOHANG) == 0) {
-            if (alarm_triggered == 1) {
-                    std::cout << "TIMEOUT" << std::endl;
-                    kill(pid, SIGTERM);
-                    //break;
-            } else {
+                //std::cout << "loop : " << i << std::endl;
                 // Data available to read from the child process
+                if (status != 0)
+                    err = status;
                 bytesRead = read(pipe_out[0], buffer, sizeof(buffer));
                 if (bytesRead > 0) {
-                    // Process the data if needed
                     outputCGI.append(buffer, bytesRead);
-                } else {
+                }
+                else if (bytesRead == 0) {
+                    std::cout << "" << std::endl;
                     break;
                 }
-            }
+                else {
+                    std::cout << "Child process error in read" << std::endl;
+                    return false;
+                }
+                if (alarm_triggered == 1) {
+                    //std::cout << "TIMEOUT" << std::endl;
+                    kill(pid, SIGTERM);
+                }
         }
 
         // After the loop, the child process has either exited or its output is fully read.
@@ -144,8 +152,10 @@ bool CGI::executeCGI(Request & req)
         alarm(0);
         alarm_triggered = 0;
 
+        outputCGI = removeContentTypeHeader(outputCGI);
+
         if (WIFEXITED(status)) {
-            int exitStatus = WEXITSTATUS(status);
+            int exitStatus = std::max(WEXITSTATUS(status), err);
             if (exitStatus == 0) {
                 std::cout << "CGI execution was successful." << std::endl;
                 return true;
