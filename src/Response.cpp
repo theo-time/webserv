@@ -96,10 +96,11 @@ void Response::sendError(int statusCode, std::string error_msg)
     std::string errorPagePath = "./data/default/" + ss.str() + ".html";
     
     // check if custom error page exists
-    if (request->getConfig() && request->getConfig()->getErrorPages().count(statusCode))
+    if (request && request->getConfig()
+        && request->getConfig()->getErrorPages().count(statusCode)
+        && fileExists(request->getConfig()->getErrorPages()[statusCode]))
     {
-        if(fileExists(request->getConfig()->getErrorPages()[statusCode]))
-            errorPagePath = request->getConfig()->getErrorPages()[statusCode];
+        errorPagePath = request->getConfig()->getErrorPages()[statusCode];
     }
 
     switch(statusCode)

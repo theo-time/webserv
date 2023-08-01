@@ -17,6 +17,7 @@ Request::Request(int clientSocket, int serverSocket) : clientSocket(clientSocket
     ready2send = false;
     lastActivityTime = ft_now();
     curRequestTime = 0;
+    _config = NULL;
 }
 
 
