@@ -35,7 +35,7 @@ int                                         WebServ::_max_fd;
 bool WebServ::runListeners(void)
 {
 
-    if (Config::getVirtualServers().empty()) // TODO port par defaut ?
+    if (Config::getVirtualServers().empty())
     {
         std::cout << "Error: no configured virtual server" << std::endl;
         return(false);
@@ -63,7 +63,7 @@ bool WebServ::init(void)
     while(srvIt != srvEnd)
     {
         std::cout << "Starting virtual server " << (*srvIt)->getPort() << " " << (*srvIt)->getRoot() << "..." << std::endl;
-        if (_listeners.count((*srvIt)->getPort())) // TODO prendre en compte host
+        if (_listeners.count((*srvIt)->getPort())) 
         {
             (*srvIt)->setFd(_listeners[(*srvIt)->getPort()]);
             std::cout << "... binding to existing server socket - fd " << (*srvIt)->getFd() << std::endl;
@@ -134,11 +134,11 @@ bool WebServ::process(void)
         working_set_write = _master_set_write;
 
         // check i/o activity
-        ret = select(_max_fd + 1, &working_set_recv, &working_set_write, NULL, &timeout); // TODO check socket errors
+        ret = select(_max_fd + 1, &working_set_recv, &working_set_write, NULL, &timeout);
 
         if (ret == - 1) {
             std::cerr << " select() failed" << std::endl;
-            stop(); // TODO a checker
+            // stop();
             return(true);
         }
         if (ret == 0 && !_requests.empty()) {
@@ -184,8 +184,6 @@ bool WebServ::acceptNewCnx(const int& fd)
             break;
         }
 
-        // TODO set receive SO_RCVTIMEO and send timeout  SO_SNDTIMEO ?
-
         add(clientSocket, _master_set_recv);
         _requests[clientSocket] = new Request(clientSocket, fd);
         std::cout << "  New incoming connection - fd " << clientSocket << std::endl;
@@ -217,7 +215,7 @@ bool WebServ::readRequest(const int &fd, Request &request)
             if (static_cast<int>(request.requestBodyString.size()) >= request.contentLength || request.requestBodyString.find("Content-Type: image") != std::string::npos)
             {
                 request.readingBody = false;
-                if (static_cast<int>(request.requestBodyString.size()) > request.contentLength) // TODO verifier si on doit envoyer erreur
+                if (static_cast<int>(request.requestBodyString.size()) > request.contentLength) 
                     request.requestBodyString.erase(request.contentLength);
                 std::cout << "  ***end of request.requestBodyString:" << std::endl << request.requestBodyString << "***" << std::endl << std::endl;
                 request.handleRequest();

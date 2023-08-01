@@ -56,7 +56,11 @@ void Config::init(const std::string& filename)
     while (!_tmpSrvConf.empty())
     {
         if (!addSrvConf(_tmpSrvConf.front(), ++i))
+        {
+            clear();
             return;
+        }
+    
         _tmpSrvConf.pop();
     }
         
@@ -178,7 +182,7 @@ bool Config::checkConfFile(const std::string& filename)
         }
         
         //check forbidden char
-        found = _tmpConfData.find_first_of("*+<>|"); //TODO tbc
+        found = _tmpConfData.find_first_of("*+<>|");
         if (found != std::string::npos)
         {
             std::cout << "Error: found forbidden characters (" << found << "): " << std::endl;
@@ -337,12 +341,18 @@ bool Config::addSrvConf(std::string& line, int i)
         if(key == "listen")
         {
             char*               endPtr      = NULL;
-            unsigned long       tmpValue = strtoul(valueStr.c_str(), &endPtr, 0);
+            long                tmpValue = strtoul(valueStr.c_str(), &endPtr, 0);
             if  (endPtr == valueStr || endPtr != &(valueStr[valueStr.size()]))
             {
                 std::cout << "Error: invalid input: " << tmpVars.front() << std::endl;
                 return(false);
             }
+            if (tmpValue < 0 || tmpValue > 65535)
+            {
+                std::cout << "Error: invalid input: " << tmpVars.front() << std::endl;
+                return(false);
+            }
+             
             portStr = valueStr;
             port = static_cast<unsigned int>(tmpValue);
             tmpVars.pop();
@@ -447,12 +457,6 @@ bool Config::addSrvConf(std::string& line, int i)
                 std::cout << "Error: invalid location configuration: " << checkLocations.front() << std::endl;
                 return(false);
             }
-/*             std::string     name = checkLocations.front().substr(0, sep);
-            if (name.find_first_of("/")) // TODO tbc
-            {
-                std::cout << "Error: invalid location name: " << name << std::endl;
-                return(false);
-            } */
             checkLocations.pop();
         }
     }

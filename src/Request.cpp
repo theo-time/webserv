@@ -271,7 +271,6 @@ void     Request::getRequestConfig()
     std::cout <<  *_config << std::endl;
 
     std::cout << "|-------- End of Config Routing ---------|" << std::endl;
-    // TODO : throw error
 }
 
 
@@ -459,7 +458,6 @@ void Request::routingDelete()
             _response.setStatusText("OK");
             _response.setProtocol("HTTP/1.1");
             _response.send();
-            // TODO : send 200 response without body
         }
         else
         {

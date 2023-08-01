@@ -73,19 +73,6 @@ _clientMaxBodySize(clientMaxBodySize), _errorPages(errorPages)
                 tmpVars.pop();
                 continue;
             }
-/*             
-            sep = key.find("cgi_error_page:");
-            if(sep != std::string::npos)
-            {
-                std::stringstream   ss;
-                int                 code;
-                ss << key.substr(15, key.length());
-                ss >> code;
-                _errorPages[code] = valueStr; // TODO check code
-                // std::cout << "key: " << code << " value:" << valueStr << std::endl;
-                tmpVars.pop();
-                continue;
-            } */
 
             if(key == "methods")
             {
