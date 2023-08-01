@@ -20,7 +20,7 @@ typedef std::vector<VirtualServer*>         srvVect;
 typedef std::map<int, Request*>             intCliMap;
 typedef std::map<int, int>                  intMap;
 
-static void         clean(std::string& src);
+static bool         clean(std::string& src);
 static void         handleHeader(Request &request);
 static bool         checkEndRequestHeader(const char* src, int size, int* pos);
 static void         addChunkedBody(Request &request, std::string& requestRawString);
@@ -226,7 +226,11 @@ bool WebServ::readRequest(const int &fd, Request &request)
     }
     else { 
         std::cout << "  ***new request:" << std::endl << requestRawString << "***" << std::endl << std::endl;
-        clean(requestRawString);
+        if (!clean(requestRawString))
+        {
+            request.getResponse().sendError(400, ": invalid HTTP method");
+            return(true);
+        }
         if (requestRawString.empty())
             return(true);
         request.setRequestString(requestRawString);
@@ -583,7 +587,7 @@ The PATCH method applies partial modifications to a resource.
 */
 
 const std::string   WebServ::httpMethods[9] = {"GET ", "HEAD ", "POST ", "PUT ", "DELETE ", "CONNECT ", "OPTIONS ", "TRACE ", "PATCH "};
-static void clean(std::string& src)
+static bool clean(std::string& src)
 {
     size_t found;
     int i = 0;
@@ -593,7 +597,7 @@ static void clean(std::string& src)
         if (found != std::string::npos)
         {
             src.erase(0, found); // enlever juste whitespaces 
-            return;
+            return(true);
         }
         i++;
     }
@@ -606,8 +610,7 @@ static void clean(std::string& src)
         // it++;
     }
     if (src.empty())
-        return;
-/* 
-    std::cout << "  ***ERROR: invalid HTTP method:" << src << "***" << std::endl << std::endl;
-    src.erase(); */
+        return(true);
+
+    return(false);
 }
