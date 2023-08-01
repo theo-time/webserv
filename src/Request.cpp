@@ -139,10 +139,7 @@ bool Request::parseHeaders()
 
     std::string delimiter = "\r\n";
     size_t pos = 0;
-    int i = 0;
     std::string tmpRequestString = requestString;
-
-    // std::cout << "REQUEST STRING FOR PARSING HEADER" << requestString << std::endl;
 
     size_t posSC = tmpRequestString.find(":");
     if (posSC == std::string::npos) {
@@ -156,22 +153,15 @@ bool Request::parseHeaders()
     }
 
     while ((pos = tmpRequestString.find(delimiter)) != std::string::npos) {
-        std::string token = tmpRequestString.substr(0, pos);
+        std::string line = tmpRequestString.substr(0, pos);
         tmpRequestString.erase(0, pos + delimiter.length());
-        std::string delimiter2 = ": ";
-        size_t pos2 = 0;
-        int j = 0;
-        while ((pos2 = token.find(delimiter2)) != std::string::npos) {
-            std::string token2 = token.substr(0, pos2);
-            token.erase(0, pos2 + delimiter2.length());
-            if (j == 0) {
-                headers[token2] = token;
-            }
-            j++;
+        size_t pos2 = line.find(": ");
+        if(pos2 != std::string::npos) {
+            std::string key = line.substr(0, pos2);
+            std::string value = line.substr(pos2 + 2);
+            headers[key] = value;
         }
-        i++;
     }
-
     //get contentLength if any
     if (headers.count("Content-Length") == 1)
     {

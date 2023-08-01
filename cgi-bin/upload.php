@@ -25,9 +25,9 @@
     }
 
     // Allow certain file formats (you can customize this list)
-    $allowed_formats = array("jpg", "jpeg", "png", "gif", "pdf", "cpp", "txt");
+    $allowed_formats = array("cpp", "txt", "jpg", "png", "html");
     if (!in_array($file_type, $allowed_formats)) {
-        echo "Error: Only JPG, JPEG, PNG, GIF, and PDF files are allowed.";
+        echo "Error: Only CPP, JPEG and TXT files are allowed.";
         $upload_ok = false;
     }
 
