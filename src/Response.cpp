@@ -66,7 +66,13 @@ void Response::send(void)
 void Response::send(const std::string& path)
 {
     std::ifstream       file(path.c_str());
-    // TODO check file status
+    // check file status
+    if (!file.good())
+    {
+        sendError(500, ": Error when opening file " + path);
+        return;
+    }
+
     std::string         fileContent;
     std::stringstream   buffer;
     buffer << file.rdbuf();
@@ -85,13 +91,17 @@ void Response::sendError(int statusCode, std::string error_msg)
     setExtension("html");
     setContentDisposition("inline");
 
-    std::string errorPagePath;
     std::stringstream ss;
     ss << statusCode;
-    if (request->getConfig() && request->getConfig()->getErrorPages().count(statusCode))
+    std::string errorPagePath = "./data/default/" + ss.str() + ".html";
+    
+    // check if custom error page exists
+    if (request && request->getConfig()
+        && request->getConfig()->getErrorPages().count(statusCode)
+        && fileExists(request->getConfig()->getErrorPages()[statusCode]))
+    {
         errorPagePath = request->getConfig()->getErrorPages()[statusCode];
-    else
-        errorPagePath = "./data/default/" + ss.str() + ".html";
+    }
 
     switch(statusCode)
     {
@@ -161,9 +171,12 @@ void Response::sendError(int statusCode, std::string error_msg)
             setFilename("505.html");
             send(errorPagePath);
             break;
-        default: // TODO check
-            std::cout << "Fatal Error : Unknown status code" << std::endl;
-            exit(1);
+        default: 
+            std::cout << "ERROR: unknown status code, sent status 500" << std::endl;
+            setStatusCode("500");
+            setStatusText("Internal Server Error");
+            setFilename("500.html");
+            send("./data/default/500.html");
     }
 }
 
