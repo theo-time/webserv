@@ -143,37 +143,31 @@ void VirtualServer::setLocationsConf(strQueue conf)
 
 void VirtualServer::setPort(unsigned int port)
 {
-    // TODO check valid port number
     _port = port;
 }
 
 void VirtualServer::setFd(int fd)
 {
-    // TODO check valid fd number
     _fd = fd;
 }
 
 void VirtualServer::setName(std::string name)
 {
-    // TODO check valid name
     _name = name;
 }
 
 void VirtualServer::setIndex(std::string index)
 {
-    // TODO check valid index
     _index = index;
 }
 
 void VirtualServer::setRoot(std::string root)
 {
-    // TODO check valid root
     _root = root;
 }
 
 void VirtualServer::setClientMaxBodySize(unsigned int value)
 {
-    // TODO check value
     _clientMaxBodySize = value;
 }
 
