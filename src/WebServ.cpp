@@ -6,7 +6,7 @@
 /*   By: jde-la-f <jde-la-f@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/13 14:37:03 by adcarnec          #+#    #+#             */
-/*   Updated: 2023/08/01 10:10:02 by jde-la-f         ###   ########.fr       */
+/*   Updated: 2023/08/01 10:13:46 by jde-la-f         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -272,7 +272,7 @@ void WebServ::add(const int& fd, fd_set& set)
 
 void WebServ::addFd2Select(const int& fd)
 {
-    FD_CLR(fd, &_master_set_recv);
+    FD_SET(fd, &_master_set_recv);
 
     if (fd > _max_fd)
         _max_fd = fd;
@@ -280,7 +280,7 @@ void WebServ::addFd2Select(const int& fd)
 
 void WebServ::delFd2Select(const int& fd)
 {
-    FD_SET(fd, &_master_set_recv);
+    FD_CLR(fd, &_master_set_recv);
 
     if (fd == _max_fd)
     {
